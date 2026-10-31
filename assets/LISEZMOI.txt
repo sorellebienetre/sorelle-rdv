@@ -1,0 +1,5 @@
+Déposez ici les deux photos des praticiennes, avec EXACTEMENT ces noms
+(majuscules comprises, GitHub les distingue) :
+  laurie.JPG
+  lea.jpg
+Sans photo, un monogramme élégant s'affiche à la place.

@@ -1,0 +1,1441 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#FBF7EE">
+  <meta name="color-scheme" content="light">
+  <meta name="robots" content="noindex">
+  <meta name="description" content="Réservez votre rendez-vous en ligne chez Sorelle Bien-Être, prothésie ongulaire à Saint-Symphorien-d'Ozon.">
+  <title>Réserver · Sorelle Bien-Être</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Outfit:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    /* ================================================================
+       TOKENS — identiques à la landing Sorelle
+    ================================================================ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --sage: #8A9D7A; --sage-d: #6F8161; --sage-700: #5A6B4D; --sage-900: #3A4A2F;
+      --sage-300: #B5C2A5; --sage-100: #DDE5D0; --sage-50: #ECF0E0;
+      --ink: #1E2218; --ink-2: #2A2F23; --char: #3C4233;
+      --text: #2A2F23; --text-sub: #5A6453; --text-mute: #8E9583;
+      --cream: #F5EFE3; --cream-2: #ECE3D0; --bone: #E7DCC5;
+      --paper: #FBF7EE; --paper-2: #F7F1E1;
+      --clay: #C97B5A; --clay-d: #A85F3F; --clay-light: #E0A48A; --clay-50: #F8E9E0;
+      --line: rgba(30, 34, 24, 0.10); --line-2: rgba(30, 34, 24, 0.05); --line-3: rgba(30, 34, 24, 0.18);
+      --serif: 'Fraunces', 'Cormorant Garamond', Georgia, serif;
+      --sans: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+      --mono: 'JetBrains Mono', ui-monospace, monospace;
+      --ease: cubic-bezier(0.16, 1, 0.3, 1);
+      --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+      --gutter: max(16px, env(safe-area-inset-left));
+      --gutter-r: max(16px, env(safe-area-inset-right));
+      --radius: 18px;
+    }
+    html { -webkit-text-size-adjust: 100%; background: var(--paper); }
+    body {
+      font-family: var(--sans);
+      background: var(--paper);
+      color: var(--text);
+      line-height: 1.55;
+      min-height: 100dvh;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+      -webkit-tap-highlight-color: transparent;
+    }
+    img, svg { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    button, input { font: inherit; color: inherit; }
+    button { cursor: pointer; border: none; background: none; }
+    ::selection { background: var(--clay); color: var(--paper); }
+    [hidden] { display: none !important; }
+    :focus-visible { outline: 2px solid var(--clay); outline-offset: 3px; border-radius: 10px; }
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+    .grain {
+      position: fixed; inset: 0; z-index: 250; pointer-events: none; opacity: 0.045; mix-blend-mode: multiply;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.55 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+    }
+
+    h1, h2, h3 {
+      font-family: var(--serif); font-weight: 400; color: var(--ink);
+      letter-spacing: -0.022em; line-height: 1.08;
+      font-variation-settings: "opsz" 144, "SOFT" 50; text-wrap: balance;
+    }
+    h1 em, h2 em, h3 em { font-style: italic; color: var(--clay); font-variation-settings: "opsz" 144, "SOFT" 100; }
+    p { text-wrap: pretty; }
+    .eyebrow {
+      display: inline-flex; align-items: center; gap: 10px;
+      font-family: var(--mono); font-weight: 500; font-size: 10.5px;
+      letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-mute);
+    }
+    .eyebrow::before { content: ''; width: 22px; height: 1px; background: currentColor; opacity: 0.6; }
+    .label {
+      font-family: var(--mono); font-size: 10.5px; font-weight: 500;
+      letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-mute);
+    }
+
+    /* ================================================================
+       EN-TÊTE
+    ================================================================ */
+    .top {
+      position: sticky; top: 0; z-index: 60;
+      padding: calc(env(safe-area-inset-top) + 8px) var(--gutter-r) 8px var(--gutter);
+      background: rgba(251, 247, 238, 0.82);
+      backdrop-filter: blur(18px) saturate(150%); -webkit-backdrop-filter: blur(18px) saturate(150%);
+      border-bottom: 1px solid var(--line-2);
+    }
+    .top__in { max-width: 1120px; margin: 0 auto; display: flex; align-items: center; gap: 10px; min-height: 44px; }
+    .top__back {
+      width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center;
+      border: 1px solid var(--line); color: var(--ink); flex: none;
+      transition: background .3s var(--ease), color .3s var(--ease);
+    }
+    .top__back:hover { background: var(--ink); color: var(--paper); }
+    .top__back svg { width: 16px; height: 16px; }
+    .brand {
+      font-family: var(--serif); font-size: 21px; letter-spacing: -0.02em; color: var(--ink);
+      display: inline-flex; align-items: center; min-height: 44px; gap: 7px; flex: 1; min-width: 0; white-space: nowrap;
+    }
+    .brand span { font-style: italic; color: var(--clay); font-size: 17px; }
+    .top__track {
+      display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 16px;
+      border-radius: 999px; border: 1px solid var(--line); font-size: 13.5px; font-weight: 500; color: var(--ink);
+      transition: background .3s var(--ease), color .3s var(--ease), border-color .3s var(--ease); flex: none;
+    }
+    .top__track:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+    .top__track svg { width: 15px; height: 15px; }
+    .top__track .long { display: none; }
+    @media (min-width: 560px) { .top__track .long { display: inline; } .top__track .short { display: none; } }
+
+    .demo {
+      max-width: 1120px; margin: 10px auto 0; display: flex; justify-content: center;
+      padding: 0 var(--gutter-r) 0 var(--gutter);
+    }
+    .demo span {
+      font-family: var(--mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase;
+      color: var(--clay-d); background: var(--clay-50); border: 1px solid rgba(201,123,90,.25);
+      border-radius: 999px; padding: 6px 12px; text-align: center;
+    }
+
+    /* ================================================================
+       MISE EN PAGE
+    ================================================================ */
+    .layout {
+      max-width: 1120px; margin: 0 auto;
+      padding: 18px var(--gutter-r) 0 var(--gutter);
+      display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px;
+    }
+    @media (min-width: 1000px) {
+      .layout { grid-template-columns: minmax(0, 1fr) 320px; gap: 56px; padding-top: 34px; }
+    }
+    .flow { min-width: 0; max-width: 680px; width: 100%; margin: 0 auto; display: flex; flex-direction: column; min-height: calc(100dvh - 140px); }
+    @media (min-width: 1000px) { .flow { margin: 0; } }
+
+    /* Progression */
+    .progress { margin-bottom: 22px; }
+    .progress__meta { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 10px; }
+    .progress__count { font-family: var(--mono); font-size: 10.5px; letter-spacing: .14em; color: var(--text-mute); }
+    .progress__bar { height: 3px; border-radius: 3px; background: var(--line); overflow: hidden; }
+    .progress__fill { height: 100%; width: 20%; background: var(--clay); border-radius: 3px; transition: width .6s var(--ease); }
+    .progress__dots { display: none; }
+
+    /* Étapes */
+    .step { outline: none; }
+    .step__head { margin-bottom: 22px; }
+    .step__head h1 { font-size: clamp(30px, 8.4vw, 44px); margin-top: 10px; }
+    .step__head p { color: var(--text-sub); font-size: 15px; margin-top: 10px; max-width: 520px; }
+    .step.is-enter { animation: stepIn .5s var(--ease) both; }
+    .step.is-enter.is-back { animation-name: stepInBack; }
+    @keyframes stepIn { from { opacity: 0; transform: translateX(18px); } to { opacity: 1; transform: none; } }
+    @keyframes stepInBack { from { opacity: 0; transform: translateX(-18px); } to { opacity: 1; transform: none; } }
+
+    .group + .group { margin-top: 26px; }
+    .group__title { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+    .group__title h2 { font-size: 22px; }
+    .group__title h2 em { font-size: inherit; }
+    .group__hint { font-size: 12.5px; color: var(--text-mute); }
+
+    /* ---------- Étape 1 : praticiennes ---------- */
+    .prats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .prat {
+      position: relative; text-align: left; border-radius: 22px; overflow: hidden;
+      background: var(--cream); border: 1px solid var(--line);
+      transition: transform .5s var(--ease), border-color .3s var(--ease), box-shadow .4s var(--ease);
+      display: flex; flex-direction: column;
+    }
+    .prat:active { transform: scale(.98); }
+    .prat__img { position: relative; aspect-ratio: 4 / 5; background: var(--sage-100); overflow: hidden; }
+    .prat__img img { width: 100%; height: 100%; object-fit: cover; transition: transform 1s var(--ease); }
+    .prat:hover .prat__img img { transform: scale(1.04); }
+    @media (min-width: 720px) { .prat__img { aspect-ratio: 5 / 4; } .prats { gap: 16px; } }
+    .prat__mono {
+      position: absolute; inset: 0; display: grid; place-items: center;
+      font-family: var(--serif); font-style: italic; font-size: clamp(40px, 11vw, 64px); color: var(--paper); letter-spacing: -0.02em;
+      font-variation-settings: "opsz" 144, "SOFT" 100;
+      background: radial-gradient(120% 90% at 30% 20%, var(--sage-300), var(--sage-d));
+    }
+    .prat[data-i="1"] .prat__mono { background: radial-gradient(120% 90% at 30% 20%, var(--clay-light), var(--clay-d)); }
+    .prat__mono::after {
+      content: ''; position: absolute; inset: 14px; border: 1px solid rgba(251,247,238,.35); border-radius: 14px;
+    }
+    .prat__body { padding: 14px 14px 16px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .prat__name { font-family: var(--serif); font-size: 24px; color: var(--ink); letter-spacing: -0.02em; line-height: 1.1; }
+    .prat__role { font-size: 12px; color: var(--text-mute); line-height: 1.35; display: inline-block; margin-top: 4px; }
+    .check {
+      width: 26px; height: 26px; border-radius: 50%; flex: none; display: grid; place-items: center;
+      border: 1.5px solid var(--line-3); color: transparent;
+      transition: background .3s var(--ease), border-color .3s var(--ease), color .3s var(--ease), transform .4s var(--spring);
+    }
+    .check svg { width: 13px; height: 13px; }
+    [aria-pressed="true"] .check { background: var(--clay); border-color: var(--clay); color: var(--paper); transform: scale(1.06); }
+    .prat[aria-pressed="true"] { border-color: var(--clay); box-shadow: 0 0 0 1px var(--clay), 0 18px 40px -24px rgba(168,95,63,.55); }
+
+    /* ---------- Étape 2 : prestations ---------- */
+    .svcs { display: flex; flex-direction: column; gap: 8px; }
+    .svc {
+      width: 100%; text-align: left; display: flex; align-items: center; gap: 14px;
+      padding: 14px 16px; min-height: 64px; border-radius: 16px;
+      background: var(--paper-2); border: 1px solid var(--line);
+      transition: border-color .3s var(--ease), background .3s var(--ease), box-shadow .3s var(--ease);
+    }
+    .svc:hover { border-color: var(--line-3); }
+    .svc[aria-pressed="true"] { background: var(--paper); border-color: var(--clay); box-shadow: 0 0 0 1px var(--clay); }
+    .svc__txt { flex: 1; min-width: 0; }
+    .svc__name { display: block; font-weight: 500; color: var(--ink); font-size: 15.5px; line-height: 1.3; }
+    .svc__info { display: block; font-size: 12.5px; color: var(--text-mute); margin-top: 2px; line-height: 1.4; }
+    .svc__dur {
+      flex: none; font-family: var(--mono); font-size: 11.5px; color: var(--text-sub);
+      padding: 5px 9px; border-radius: 999px; background: var(--cream); border: 1px solid var(--line-2); white-space: nowrap;
+    }
+    .svc[aria-pressed="true"] .svc__dur { background: var(--clay-50); color: var(--clay-d); border-color: rgba(201,123,90,.2); }
+    .svc .check { border-radius: 50%; }
+
+    .note {
+      margin-top: 22px; padding: 14px 16px; border-radius: 14px; border: 1px dashed var(--line-3);
+      font-size: 13.5px; color: var(--text-sub); line-height: 1.55;
+    }
+    .note strong { color: var(--ink); font-weight: 500; }
+    .phones { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .phone {
+      display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px;
+      border-radius: 999px; background: var(--paper); border: 1px solid var(--line);
+      font-size: 13.5px; color: var(--ink); white-space: nowrap;
+      transition: background .3s var(--ease), color .3s var(--ease), border-color .3s var(--ease);
+    }
+    .phone:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+    .phone svg { width: 14px; height: 14px; flex: none; }
+    .phone b { font-weight: 500; }
+    .phone span { font-family: var(--mono); font-size: 12px; letter-spacing: .02em; }
+
+    /* ---------- Étape 3 : profil ---------- */
+    .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .choice {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      min-height: 60px; padding: 14px 16px; border-radius: 16px; text-align: left;
+      background: var(--paper-2); border: 1px solid var(--line); font-size: 15.5px; font-weight: 500; color: var(--ink);
+      transition: border-color .3s var(--ease), background .3s var(--ease), box-shadow .3s var(--ease);
+    }
+    .choice small { display: block; font-weight: 400; font-size: 12.5px; color: var(--text-mute); margin-top: 2px; }
+    .choice[aria-pressed="true"] { background: var(--paper); border-color: var(--clay); box-shadow: 0 0 0 1px var(--clay); }
+    .reveal { animation: stepIn .45s var(--ease) both; }
+    .callout {
+      margin-top: 18px; padding: 16px 18px; border-radius: 16px; font-size: 14px; line-height: 1.6;
+      background: var(--sage-50); border: 1px solid var(--sage-100); color: var(--sage-900);
+      display: flex; gap: 12px;
+    }
+    .callout svg { width: 18px; height: 18px; flex: none; margin-top: 2px; }
+    .callout--clay { background: var(--clay-50); border-color: rgba(201,123,90,.25); color: #6E3B24; }
+    .callout--stop { background: #F6E3DA; border-color: rgba(168,95,63,.35); color: #5C2E1A; }
+    .callout__body { min-width: 0; flex: 1; }
+    .callout__title { font-weight: 600; margin-bottom: 4px; }
+    .callout .phones { margin-top: 12px; }
+    .link-btn {
+      display: inline-flex; align-items: center; min-height: 40px; padding: 0 14px; margin: 10px 8px 0 0;
+      border-radius: 999px; background: var(--paper); border: 1px solid rgba(201,123,90,.35);
+      font-size: 13.5px; font-weight: 500; color: var(--clay-d);
+    }
+    .link-btn:hover { background: var(--clay); color: var(--paper); border-color: var(--clay); }
+
+    /* ---------- Étape 4 : date & heure ---------- */
+    .cal-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+    .cal-month { font-family: var(--serif); font-size: 20px; color: var(--ink); text-transform: capitalize; }
+    .cal-nav { display: none; gap: 6px; }
+    @media (hover: hover) and (min-width: 700px) { .cal-nav { display: flex; } }
+    .cal-nav button {
+      width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); display: grid; place-items: center; color: var(--ink);
+    }
+    .cal-nav button:hover { background: var(--ink); color: var(--paper); }
+    .cal-nav svg { width: 15px; height: 15px; }
+    .days {
+      display: flex; gap: 8px; overflow-x: auto; overscroll-behavior-x: contain;
+      scroll-snap-type: x proximity; scroll-padding: 0 var(--gutter);
+      margin: 0 calc(-1 * var(--gutter-r)) 0 calc(-1 * var(--gutter)); padding: 4px var(--gutter-r) 12px var(--gutter);
+      scrollbar-width: none; -webkit-overflow-scrolling: touch;
+    }
+    .days::-webkit-scrollbar { display: none; }
+    @media (min-width: 720px) { .days { margin: 0; padding-left: 2px; padding-right: 2px; scroll-padding: 0; } }
+    .day {
+      flex: none; width: 62px; min-height: 84px; scroll-snap-align: start;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+      border-radius: 16px; background: var(--paper-2); border: 1px solid var(--line);
+      transition: background .3s var(--ease), border-color .3s var(--ease), color .3s var(--ease), transform .4s var(--ease);
+      position: relative;
+    }
+    .day__wd { font-family: var(--mono); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--text-mute); }
+    .day__n { font-family: var(--serif); font-size: 24px; line-height: 1.1; color: var(--ink); }
+    .day__m { font-size: 11px; color: var(--text-mute); }
+    .day__dot { width: 5px; height: 5px; border-radius: 50%; background: var(--sage); margin-top: 3px; }
+    .day:disabled { background: transparent; border-style: dashed; cursor: default; }
+    .day:disabled .day__n, .day:disabled .day__wd, .day:disabled .day__m { color: var(--text-mute); opacity: .55; }
+    .day:disabled .day__dot { background: var(--line-3); opacity: .6; }
+    .day:not(:disabled):hover { border-color: var(--line-3); }
+    .day[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); }
+    .day[aria-pressed="true"] .day__n { color: var(--paper); }
+    .day[aria-pressed="true"] .day__wd, .day[aria-pressed="true"] .day__m { color: rgba(251,247,238,.7); }
+    .day[aria-pressed="true"] .day__dot { background: var(--clay-light); }
+    .day--week { margin-left: 8px; }
+    .day--week::before { content: ''; position: absolute; left: -9px; top: 18px; bottom: 18px; width: 1px; background: var(--line); }
+
+    .slots-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin: 18px 0 12px; }
+    .slots-head h2 { font-size: 22px; }
+    .slots-head h2::first-letter { text-transform: uppercase; }
+    .slots-count { font-size: 12.5px; color: var(--text-mute); white-space: nowrap; }
+    .slot-group + .slot-group { margin-top: 16px; }
+    .slot-group .label { display: block; margin-bottom: 8px; }
+    .slots { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+    @media (min-width: 560px) { .slots { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+    .slot {
+      min-height: 50px; border-radius: 999px; border: 1px solid var(--line); background: var(--paper-2);
+      font-family: var(--mono); font-size: 13.5px; color: var(--ink); letter-spacing: .01em;
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 0 10px;
+      transition: background .3s var(--ease), border-color .3s var(--ease), color .3s var(--ease);
+    }
+    .slot i { font-style: normal; color: var(--text-mute); font-size: 12px; }
+    .slot:hover { border-color: var(--line-3); }
+    .slot[aria-pressed="true"] { background: var(--clay); border-color: var(--clay); color: var(--paper); }
+    .slot[aria-pressed="true"] i { color: rgba(251,247,238,.75); }
+    .small-note { font-size: 12.5px; color: var(--text-mute); margin-top: 18px; display: flex; gap: 8px; line-height: 1.5; }
+    .small-note svg { width: 14px; height: 14px; flex: none; margin-top: 2px; }
+
+    .sk { background: linear-gradient(90deg, var(--cream) 0%, var(--paper-2) 50%, var(--cream) 100%); background-size: 200% 100%; animation: sk 1.4s linear infinite; border-radius: 16px; }
+    @keyframes sk { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+    .sk-days { display: flex; gap: 8px; overflow: hidden; padding: 4px 0 12px; }
+    .sk-days .sk { width: 62px; height: 84px; flex: none; }
+    .sk-line { height: 22px; width: 50%; margin: 18px 0 14px; border-radius: 8px; }
+    .sk-slot { height: 50px; border-radius: 999px; }
+
+    .error-box {
+      padding: 18px; border-radius: 16px; background: #F6E3DA; border: 1px solid rgba(168,95,63,.3); color: #5C2E1A; font-size: 14.5px;
+    }
+    .error-box .btn { margin-top: 12px; }
+    .alert {
+      padding: 12px 16px; border-radius: 14px; background: #F6E3DA; border: 1px solid rgba(168,95,63,.3);
+      color: #5C2E1A; font-size: 14px; margin-bottom: 16px; line-height: 1.5;
+    }
+    .alert:empty { display: none; }
+
+    /* ---------- Étape 5 : coordonnées ---------- */
+    .fields { display: grid; grid-template-columns: 1fr; gap: 14px; }
+    @media (min-width: 560px) { .fields { grid-template-columns: 1fr 1fr; } }
+    .field { display: flex; flex-direction: column; gap: 7px; }
+    .field label { font-family: var(--mono); font-size: 10.5px; letter-spacing: .18em; text-transform: uppercase; color: var(--text-sub); }
+    .field input {
+      font-family: var(--sans); font-size: 17px; height: 54px; padding: 0 16px;
+      border: 1px solid var(--line-3); border-radius: 14px; background: var(--paper-2); color: var(--ink);
+      outline: none; width: 100%; transition: border-color .3s var(--ease), background .3s var(--ease), box-shadow .3s var(--ease);
+      -webkit-appearance: none; appearance: none;
+    }
+    .field input:focus { border-color: var(--clay); background: var(--paper); box-shadow: 0 0 0 3px rgba(201,123,90,.15); }
+    .field input[aria-invalid="true"] { border-color: var(--clay-d); background: #FBF0EA; }
+    .field__err { font-size: 13px; color: var(--clay-d); min-height: 0; }
+    .field__err:empty { display: none; }
+    .hp { position: absolute !important; left: -9999px !important; top: auto; width: 1px; height: 1px; overflow: hidden; }
+
+    .recap { margin-top: 26px; border-radius: var(--radius); background: var(--cream); border: 1px solid var(--line); overflow: hidden; }
+    .recap__head { padding: 14px 18px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+    .recap dl { padding: 4px 18px 8px; }
+    .recap__row { display: flex; justify-content: space-between; gap: 16px; padding: 11px 0; border-bottom: 1px solid var(--line-2); }
+    .recap__row:last-child { border-bottom: none; }
+    .recap dt { font-size: 13px; color: var(--text-mute); flex: none; }
+    .recap dd { font-size: 14.5px; color: var(--ink); text-align: right; font-weight: 500; min-width: 0; }
+    .recap dd span { display: block; }
+    .cap::first-letter { text-transform: uppercase; }
+    .recap__edit { font-size: 13px; color: var(--clay-d); font-weight: 500; min-height: 36px; padding: 0 4px; }
+    .recap__edit:hover { text-decoration: underline; }
+
+    .cancel-box {
+      margin-top: 16px; padding: 18px; border-radius: var(--radius);
+      background: var(--ink); color: rgba(251,247,238,.86); font-size: 14px; line-height: 1.6;
+    }
+    .cancel-box .label { color: var(--clay-light); display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .cancel-box .label svg { width: 14px; height: 14px; }
+    .cancel-box .phones { margin-top: 14px; }
+    .cancel-box .phone { background: transparent; color: var(--paper); border-color: rgba(251,247,238,.2); }
+    .cancel-box .phone:hover { background: var(--paper); color: var(--ink); }
+
+    .ack {
+      margin-top: 16px; display: flex; gap: 14px; align-items: flex-start; padding: 16px; border-radius: 16px;
+      border: 1px solid var(--line-3); background: var(--paper-2); cursor: pointer; font-size: 14.5px; color: var(--ink); line-height: 1.5;
+      transition: border-color .3s var(--ease), background .3s var(--ease);
+    }
+    .ack input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+    .ack__box {
+      width: 26px; height: 26px; border-radius: 8px; border: 1.5px solid var(--line-3); background: var(--paper);
+      flex: none; display: grid; place-items: center; color: transparent; transition: all .3s var(--ease); margin-top: -1px;
+    }
+    .ack__box svg { width: 14px; height: 14px; }
+    .ack input:checked + .ack__box { background: var(--clay); border-color: var(--clay); color: var(--paper); }
+    .ack input:focus-visible + .ack__box { outline: 2px solid var(--clay); outline-offset: 3px; }
+    .ack.is-err { border-color: var(--clay-d); background: #FBF0EA; }
+    .rgpd { margin-top: 14px; font-size: 12.5px; color: var(--text-mute); display: flex; gap: 8px; line-height: 1.5; }
+    .rgpd svg { width: 14px; height: 14px; flex: none; margin-top: 2px; }
+
+    /* ---------- Étape 6 : confirmation ---------- */
+    .done { text-align: center; padding-top: 6px; }
+    .done__check { width: 84px; height: 84px; margin: 4px auto 18px; }
+    .done__check circle { stroke: var(--sage); stroke-width: 1.5; fill: var(--sage-50); stroke-dasharray: 240; stroke-dashoffset: 240; animation: draw .9s var(--ease) .1s forwards; }
+    .done__check path { stroke: var(--sage-700); stroke-width: 2.4; fill: none; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 50; stroke-dashoffset: 50; animation: draw .55s var(--ease) .65s forwards; }
+    .done--wait .done__check circle { stroke: var(--clay-light); fill: var(--clay-50); }
+    .done--wait .done__check path { stroke: var(--clay-d); }
+    @keyframes draw { to { stroke-dashoffset: 0; } }
+    .done h1 { font-size: clamp(32px, 9vw, 46px); }
+    .done__lead { color: var(--text-sub); font-size: 15px; margin: 10px auto 0; max-width: 460px; }
+    .done__when { margin: 22px auto 0; font-family: var(--serif); font-size: clamp(24px, 7vw, 32px); color: var(--ink); line-height: 1.15; }
+    .done__when::first-letter { text-transform: uppercase; }
+    .done__when em { font-style: italic; color: var(--clay); display: block; font-size: .8em; margin-top: 4px; }
+    .code-card {
+      margin: 24px auto 0; max-width: 420px; padding: 18px; border-radius: var(--radius);
+      background: var(--paper-2); border: 1px solid var(--line);
+    }
+    .code-card__row { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 8px; flex-wrap: wrap; }
+    .code {
+      font-family: var(--mono); font-weight: 500; font-size: clamp(30px, 9vw, 38px); letter-spacing: .16em; color: var(--ink);
+      padding-left: .16em;
+    }
+    .copy {
+      display: inline-flex; align-items: center; gap: 7px; min-height: 44px; padding: 0 14px; border-radius: 999px;
+      border: 1px solid var(--line-3); font-size: 13.5px; font-weight: 500; color: var(--ink); background: var(--paper);
+    }
+    .copy:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+    .copy svg { width: 14px; height: 14px; }
+    .code-card p { font-size: 12.5px; color: var(--text-mute); margin-top: 10px; }
+    .done .recap, .done .cancel-box { text-align: left; max-width: 520px; margin-left: auto; margin-right: auto; }
+    .done__actions { display: flex; flex-direction: column; gap: 10px; max-width: 420px; margin: 24px auto 0; }
+    .done__actions .btn { justify-content: center; width: 100%; }
+
+    /* ================================================================
+       BOUTONS — pilule + orb (landing)
+    ================================================================ */
+    .btn {
+      position: relative; display: inline-flex; align-items: center; gap: 10px;
+      min-height: 52px; padding: 8px 8px 8px 22px; border-radius: 999px;
+      font-family: var(--sans); font-size: 15px; font-weight: 500; line-height: 1; white-space: nowrap;
+      border: 1px solid transparent;
+      transition: background .4s var(--ease), color .4s var(--ease), border-color .4s var(--ease), opacity .3s var(--ease), transform .2s var(--ease);
+    }
+    .btn:active:not(:disabled) { transform: scale(.97); }
+    .btn__orb { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; flex: none; transition: transform .55s var(--spring), background .4s var(--ease); }
+    .btn:hover:not(:disabled) .btn__orb { transform: translate(3px, -1px) rotate(-12deg); }
+    .btn__orb svg { width: 14px; height: 14px; }
+    .btn__label { flex: 1; text-align: left; }
+    .btn--clay { background: var(--clay); color: var(--paper); }
+    .btn--clay .btn__orb { background: var(--ink); color: var(--paper); }
+    .btn--clay:hover:not(:disabled) { background: var(--clay-d); }
+    .btn--ink { background: var(--ink); color: var(--paper); }
+    .btn--ink .btn__orb { background: var(--paper); color: var(--ink); }
+    .btn--ghost { background: transparent; color: var(--ink); border-color: var(--line-3); padding: 8px 22px; justify-content: center; }
+    .btn--ghost:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+    .btn--ghost svg { width: 16px; height: 16px; }
+    .btn:disabled { opacity: .38; cursor: not-allowed; }
+    .btn.is-loading .btn__orb svg { display: none; }
+    .btn.is-loading .btn__orb::after {
+      content: ''; width: 14px; height: 14px; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent;
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Barre d'action collante */
+    .bar {
+      position: sticky; bottom: 0; z-index: 40; margin-top: auto;
+      margin-left: calc(-1 * var(--gutter)); margin-right: calc(-1 * var(--gutter-r));
+      padding: 12px var(--gutter-r) calc(12px + env(safe-area-inset-bottom)) var(--gutter);
+      background: rgba(251, 247, 238, 0.84);
+      backdrop-filter: blur(18px) saturate(150%); -webkit-backdrop-filter: blur(18px) saturate(150%);
+      border-top: 1px solid var(--line);
+    }
+    .bar-spacer { height: 28px; flex: none; }
+    @media (min-width: 720px) {
+      .bar { margin-left: 0; margin-right: 0; border: 1px solid var(--line); border-radius: 999px; padding: 8px; bottom: 16px; margin-bottom: 16px; box-shadow: 0 20px 40px -30px rgba(30,34,24,.4); }
+    }
+    .bar__meta { font-size: 13px; color: var(--text-sub); margin: 0 4px 10px; display: flex; gap: 8px; align-items: baseline; min-height: 0; }
+    .bar__meta:empty { display: none; }
+    .bar__meta b { color: var(--ink); font-weight: 500; }
+    @media (min-width: 720px) { .bar__meta { display: none; } }
+    .bar__row { display: flex; gap: 10px; align-items: center; }
+    .bar__back {
+      width: 52px; height: 52px; border-radius: 50%; border: 1px solid var(--line-3); display: grid; place-items: center; flex: none; color: var(--ink);
+      transition: background .3s var(--ease), color .3s var(--ease);
+    }
+    .bar__back:hover { background: var(--ink); color: var(--paper); }
+    .bar__back svg { width: 17px; height: 17px; }
+    .bar__wide { display: none; flex: 1; font-size: 13.5px; color: var(--text-sub); padding: 0 8px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .bar__wide b { color: var(--ink); font-weight: 500; }
+    @media (min-width: 720px) { .bar__wide { display: block; } }
+    .bar__next { flex: 1; }
+    @media (min-width: 720px) { .bar__next { flex: none; min-width: 240px; } }
+
+    /* ================================================================
+       RÉCAP LATÉRAL (desktop)
+    ================================================================ */
+    .aside { display: none; }
+    @media (min-width: 1000px) {
+      .aside { display: block; position: sticky; top: 96px; align-self: start; }
+    }
+    .aside__card { border-radius: 22px; background: var(--cream); border: 1px solid var(--line); padding: 22px; }
+    .aside__card h2 { font-size: 24px; margin: 8px 0 14px; }
+    .aside__row { padding: 12px 0; border-top: 1px solid var(--line); }
+    .aside__row .label { display: block; margin-bottom: 4px; font-size: 9.5px; }
+    .aside__val { font-size: 14.5px; color: var(--ink); }
+    .aside__val.is-empty { color: var(--text-mute); font-style: italic; font-family: var(--serif); }
+    .aside__foot { margin-top: 16px; font-size: 12.5px; color: var(--text-mute); line-height: 1.55; }
+
+    /* ================================================================
+       PIED DE PAGE
+    ================================================================ */
+    .foot {
+      max-width: 1120px; margin: 8px auto 0; padding: 22px var(--gutter-r) calc(28px + env(safe-area-inset-bottom)) var(--gutter);
+      border-top: 1px solid var(--line-2); font-size: 12.5px; color: var(--text-mute);
+      display: flex; flex-wrap: wrap; gap: 8px 18px; justify-content: space-between; align-items: center;
+    }
+    .foot a, .foot button { color: var(--text-sub); text-decoration: underline; text-decoration-color: var(--line-3); text-underline-offset: 3px; min-height: 44px; display: inline-flex; align-items: center; font-size: 12.5px; }
+
+    /* ================================================================
+       PANNEAU SUIVI
+    ================================================================ */
+    dialog.sheet {
+      border: none; padding: 0; background: var(--paper); color: var(--text);
+      width: 100%; max-width: 100%; margin: auto 0 0; max-height: 92dvh;
+      border-radius: 24px 24px 0 0; box-shadow: 0 -20px 60px -20px rgba(30,34,24,.4);
+    }
+    dialog.sheet[open] { animation: sheetIn .45s var(--ease); }
+    dialog.sheet::backdrop { background: rgba(30,34,24,.45); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
+    @keyframes sheetIn { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+    @media (min-width: 640px) {
+      dialog.sheet { max-width: 460px; margin: auto; border-radius: 24px; }
+    }
+    .sheet__in { padding: 22px var(--gutter-r) calc(22px + env(safe-area-inset-bottom)) var(--gutter); }
+    @media (min-width: 640px) { .sheet__in { padding: 28px; } }
+    .sheet__grab { width: 40px; height: 4px; border-radius: 4px; background: var(--line-3); margin: -8px auto 14px; }
+    @media (min-width: 640px) { .sheet__grab { display: none; } }
+    .sheet__top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+    .sheet h2 { font-size: 28px; margin-top: 8px; }
+    .sheet__close { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); display: grid; place-items: center; flex: none; margin: -4px -4px 0 0; }
+    .sheet__close svg { width: 15px; height: 15px; }
+    .sheet p.sub { font-size: 14px; color: var(--text-sub); margin: 8px 0 18px; }
+    .track-form { display: flex; gap: 8px; }
+    .track-form input {
+      flex: 1; min-width: 0; height: 54px; padding: 0 16px; border-radius: 14px; border: 1px solid var(--line-3); background: var(--paper-2);
+      font-family: var(--mono); font-size: 19px; letter-spacing: .18em; text-transform: uppercase; color: var(--ink); outline: none;
+    }
+    .track-form input:focus { border-color: var(--clay); background: var(--paper); box-shadow: 0 0 0 3px rgba(201,123,90,.15); }
+    .track-form .btn { padding-left: 18px; }
+    .track-res { margin-top: 18px; }
+    .track-res .alert { margin: 0; }
+    .status {
+      display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px;
+      font-size: 13px; font-weight: 500;
+    }
+    .status::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+    .status--ok { background: var(--sage-50); color: var(--sage-700); border: 1px solid var(--sage-100); }
+    .status--wait { background: var(--clay-50); color: var(--clay-d); border: 1px solid rgba(201,123,90,.25); }
+    .status--ko { background: #EEE9E2; color: var(--char); border: 1px solid var(--line); }
+    .track-card { border-radius: 18px; border: 1px solid var(--line); background: var(--cream); padding: 16px 18px; }
+    .track-card__when { font-family: var(--serif); font-size: 22px; color: var(--ink); margin-top: 12px; line-height: 1.2; }
+    .track-card__when::first-letter { text-transform: uppercase; }
+    .track-card__meta { font-size: 14px; color: var(--text-sub); margin-top: 6px; }
+
+    .loading-page { padding: 40px 0; }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .001ms !important; animation-delay: 0s !important; transition-duration: .001ms !important; }
+      .done__check circle, .done__check path { stroke-dashoffset: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="grain" aria-hidden="true"></div>
+
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="i-arrow" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12 L19 12"/><path d="M13 6 L19 12 L13 18"/></g></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12 L5 12"/><path d="M11 6 L5 12 L11 18"/></g></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5 L10 17.5 L19 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24"><path d="M6.6 3.5h2.6l1.4 4.2-2 1.3a12 12 0 0 0 6.4 6.4l1.3-2 4.2 1.4v2.6a2 2 0 0 1-2.2 2A16.5 16.5 0 0 1 4.6 5.7a2 2 0 0 1 2-2.2z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></symbol>
+    <symbol id="i-sms" viewBox="0 0 24 24"><path d="M4 5.5h16v10H9l-5 4z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5"/><path d="M12 7.6v.2"/></g></symbol>
+    <symbol id="i-leaf" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19c0-8 5-13 14-14 0 9-5 14-13 14z"/><path d="M5 19 13 11"/></g></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><rect x="5" y="10.5" width="14" height="9.5" rx="2"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/></g></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></g></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></g></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><rect x="8.5" y="8.5" width="11" height="11" rx="2"/><path d="M15.5 8.5V6a1.5 1.5 0 0 0-1.5-1.5H6A1.5 1.5 0 0 0 4.5 6v8A1.5 1.5 0 0 0 6 15.5h2.5"/></g></symbol>
+    <symbol id="i-cal" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5.5" width="16" height="14.5" rx="2"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4M12 13v4M10 15h4"/></g></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+  </svg>
+
+  <header class="top">
+    <div class="top__in">
+      <a class="top__back" href="https://sorellebienetre.fr/" aria-label="Retour au site Sorelle Bien-Être"><svg><use href="#i-back"/></svg></a>
+      <a class="brand" href="https://sorellebienetre.fr/" aria-label="Sorelle Bien-Être — accueil du site">Sorelle<span>Bien-Être</span></a>
+      <button type="button" class="top__track" data-open-track aria-haspopup="dialog">
+        <svg aria-hidden="true"><use href="#i-search"/></svg><span class="short">Suivi</span><span class="long">Suivre ma réservation</span>
+      </button>
+    </div>
+  </header>
+  <div class="demo" id="demo" hidden><span>Mode démo — aucune réservation réelle</span></div>
+
+  <div class="layout">
+    <main class="flow" id="flow">
+      <div class="progress" id="progress" hidden>
+        <div class="progress__meta">
+          <span class="eyebrow" id="progressLabel">Praticienne</span>
+          <span class="progress__count" id="progressCount">1 / 5</span>
+        </div>
+        <div class="progress__bar" role="progressbar" aria-label="Progression de la réservation" aria-valuemin="1" aria-valuemax="5" aria-valuenow="1" id="progressBar">
+          <div class="progress__fill" id="progressFill"></div>
+        </div>
+      </div>
+
+      <div id="boot" class="loading-page" aria-live="polite">
+        <div class="sk sk-line" style="width:40%;margin-top:0"></div>
+        <div class="sk" style="height:48px;width:80%;border-radius:12px;margin-bottom:26px"></div>
+        <div class="prats"><div class="sk" style="aspect-ratio:4/5.6;border-radius:22px"></div><div class="sk" style="aspect-ratio:4/5.6;border-radius:22px"></div></div>
+      </div>
+
+      <!-- ÉTAPE 1 -->
+      <section class="step" data-step="1" tabindex="-1" aria-labelledby="h1-1" hidden>
+        <div class="step__head">
+          <span class="eyebrow">Prendre rendez-vous</span>
+          <h1 id="h1-1">Avec qui souhaitez-vous <em>votre moment</em> ?</h1>
+          <p>Choisissez votre praticienne : les créneaux proposés s'adaptent à son agenda.</p>
+        </div>
+        <div class="prats" id="prats" role="group" aria-label="Praticiennes"></div>
+      </section>
+
+      <!-- ÉTAPE 2 -->
+      <section class="step" data-step="2" tabindex="-1" aria-labelledby="h1-2" hidden>
+        <div class="step__head">
+          <span class="eyebrow">Étape 2 · Prestations</span>
+          <h1 id="h1-2">Vos <em>prestations</em></h1>
+          <p>Une prestation mains, une prestation pieds, ou les deux à la suite.</p>
+        </div>
+        <div id="svcGroups"></div>
+        <div class="note" id="massageNote"></div>
+      </section>
+
+      <!-- ÉTAPE 3 -->
+      <section class="step" data-step="3" tabindex="-1" aria-labelledby="h1-3" hidden>
+        <div class="step__head">
+          <span class="eyebrow">Étape 3 · Votre profil</span>
+          <h1 id="h1-3">Première <em>visite</em> chez nous ?</h1>
+          <p>Cela nous aide à bien préparer votre rendez-vous.</p>
+        </div>
+        <div class="choices" role="group" aria-label="Première visite" id="newChoices">
+          <button type="button" class="choice" data-nouvelle="1" aria-pressed="false"><span>Oui<small>C'est ma première fois</small></span><span class="check"><svg><use href="#i-check"/></svg></span></button>
+          <button type="button" class="choice" data-nouvelle="0" aria-pressed="false"><span>Non<small>Je suis déjà venue</small></span><span class="check"><svg><use href="#i-check"/></svg></span></button>
+        </div>
+        <div id="onglesWrap" hidden>
+          <div class="group__title" style="margin-top:28px"><h2 id="onglesQ">Qu'avez-vous actuellement <em>sur les ongles</em> ?</h2></div>
+          <div class="choices" role="group" aria-labelledby="onglesQ" id="onglesChoices">
+            <button type="button" class="choice" data-ongles="rien" aria-pressed="false"><span>Rien<small>Ongles naturels</small></span><span class="check"><svg><use href="#i-check"/></svg></span></button>
+            <button type="button" class="choice" data-ongles="gel" aria-pressed="false"><span>Gel</span><span class="check"><svg><use href="#i-check"/></svg></span></button>
+            <button type="button" class="choice" data-ongles="semi" aria-pressed="false"><span>Semi-permanent</span><span class="check"><svg><use href="#i-check"/></svg></span></button>
+            <button type="button" class="choice" data-ongles="porcelaine" aria-pressed="false"><span>Résine ou porcelaine</span><span class="check"><svg><use href="#i-check"/></svg></span></button>
+          </div>
+        </div>
+        <div id="profilMsg" aria-live="polite"></div>
+      </section>
+
+      <!-- ÉTAPE 4 -->
+      <section class="step" data-step="4" tabindex="-1" aria-labelledby="h1-4" hidden>
+        <div class="step__head">
+          <span class="eyebrow">Étape 4 · Créneau</span>
+          <h1 id="h1-4">Date et <em>heure</em></h1>
+          <p id="slotIntro">Les horaires tiennent compte de la durée de vos prestations.</p>
+        </div>
+        <div class="alert" id="slotAlert" role="alert" aria-live="assertive"></div>
+        <div id="calBody" aria-live="polite" aria-busy="false"></div>
+        <p class="small-note"><svg aria-hidden="true"><use href="#i-info"/></svg><span>Réservation en ligne possible à partir de demain. Pour aujourd'hui, appelez-nous.</span></p>
+      </section>
+
+      <!-- ÉTAPE 5 -->
+      <section class="step" data-step="5" tabindex="-1" aria-labelledby="h1-5" hidden>
+        <div class="step__head">
+          <span class="eyebrow">Étape 5 · Coordonnées</span>
+          <h1 id="h1-5">Vos <em>coordonnées</em></h1>
+          <p>Votre prénom et votre nom suffisent.</p>
+        </div>
+        <div class="alert" id="formAlert" role="alert" aria-live="assertive"></div>
+        <form id="form" novalidate autocomplete="on">
+          <div class="fields">
+            <div class="field">
+              <label for="prenom">Prénom</label>
+              <input id="prenom" name="prenom" type="text" autocomplete="given-name" autocapitalize="words" spellcheck="false" maxlength="40" required aria-describedby="prenomErr" enterkeyhint="next">
+              <span class="field__err" id="prenomErr" aria-live="polite"></span>
+            </div>
+            <div class="field">
+              <label for="nom">Nom</label>
+              <input id="nom" name="nom" type="text" autocomplete="family-name" autocapitalize="words" spellcheck="false" maxlength="40" required aria-describedby="nomErr" enterkeyhint="done">
+              <span class="field__err" id="nomErr" aria-live="polite"></span>
+            </div>
+          </div>
+          <div class="hp" aria-hidden="true">
+            <label for="website">Ne pas remplir</label>
+            <input id="website" name="website" type="text" tabindex="-1" autocomplete="off" value="">
+          </div>
+
+          <div class="recap" id="recap"></div>
+
+          <div class="cancel-box" id="cancelBox"></div>
+
+          <label class="ack" id="ackWrap">
+            <input type="checkbox" id="ack" required>
+            <span class="ack__box" aria-hidden="true"><svg><use href="#i-check"/></svg></span>
+            <span>J'ai bien noté : annulation uniquement par téléphone, au plus tard 48 h avant.</span>
+          </label>
+          <p class="rgpd"><svg aria-hidden="true"><use href="#i-lock"/></svg><span>Seuls vos prénom et nom sont conservés, uniquement pour la gestion du rendez-vous, puis supprimés automatiquement.</span></p>
+          <button type="submit" hidden aria-hidden="true" tabindex="-1"></button>
+        </form>
+      </section>
+
+      <!-- ÉTAPE 6 -->
+      <section class="step" data-step="6" tabindex="-1" aria-labelledby="h1-6" hidden>
+        <div class="done" id="done"></div>
+      </section>
+
+      <div class="bar-spacer" id="barSpacer"></div>
+      <div class="bar" id="bar" hidden>
+        <div class="bar__meta" id="barMeta"></div>
+        <div class="bar__row">
+          <button type="button" class="bar__back" id="btnBack" aria-label="Étape précédente"><svg><use href="#i-back"/></svg></button>
+          <div class="bar__wide" id="barWide"></div>
+          <button type="button" class="btn btn--clay bar__next" id="btnNext">
+            <span class="btn__label" id="btnNextLabel">Continuer</span>
+            <span class="btn__orb"><svg><use href="#i-arrow"/></svg></span>
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <aside class="aside" aria-label="Votre rendez-vous">
+      <div class="aside__card">
+        <span class="eyebrow">Récapitulatif</span>
+        <h2>Votre <em>rendez-vous</em></h2>
+        <div id="asideRows"></div>
+        <p class="aside__foot" id="asideFoot"></p>
+      </div>
+    </aside>
+  </div>
+
+  <footer class="foot">
+    <span id="footAddr">Sorelle Bien-Être</span>
+    <span style="display:flex;gap:18px;flex-wrap:wrap">
+      <button type="button" data-open-track>Suivre ma réservation</button>
+      <a href="https://sorellebienetre.fr/">Retour au site</a>
+    </span>
+  </footer>
+
+  <dialog class="sheet" id="trackSheet" aria-labelledby="trackTitle">
+    <div class="sheet__in">
+      <div class="sheet__grab" aria-hidden="true"></div>
+      <div class="sheet__top">
+        <div>
+          <span class="eyebrow">Suivi</span>
+          <h2 id="trackTitle">Suivre ma <em>réservation</em></h2>
+        </div>
+        <button type="button" class="sheet__close" id="trackClose" aria-label="Fermer"><svg><use href="#i-close"/></svg></button>
+      </div>
+      <p class="sub">Saisissez le code reçu à la fin de votre réservation.</p>
+      <form class="track-form" id="trackForm" novalidate>
+        <label for="trackCode" class="sr-only">Code de réservation</label>
+        <input id="trackCode" type="text" inputmode="text" autocapitalize="characters" autocomplete="off" spellcheck="false" maxlength="10" placeholder="ABC123">
+        <button type="submit" class="btn btn--ink" id="trackBtn"><span class="btn__label">Voir</span><span class="btn__orb"><svg><use href="#i-arrow"/></svg></span></button>
+      </form>
+      <div class="track-res" id="trackRes" aria-live="polite"></div>
+    </div>
+  </dialog>
+
+  <script src="../app/config.js"></script>
+  <script src="../app/core.js"></script>
+  <script src="../app/api.js"></script>
+  <script>
+  (function () {
+    'use strict';
+
+    var API = window.SorelleAPI;
+    var NAME_RE = /^[A-Za-zÀ-ÖØ-öø-ÿŒœ' \-]{1,40}$/;
+    var PHOTOS = { laurie: '../assets/laurie.JPG', lea: '../assets/lea.jpg' };
+    var STEPS = ['Praticienne', 'Prestations', 'Votre profil', 'Créneau', 'Coordonnées'];
+    var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    var S = {
+      cfg: null, step: 1,
+      prat: null, main: null, pied: null,
+      nouvelle: null, ongles: null,
+      dispo: null, dispoKey: null, dispoLoading: false, dispoError: null,
+      day: null, slot: null,
+      prenom: '', nom: '', ack: false,
+      result: null, submitting: false
+    };
+
+    /* ---------------- Utilitaires ---------------- */
+    function $(s, r) { return (r || document).querySelector(s); }
+    function $$(s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
+    function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+    function icon(id) { return '<svg aria-hidden="true"><use href="#' + id + '"/></svg>'; }
+
+    function fmtDur(min) {
+      min = Math.round(min || 0);
+      if (min < 60) return min + ' min';
+      var h = Math.floor(min / 60), m = min % 60;
+      return h + ' h' + (m ? ' ' + (m < 10 ? '0' + m : m) : '');
+    }
+    function parseD(iso) { var p = iso.split('-'); return new Date(+p[0], +p[1] - 1, +p[2], 12); }
+    function fmt(iso, opts) { return new Intl.DateTimeFormat('fr-FR', opts).format(parseD(iso)); }
+    function longDate(iso) { return fmt(iso, { weekday: 'long', day: 'numeric', month: 'long' }); }
+    function shortDate(iso) { return fmt(iso, { weekday: 'short', day: 'numeric', month: 'short' }); }
+    function hm(t) { return t.replace(':', ' h '); }
+    function cleanName(s) { return String(s || '').replace(/\s+/g, ' ').trim(); }
+    function telHref(t) { var d = String(t || '').replace(/[^\d+]/g, ''); if (d.charAt(0) === '0') d = '+33' + d.slice(1); return d; }
+
+    function svc(id) { return (S.cfg.prestations || []).filter(function (s) { return s.id === id; })[0] || null; }
+    function chosenIds() { return [S.main, S.pied].filter(Boolean); }
+    function chosenSvcs() { return chosenIds().map(svc).filter(Boolean); }
+    function totalDur() { return chosenSvcs().reduce(function (a, s) { return a + s.duree; }, 0); }
+    function prat() { return S.prat ? (S.cfg.praticiennes.filter(function (p) { return p.id === S.prat; })[0] || null) : null; }
+
+    function phoneLinks(list, withSms) {
+      return '<div class="phones">' + list.map(function (p) {
+        var h = telHref(p.telephone);
+        var s = '<a class="phone" href="tel:' + esc(h) + '">' + icon('i-phone') + '<b>' + esc(p.nom) + '</b><span>' + esc(p.telephone) + '</span></a>';
+        if (withSms) s += '<a class="phone" href="sms:' + esc(h) + '">' + icon('i-sms') + '<b>SMS</b></a>';
+        return s;
+      }).join('') + '</div>';
+    }
+
+    /* ---------------- Navigation ---------------- */
+    var dirBack = false;
+    function canNext(n) {
+      if (n === 1) return !!S.prat;
+      if (n === 2) return chosenIds().length > 0;
+      if (n === 3) return S.nouvelle === false || (S.nouvelle === true && !!S.ongles && S.ongles !== 'porcelaine');
+      if (n === 4) return !!(S.day && S.slot);
+      return true;
+    }
+
+    function go(n, opts) {
+      opts = opts || {};
+      dirBack = n < S.step;
+      S.step = n;
+      if (!opts.fromHistory) {
+        try {
+          if (opts.replace) history.replaceState({ step: n }, '');
+          else history.pushState({ step: n }, '');
+        } catch (e) { /* ignore */ }
+      }
+      render(true);
+    }
+
+    window.addEventListener('popstate', function (e) {
+      if (!S.cfg) return;
+      var n = e.state && e.state.step ? e.state.step : 1;
+      if (S.step === 6) { // une réservation terminée ne se « défait » pas
+        try { history.pushState({ step: 6 }, ''); } catch (x) { /* ignore */ }
+        return;
+      }
+      if (n > S.step) { var ok = true; for (var i = S.step; i < n; i++) if (!canNext(i)) ok = false; if (!ok) n = S.step; }
+      go(n, { fromHistory: true });
+    });
+
+    /* ---------------- Rendu global ---------------- */
+    function render(animate) {
+      var n = S.step;
+      $$('.step').forEach(function (sec) {
+        var on = +sec.getAttribute('data-step') === n;
+        if (on && sec.hidden) {
+          sec.hidden = false;
+          if (animate && !reduceMotion) {
+            sec.classList.remove('is-enter', 'is-back');
+            void sec.offsetWidth;
+            sec.classList.add('is-enter');
+            if (dirBack) sec.classList.add('is-back');
+          }
+        } else if (!on) sec.hidden = true;
+      });
+
+      // Progression
+      var prog = $('#progress');
+      prog.hidden = n === 6;
+      if (n <= 5) {
+        $('#progressLabel').textContent = STEPS[n - 1];
+        $('#progressCount').textContent = n + ' / 5';
+        $('#progressFill').style.width = (n / 5 * 100) + '%';
+        $('#progressBar').setAttribute('aria-valuenow', n);
+        $('#progressBar').setAttribute('aria-valuetext', 'Étape ' + n + ' sur 5 : ' + STEPS[n - 1]);
+      }
+
+      if (n === 1) renderPrats();
+      if (n === 2) renderServices();
+      if (n === 3) renderProfil();
+      if (n === 4) ensureDispo();
+      if (n === 5) renderForm();
+      renderBar();
+      renderAside();
+
+      if (animate) {
+        window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
+        var sec = $('.step[data-step="' + n + '"]');
+        if (sec) setTimeout(function () { sec.focus({ preventScroll: true }); }, 30);
+      }
+    }
+
+    function renderBar() {
+      var n = S.step, bar = $('#bar'), next = $('#btnNext');
+      bar.hidden = n === 6 || n === 1;
+      $('#barSpacer').hidden = n === 6;
+      $('#btnBack').hidden = n === 1;
+      var hideNext = n === 3 && S.nouvelle === true && S.ongles === 'porcelaine';
+      next.hidden = hideNext;
+      next.disabled = n === 5 ? S.submitting : !canNext(n);
+      next.classList.toggle('is-loading', n === 5 && S.submitting);
+      $('#btnNextLabel').textContent = n === 5 ? (S.submitting ? 'Envoi en cours…' : 'Confirmer le rendez-vous') : 'Continuer';
+      next.setAttribute('aria-busy', n === 5 && S.submitting ? 'true' : 'false');
+
+      var meta = '', wide = '';
+      if (n === 1 && prat()) wide = 'Avec <b>' + esc(prat().nom) + '</b>';
+      if (n === 2) {
+        if (chosenIds().length) {
+          meta = 'Durée totale <b>' + fmtDur(totalDur()) + '</b>';
+          wide = chosenSvcs().map(function (s) { return esc(s.nom); }).join(' + ') + ' · <b>' + fmtDur(totalDur()) + '</b>';
+        } else wide = 'Choisissez au moins une prestation';
+      }
+      if (n === 4 && S.day && S.slot) {
+        meta = '<b>' + esc(shortDate(S.day)) + '</b> · ' + esc(S.slot.debut) + ' → ' + esc(S.slot.fin);
+        wide = '<b>' + esc(longDate(S.day)) + '</b> · ' + esc(S.slot.debut) + ' → ' + esc(S.slot.fin);
+      }
+      if (n === 5) wide = '<b>' + esc(longDate(S.day)) + '</b> · ' + esc(S.slot.debut);
+      $('#barMeta').innerHTML = meta;
+      $('#barWide').innerHTML = wide;
+    }
+
+    function renderAside() {
+      if (!S.cfg) return;
+      var p = prat();
+      var rows = [
+        ['Praticienne', p ? esc(p.nom) : ''],
+        ['Prestations', chosenSvcs().map(function (s) { return esc(s.nom); }).join('<br>')],
+        ['Durée', chosenIds().length ? fmtDur(totalDur()) : ''],
+        ['Date', S.day && S.slot ? esc(longDate(S.day)) : ''],
+        ['Heure', S.slot ? esc(S.slot.debut) + ' → ' + esc(S.slot.fin) : '']
+      ];
+      $('#asideRows').innerHTML = rows.map(function (r) {
+        return '<div class="aside__row"><span class="label">' + r[0] + '</span><div class="aside__val' + (r[1] ? '' : ' is-empty') + '">' + (r[1] || 'à choisir') + '</div></div>';
+      }).join('');
+      $('#asideFoot').textContent = S.cfg.salon.adresse;
+    }
+
+    /* ---------------- Étape 1 ---------------- */
+    function renderPrats() {
+      var box = $('#prats');
+      if (!box.childElementCount) {
+        box.innerHTML = S.cfg.praticiennes.map(function (p, i) {
+          var src = PHOTOS[p.id];
+          var initial = esc(p.nom || '?');
+          return '<button type="button" class="prat" data-prat="' + esc(p.id) + '" data-i="' + (i % 2) + '" aria-pressed="false">' +
+            '<span class="prat__img">' +
+              '<span class="prat__mono" aria-hidden="true">' + initial + '</span>' +
+              (src ? '<img src="' + esc(src) + '" alt="" loading="eager" decoding="async" style="position:relative" onerror="this.remove()">' : '') +
+            '</span>' +
+            '<span class="prat__body"><span><span class="prat__name">' + esc(p.nom) + '</span><br><span class="prat__role">Prothésiste ongulaire</span></span>' +
+            '<span class="check">' + icon('i-check') + '</span></span>' +
+          '</button>';
+        }).join('');
+      }
+      $$('.prat', box).forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-prat') === S.prat)); });
+    }
+
+    $('#prats').addEventListener('click', function (e) {
+      var b = e.target.closest('.prat'); if (!b) return;
+      var id = b.getAttribute('data-prat');
+      var changed = id !== S.prat;
+      S.prat = id;
+      if (changed) invalidateDispo();
+      renderPrats(); renderBar(); renderAside();
+      setTimeout(function () { if (S.step === 1 && S.prat === id) go(2); }, reduceMotion ? 0 : 280);
+    });
+
+    /* ---------------- Étape 2 ---------------- */
+    function renderServices() {
+      var box = $('#svcGroups');
+      if (!box.childElementCount) {
+        var groups = [
+          { cat: 'main', title: 'Mains', hint: 'Une seule au choix' },
+          { cat: 'pied', title: 'Pieds — <em>YUMI FEET</em>', hint: 'Une seule au choix' }
+        ];
+        box.innerHTML = groups.map(function (g) {
+          var list = S.cfg.prestations.filter(function (s) { return s.categorie === g.cat; });
+          if (!list.length) return '';
+          return '<div class="group"><div class="group__title"><h2 id="g-' + g.cat + '">' + g.title + '</h2><span class="group__hint">' + g.hint + '</span></div>' +
+            '<div class="svcs" role="group" aria-labelledby="g-' + g.cat + '">' + list.map(function (s) {
+              return '<button type="button" class="svc" data-svc="' + esc(s.id) + '" data-cat="' + g.cat + '" aria-pressed="false">' +
+                '<span class="check">' + icon('i-check') + '</span>' +
+                '<span class="svc__txt"><span class="svc__name">' + esc(s.nom) + '</span>' + (s.info ? '<span class="svc__info">' + esc(s.info) + '</span>' : '') + '</span>' +
+                '<span class="svc__dur">' + fmtDur(s.duree) + '</span></button>';
+            }).join('') + '</div></div>';
+        }).join('');
+        $('#massageNote').innerHTML = '<strong>Modelages :</strong> sur réservation par téléphone uniquement.' + phoneLinks(S.cfg.praticiennes, false);
+      }
+      $$('.svc', box).forEach(function (b) {
+        var id = b.getAttribute('data-svc');
+        b.setAttribute('aria-pressed', String(id === S.main || id === S.pied));
+      });
+    }
+
+    $('#svcGroups').addEventListener('click', function (e) {
+      var b = e.target.closest('.svc'); if (!b) return;
+      var id = b.getAttribute('data-svc'), cat = b.getAttribute('data-cat');
+      var key = cat === 'main' ? 'main' : 'pied';
+      S[key] = S[key] === id ? null : id;
+      invalidateDispo();
+      renderServices(); renderBar(); renderAside();
+    });
+
+    /* ---------------- Étape 3 ---------------- */
+    var SUGGEST = {
+      rien: { remplissage: ['extension', 'renfort'], depose_pose_semi: ['semi'], depose_gel: [], depose_semi: [] },
+      semi: { semi: ['depose_pose_semi'] }
+    };
+    function renderProfil() {
+      $$('#newChoices .choice').forEach(function (b) {
+        var v = b.getAttribute('data-nouvelle') === '1';
+        b.setAttribute('aria-pressed', String(S.nouvelle === v));
+      });
+      var showOngles = S.nouvelle === true;
+      var w = $('#onglesWrap');
+      if (showOngles && w.hidden) { w.hidden = false; if (!reduceMotion) { w.classList.remove('reveal'); void w.offsetWidth; w.classList.add('reveal'); } }
+      if (!showOngles) w.hidden = true;
+      $$('#onglesChoices .choice').forEach(function (b) { b.setAttribute('aria-pressed', String(S.ongles === b.getAttribute('data-ongles'))); });
+
+      var msg = '';
+      if (S.nouvelle === true && S.ongles === 'porcelaine') {
+        msg = '<div class="callout callout--stop reveal" role="alert">' + icon('i-info') + '<div class="callout__body"><p class="callout__title">Réservation en ligne impossible</p><p>' + esc(S.cfg.textes.porcelaine) + '</p><p style="margin-top:8px">Une question ? Appelez-nous :</p>' + phoneLinks(S.cfg.praticiennes, false) + '</div></div>';
+      } else if (S.nouvelle === true && S.ongles) {
+        msg = '<div class="callout reveal">' + icon('i-leaf') + '<div class="callout__body"><p>' + esc(S.cfg.textes.nouvelleCliente) + '</p></div></div>';
+        var sug = SUGGEST[S.ongles] && S.main && SUGGEST[S.ongles][S.main];
+        if (sug) {
+          sug = sug.map(svc).filter(Boolean);
+          var cur = svc(S.main);
+          var txt = S.ongles === 'rien'
+            ? 'Vous avez choisi « ' + cur.nom + ' », qui suppose ' + (S.main === 'remplissage' ? 'du gel déjà posé' : S.main === 'depose_pose_semi' ? 'du semi-permanent déjà posé' : 'quelque chose à retirer') + '. Avec des ongles naturels, '
+            : 'Vous avez déjà du semi-permanent : il faudra le retirer avant la nouvelle pose. ';
+          txt += sug.length ? (sug.length > 1 ? 'ces prestations conviennent mieux :' : 'cette prestation convient mieux :') : 'vérifiez votre choix.';
+          msg += '<div class="callout callout--clay reveal">' + icon('i-info') + '<div class="callout__body"><p>' + esc(txt) + '</p>' +
+            sug.map(function (s) { return '<button type="button" class="link-btn" data-swap="' + esc(s.id) + '">' + esc(s.nom) + ' · ' + fmtDur(s.duree) + '</button>'; }).join('') +
+            '<p style="margin-top:10px;font-size:12.5px;opacity:.8">Vous pouvez aussi garder votre choix et continuer.</p></div></div>';
+        }
+      }
+      var box = $('#profilMsg');
+      if (box.getAttribute('data-k') !== msg.length + '|' + S.ongles + S.main) { box.innerHTML = msg; box.setAttribute('data-k', msg.length + '|' + S.ongles + S.main); }
+    }
+
+    $('#newChoices').addEventListener('click', function (e) {
+      var b = e.target.closest('.choice'); if (!b) return;
+      S.nouvelle = b.getAttribute('data-nouvelle') === '1';
+      if (!S.nouvelle) S.ongles = null;
+      renderProfil(); renderBar();
+      if (S.nouvelle) setTimeout(function () { var w = $('#onglesWrap'); if (w && !w.hidden) w.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'nearest' }); }, 60);
+    });
+    $('#onglesChoices').addEventListener('click', function (e) {
+      var b = e.target.closest('.choice'); if (!b) return;
+      S.ongles = b.getAttribute('data-ongles');
+      renderProfil(); renderBar();
+      setTimeout(function () { var m = $('#profilMsg'); if (m.firstChild) m.lastElementChild.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'nearest' }); }, 60);
+    });
+    $('#profilMsg').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-swap]'); if (!b) return;
+      S.main = b.getAttribute('data-swap');
+      invalidateDispo();
+      renderProfil(); renderBar(); renderAside();
+      var m = $('#profilMsg');
+      m.insertAdjacentHTML('beforeend', '<div class="callout reveal" role="status">' + icon('i-check') + '<div class="callout__body"><p>C\'est noté : <b>' + esc(svc(S.main).nom) + '</b>.</p></div></div>');
+    });
+
+    /* ---------------- Étape 4 ---------------- */
+    function invalidateDispo() { S.dispo = null; S.dispoKey = null; S.day = null; S.slot = null; S.dispoError = null; }
+    var dispoReq = 0;
+    function ensureDispo(force) {
+      var key = S.prat + '|' + chosenIds().join(',');
+      if (!force && S.dispo && S.dispoKey === key) { renderCal(); return; }
+      if (!force && S.dispoLoading && S.dispoKey === key) return;
+      S.dispoKey = key; S.dispoLoading = true; S.dispoError = null;
+      var my = ++dispoReq;
+      renderCal();
+      API.call('public.disponibilites', { praticienne: S.prat, services: chosenIds() }).then(function (d) {
+        if (my !== dispoReq) return;
+        S.dispo = d; S.dispoLoading = false;
+        if (!S.day || !(d.jours[S.day] || []).length) {
+          S.day = null; S.slot = null;
+          var days = Object.keys(d.jours).sort();
+          for (var i = 0; i < days.length; i++) if (d.jours[days[i]].length) { S.day = days[i]; break; }
+        }
+        renderCal(true); renderBar(); renderAside();
+      }, function (err) {
+        if (my !== dispoReq) return;
+        S.dispoLoading = false; S.dispoError = err; S.dispo = null; S.dispoKey = null;
+        renderCal(); renderBar();
+      });
+    }
+
+    function renderCal(scrollToDay) {
+      var box = $('#calBody');
+      box.setAttribute('aria-busy', S.dispoLoading ? 'true' : 'false');
+      if (S.dispoLoading) {
+        var sk = '<div class="sk sk-line" style="width:34%;margin-top:0;height:20px"></div><div class="sk-days">' + new Array(9).join('<div class="sk"></div>') + '</div>' +
+          '<div class="sk sk-line"></div><div class="slots">' + new Array(7).join('<div class="sk sk-slot"></div>') + '</div><span class="sr-only">Chargement des disponibilités…</span>';
+        box.innerHTML = sk; return;
+      }
+      if (S.dispoError) {
+        box.innerHTML = '<div class="error-box" role="alert"><p>' + esc(S.dispoError.message) + '</p><button type="button" class="btn btn--ink" data-retry><span class="btn__label">Réessayer</span><span class="btn__orb">' + icon('i-arrow') + '</span></button></div>';
+        return;
+      }
+      if (!S.dispo) return;
+      var d = S.dispo, days = Object.keys(d.jours).sort();
+      var anyFree = days.some(function (k) { return d.jours[k].length; });
+      if (!anyFree) {
+        box.innerHTML = '<div class="callout callout--clay">' + icon('i-info') + '<div class="callout__body"><p class="callout__title">Aucun créneau disponible en ligne</p><p>Pour ces prestations, l\'agenda de ' + esc(prat().nom) + ' est complet sur les prochaines semaines. Appelez-nous, nous trouverons une solution :</p>' + phoneLinks(S.cfg.praticiennes, false) + '</div></div>';
+        return;
+      }
+      var html = '<div class="cal-head"><span class="cal-month" id="calMonth"></span><div class="cal-nav"><button type="button" data-scroll="-1" aria-label="Jours précédents">' + icon('i-back') + '</button><button type="button" data-scroll="1" aria-label="Jours suivants">' + icon('i-arrow') + '</button></div></div>';
+      html += '<div class="days" id="days" role="group" aria-label="Choisir un jour">';
+      days.forEach(function (k, i) {
+        var n = d.jours[k].length, dt = parseD(k);
+        var week = i > 0 && dt.getDay() === 1 || (i > 0 && dt.getDay() === 0 && false);
+        var wd = fmt(k, { weekday: 'short' }).replace('.', '');
+        var mo = fmt(k, { month: 'short' }).replace('.', '');
+        html += '<button type="button" class="day' + (i > 0 && dt.getDay() === 2 ? ' day--week' : '') + '" data-day="' + k + '" aria-pressed="' + (k === S.day) + '"' + (n ? '' : ' disabled') +
+          ' aria-label="' + esc(longDate(k)) + (n ? ', ' + n + ' créneau' + (n > 1 ? 'x' : '') : ', complet ou fermé') + '">' +
+          '<span class="day__wd">' + esc(wd) + '</span><span class="day__n">' + dt.getDate() + '</span><span class="day__m">' + esc(mo) + '</span><span class="day__dot"></span></button>';
+        void week;
+      });
+      html += '</div><div id="slotsBox"></div>';
+      box.innerHTML = html;
+      renderSlots();
+      updateMonth();
+      var strip = $('#days');
+      strip.addEventListener('scroll', throttle(updateMonth, 80), { passive: true });
+      if (scrollToDay !== false) centerDay(false);
+    }
+
+    function centerDay(smooth) {
+      var strip = $('#days'); if (!strip || !S.day) return;
+      var el = strip.querySelector('[data-day="' + S.day + '"]'); if (!el) return;
+      var target = el.offsetLeft - strip.offsetLeft - 16;
+      strip.scrollTo({ left: Math.max(0, target), behavior: smooth && !reduceMotion ? 'smooth' : 'auto' });
+    }
+    function updateMonth() {
+      var strip = $('#days'), m = $('#calMonth'); if (!strip || !m) return;
+      var btns = $$('.day', strip), left = strip.scrollLeft + 20, ref = S.day;
+      for (var i = 0; i < btns.length; i++) { if (btns[i].offsetLeft - strip.offsetLeft >= left) { ref = btns[i].getAttribute('data-day'); break; } }
+      if (ref) m.textContent = fmt(ref, { month: 'long', year: 'numeric' });
+    }
+    function throttle(fn, ms) { var t = 0; return function () { if (t) return; t = setTimeout(function () { t = 0; fn(); }, ms); }; }
+
+    function renderSlots() {
+      var box = $('#slotsBox'); if (!box) return;
+      if (!S.day) { box.innerHTML = ''; return; }
+      var list = S.dispo.jours[S.day] || [];
+      var parts = [['Matin', function (h) { return h < 12; }], ['Après-midi', function (h) { return h >= 12 && h < 17; }], ['Fin de journée', function (h) { return h >= 17; }]];
+      var html = '<div class="slots-head"><h2>' + esc(longDate(S.day)) + '</h2><span class="slots-count">' + list.length + ' horaire' + (list.length > 1 ? 's' : '') + '</span></div>';
+      if (!list.length) html += '<p style="color:var(--text-sub)">Plus aucun créneau ce jour-là. Choisissez une autre date.</p>';
+      parts.forEach(function (p) {
+        var sub = list.filter(function (s) { return p[1](+s.debut.slice(0, 2)); });
+        if (!sub.length) return;
+        html += '<div class="slot-group"><span class="label">' + p[0] + '</span><div class="slots" role="group" aria-label="' + p[0] + '">' + sub.map(function (s) {
+          var on = S.slot && S.slot.debut === s.debut;
+          return '<button type="button" class="slot" data-debut="' + s.debut + '" data-fin="' + s.fin + '" aria-pressed="' + !!on + '" aria-label="De ' + hm(s.debut) + ' à ' + hm(s.fin) + '">' + s.debut + ' <i>→ ' + s.fin + '</i></button>';
+        }).join('') + '</div></div>';
+      });
+      box.innerHTML = html;
+    }
+
+    $('#calBody').addEventListener('click', function (e) {
+      if (e.target.closest('[data-retry]')) { ensureDispo(true); return; }
+      var sc = e.target.closest('[data-scroll]');
+      if (sc) { var st = $('#days'); st.scrollBy({ left: +sc.getAttribute('data-scroll') * st.clientWidth * 0.8, behavior: reduceMotion ? 'auto' : 'smooth' }); return; }
+      var day = e.target.closest('.day');
+      if (day && !day.disabled) {
+        S.day = day.getAttribute('data-day'); S.slot = null;
+        $$('.day', $('#days')).forEach(function (b) { b.setAttribute('aria-pressed', String(b === day)); });
+        $('#slotAlert').textContent = '';
+        renderSlots(); renderBar(); renderAside(); return;
+      }
+      var sl = e.target.closest('.slot');
+      if (sl) {
+        S.slot = { debut: sl.getAttribute('data-debut'), fin: sl.getAttribute('data-fin') };
+        $$('.slot', $('#slotsBox')).forEach(function (b) { b.setAttribute('aria-pressed', String(b === sl)); });
+        renderBar(); renderAside();
+      }
+    });
+
+    /* ---------------- Étape 5 ---------------- */
+    function nameError(v, label) {
+      v = cleanName(v);
+      if (!v) return 'Indiquez votre ' + label + '.';
+      if (/[0-9@]/.test(v)) return label.charAt(0).toUpperCase() + label.slice(1) + ' : lettres uniquement, sans chiffres ni adresse email.';
+      if (v.length > 40) return '40 caractères maximum.';
+      if (!NAME_RE.test(v)) return 'Lettres, espaces, tirets et apostrophes uniquement.';
+      return '';
+    }
+    function setFieldErr(id, msg) {
+      var inp = $('#' + id);
+      inp.setAttribute('aria-invalid', msg ? 'true' : 'false');
+      $('#' + id + 'Err').textContent = msg;
+    }
+
+    function recapHtml(edit) {
+      var p = prat();
+      function row(dt, dd, step) {
+        return '<div class="recap__row"><dt>' + dt + '</dt><dd>' + dd + '</dd></div>';
+      }
+      var rows = row('Praticienne', esc(p.nom)) +
+        row('Prestations', chosenSvcs().map(function (s) { return '<span>' + esc(s.nom) + '</span>'; }).join('')) +
+        row('Durée', fmtDur(totalDur())) +
+        row('Date', '<span class="cap">' + esc(longDate(S.day)) + '</span>') +
+        row('Heure', esc(S.slot.debut) + ' → ' + esc(S.slot.fin)) +
+        row('Profil', S.nouvelle ? 'Première visite' + (S.ongles ? ' · ' + ({ rien: 'ongles naturels', gel: 'gel', semi: 'semi-permanent' }[S.ongles] || '') : '') : 'Déjà cliente');
+      return '<div class="recap__head"><span class="label">Récapitulatif</span>' + (edit ? '<button type="button" class="recap__edit" data-goto="4">Modifier</button>' : '') + '</div><dl>' + rows + '</dl>';
+    }
+    function cancelHtml(p) {
+      return '<span class="label">' + icon('i-phone') + 'Annulation</span><p>' + esc(S.cfg.textes.annulation) + '</p>' +
+        phoneLinks([p], true);
+    }
+    function renderForm() {
+      $('#prenom').value = S.prenom; $('#nom').value = S.nom; $('#ack').checked = S.ack;
+      $('#recap').innerHTML = recapHtml(true);
+      $('#cancelBox').innerHTML = cancelHtml(prat());
+    }
+    $('#recap').addEventListener('click', function (e) { var b = e.target.closest('[data-goto]'); if (b) go(+b.getAttribute('data-goto')); });
+    ['prenom', 'nom'].forEach(function (id) {
+      var inp = $('#' + id);
+      inp.addEventListener('input', function () { S[id] = inp.value; if (inp.getAttribute('aria-invalid') === 'true') setFieldErr(id, nameError(inp.value, id === 'prenom' ? 'prénom' : 'nom')); });
+      inp.addEventListener('blur', function () { if (inp.value) setFieldErr(id, nameError(inp.value, id === 'prenom' ? 'prénom' : 'nom')); });
+    });
+    $('#prenom').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); $('#nom').focus(); } });
+    $('#ack').addEventListener('change', function () { S.ack = this.checked; if (S.ack) { $('#ackWrap').classList.remove('is-err'); if (/cocher/.test($('#formAlert').textContent)) $('#formAlert').textContent = ''; } });
+    $('#form').addEventListener('submit', function (e) { e.preventDefault(); submit(); });
+
+    function submit() {
+      if (S.submitting) return;
+      $('#formAlert').textContent = '';
+      var e1 = nameError($('#prenom').value, 'prénom'), e2 = nameError($('#nom').value, 'nom');
+      setFieldErr('prenom', e1); setFieldErr('nom', e2);
+      S.ack = $('#ack').checked;
+      $('#ackWrap').classList.toggle('is-err', !S.ack);
+      if (e1) { $('#prenom').focus(); return; }
+      if (e2) { $('#nom').focus(); return; }
+      if (!S.ack) { $('#formAlert').textContent = 'Merci de cocher la case pour confirmer que vous avez bien noté les conditions d\'annulation.'; $('#ack').focus(); return; }
+
+      S.submitting = true; renderBar();
+      var payload = {
+        praticienne: S.prat, services: chosenIds(), date: S.day, debut: S.slot.debut,
+        prenom: cleanName($('#prenom').value), nom: cleanName($('#nom').value),
+        nouvelle: !!S.nouvelle, website: $('#website').value
+      };
+      if (S.nouvelle) payload.ongles = S.ongles;
+      API.call('public.reserver', payload).then(function (r) {
+        S.submitting = false; S.result = r;
+        renderDone();
+        go(6, { replace: true });
+      }, function (err) {
+        S.submitting = false;
+        if (err.code === 'creneau_indisponible') {
+          var cr = (err.details && err.details.creneaux) || [];
+          if (S.dispo) S.dispo.jours[S.day] = cr;
+          S.slot = null;
+          go(4);
+          $('#slotAlert').textContent = err.message + (cr.length ? '' : ' Il n\'y a plus de place ce jour-là.');
+          return;
+        }
+        if (err.code === 'date_trop_proche') {
+          invalidateDispo(); go(4);
+          $('#slotAlert').textContent = err.message; return;
+        }
+        if (err.code === 'nom_invalide' || err.code === 'nom_requis') setFieldErr('prenom', ' '), setFieldErr('nom', ' ');
+        renderBar();
+        $('#formAlert').textContent = err.message;
+        $('#formAlert').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' });
+      });
+    }
+
+    /* ---------------- Étape 6 ---------------- */
+    function renderDone() {
+      var r = S.result, wait = r.statut === 'en_attente';
+      var p = S.cfg.praticiennes.filter(function (x) { return x.id === r.praticienne; })[0] || { nom: r.praticienneNom, telephone: r.telephone };
+      if (r.telephone) p = { nom: r.praticienneNom || p.nom, telephone: r.telephone };
+      var html = '<div class="' + (wait ? 'done--wait' : '') + '">' +
+        '<svg class="done__check" viewBox="0 0 84 84" aria-hidden="true"><circle cx="42" cy="42" r="38"/><path d="M27 43 L37.5 53 L58 31"/></svg>' +
+        '<span class="eyebrow">' + (wait ? 'Demande enregistrée' : 'C\'est réservé') + '</span>' +
+        '<h1 id="h1-6" style="margin-top:10px">' + (wait ? 'Demande envoyée — <em>en attente de validation</em>' : 'Rendez-vous <em>confirmé</em>') + '</h1>' +
+        '<p class="done__lead">' + (wait ? esc(S.cfg.textes.enAttente) : 'Merci ' + esc(r.prenom) + ', ' + esc(r.praticienneNom) + ' vous attend.') + '</p>' +
+        '<p class="done__when">' + esc(longDate(r.date)) + '<em>de ' + esc(r.debut) + ' à ' + esc(r.fin) + ' · avec ' + esc(r.praticienneNom) + '</em></p>' +
+        '<div class="code-card"><span class="label">Code de réservation</span><div class="code-card__row"><span class="code" id="code">' + esc(r.code) + '</span>' +
+          '<button type="button" class="copy" id="copyBtn">' + icon('i-copy') + '<span>Copier</span></button></div>' +
+          '<p>Conservez-le : il permet de suivre votre réservation.</p></div>' +
+        '<div class="recap" style="margin-top:16px"><div class="recap__head"><span class="label">Prestations</span></div><dl>' +
+          r.prestations.map(function (n) { return '<div class="recap__row"><dt>' + icon('i-leaf').replace('<svg', '<svg style="width:14px;height:14px;color:var(--sage-d)"') + '</dt><dd>' + esc(n) + '</dd></div>'; }).join('') +
+          '<div class="recap__row"><dt>Adresse</dt><dd>' + esc(S.cfg.salon.adresse) + '</dd></div>' +
+        '</dl></div>' +
+        '<div class="cancel-box">' + cancelHtml(p) + '</div>' +
+        '<div class="done__actions">' +
+          '<button type="button" class="btn btn--clay" id="icsBtn"><span class="btn__label">Ajouter à mon agenda</span><span class="btn__orb">' + icon('i-cal') + '</span></button>' +
+          '<button type="button" class="btn btn--ghost" id="againBtn">' + icon('i-plus') + '<span>Nouvelle réservation</span></button>' +
+        '</div></div>';
+      var box = $('#done');
+      box.className = 'done' + (wait ? ' done--wait' : '');
+      box.innerHTML = html;
+      $('#copyBtn').addEventListener('click', function () { copyText(r.code, this); });
+      $('#icsBtn').addEventListener('click', function () { downloadIcs(r); });
+      $('#againBtn').addEventListener('click', resetAll);
+    }
+
+    function copyText(txt, btn) {
+      function ok() { var s = btn.querySelector('span'); s.textContent = 'Copié'; setTimeout(function () { s.textContent = 'Copier'; }, 1800); }
+      function fallback() {
+        var t = document.createElement('textarea'); t.value = txt; t.setAttribute('readonly', ''); t.style.position = 'absolute'; t.style.left = '-9999px';
+        document.body.appendChild(t); t.select(); try { document.execCommand('copy'); ok(); } catch (e) { /* ignore */ } t.remove();
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(ok, fallback); else fallback();
+    }
+
+    function icsEsc(s) { return String(s).replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/([,;])/g, '\\$1'); }
+    function icsFold(line) {
+      var out = [], cur = '';
+      Array.from(line).forEach(function (ch) {
+        if (new TextEncoder().encode(cur + ch).length > 73) { out.push(cur); cur = ' ' + ch; } else cur += ch;
+      });
+      out.push(cur); return out.join('\r\n');
+    }
+    function downloadIcs(r) {
+      var dt = function (d, t) { return d.replace(/-/g, '') + 'T' + t.replace(':', '') + '00'; };
+      var stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z');
+      var desc = 'Avec ' + r.praticienneNom + '\nPrestations : ' + r.prestations.join(', ') + '\nCode de réservation : ' + r.code +
+        '\n\n' + S.cfg.textes.annulation + '\nTéléphone : ' + r.telephone;
+      var lines = [
+        'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Sorelle Bien-Etre//Reservation//FR', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
+        'BEGIN:VTIMEZONE', 'TZID:Europe/Paris',
+        'BEGIN:DAYLIGHT', 'TZOFFSETFROM:+0100', 'TZOFFSETTO:+0200', 'TZNAME:CEST', 'DTSTART:19700329T020000', 'RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU', 'END:DAYLIGHT',
+        'BEGIN:STANDARD', 'TZOFFSETFROM:+0200', 'TZOFFSETTO:+0100', 'TZNAME:CET', 'DTSTART:19701025T030000', 'RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU', 'END:STANDARD',
+        'END:VTIMEZONE',
+        'BEGIN:VEVENT',
+        'UID:' + r.code + '-' + r.date.replace(/-/g, '') + '@sorellebienetre.fr',
+        'DTSTAMP:' + stamp,
+        'DTSTART;TZID=Europe/Paris:' + dt(r.date, r.debut),
+        'DTEND;TZID=Europe/Paris:' + dt(r.date, r.fin),
+        'SUMMARY:' + icsEsc('Sorelle — ' + r.prestations.join(' + ')),
+        'LOCATION:' + icsEsc(S.cfg.salon.nom + ', ' + S.cfg.salon.adresse),
+        'DESCRIPTION:' + icsEsc(desc),
+        'STATUS:' + (r.statut === 'en_attente' ? 'TENTATIVE' : 'CONFIRMED'),
+        'BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:' + icsEsc('Rendez-vous Sorelle demain'), 'TRIGGER:-P1D', 'END:VALARM',
+        'END:VEVENT', 'END:VCALENDAR'
+      ];
+      var body = lines.map(icsFold).join('\r\n') + '\r\n';
+      var blob = new Blob([body], { type: 'text/calendar;charset=utf-8' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url; a.download = 'sorelle-' + r.date + '.ics';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+    }
+
+    function resetAll() {
+      var cfg = S.cfg;
+      S = { cfg: cfg, step: 1, prat: null, main: null, pied: null, nouvelle: null, ongles: null, dispo: null, dispoKey: null, dispoLoading: false, dispoError: null, day: null, slot: null, prenom: '', nom: '', ack: false, result: null, submitting: false };
+      $('#svcGroups').innerHTML = ''; $('#profilMsg').innerHTML = ''; $('#profilMsg').removeAttribute('data-k');
+      $('#form').reset(); setFieldErr('prenom', ''); setFieldErr('nom', ''); $('#formAlert').textContent = ''; $('#slotAlert').textContent = '';
+      $('#ackWrap').classList.remove('is-err');
+      dirBack = true; S.step = 6;
+      go(1, { replace: true });
+    }
+
+    /* ---------------- Barre d'action ---------------- */
+    $('#btnNext').addEventListener('click', function () {
+      var n = S.step;
+      if (n === 5) { submit(); return; }
+      if (!canNext(n)) return;
+      if (n === 4) $('#slotAlert').textContent = '';
+      go(n + 1);
+    });
+    $('#btnBack').addEventListener('click', function () {
+      if (S.step > 1) { try { history.back(); } catch (e) { go(S.step - 1); } }
+    });
+
+    /* ---------------- Suivi ---------------- */
+    var sheet = $('#trackSheet');
+    var STATUTS = {
+      confirme: ['Confirmé', 'ok'], en_attente: ['En attente de validation', 'wait'],
+      annule: ['Annulé', 'ko'], refuse: ['Refusé', 'ko'], absente: ['Rendez-vous passé', 'ko']
+    };
+    function openTrack() {
+      if (S.result && !$('#trackCode').value) $('#trackCode').value = S.result.code;
+      if (typeof sheet.showModal === 'function') sheet.showModal(); else sheet.setAttribute('open', '');
+      setTimeout(function () { $('#trackCode').focus(); }, 50);
+    }
+    function closeTrack() { if (typeof sheet.close === 'function') sheet.close(); else sheet.removeAttribute('open'); }
+    $$('[data-open-track]').forEach(function (b) { b.addEventListener('click', openTrack); });
+    $('#trackClose').addEventListener('click', closeTrack);
+    sheet.addEventListener('click', function (e) { if (e.target === sheet) closeTrack(); });
+    $('#trackForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var code = $('#trackCode').value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+      var res = $('#trackRes'), btn = $('#trackBtn');
+      if (code.length < 6) { res.innerHTML = '<div class="alert" role="alert">Le code comporte 6 caractères (lettres et chiffres).</div>'; return; }
+      btn.disabled = true; btn.classList.add('is-loading');
+      res.innerHTML = '<div class="sk" style="height:120px;border-radius:18px"></div>';
+      API.call('public.suivi', { code: code }).then(function (r) {
+        var st = STATUTS[r.statut] || [r.statut, 'ko'];
+        res.innerHTML = '<div class="track-card"><span class="status status--' + st[1] + '">' + esc(st[0]) + '</span>' +
+          '<p class="track-card__when">' + esc(longDate(r.date)) + ' · ' + esc(r.debut) + '</p>' +
+          '<p class="track-card__meta">Avec ' + esc(r.praticienneNom) + ' · ' + esc(r.prestations.join(' + ')) + '</p>' +
+          (r.statut === 'confirme' || r.statut === 'en_attente'
+            ? '<p class="track-card__meta" style="margin-top:12px;font-size:13px">Pour annuler ou modifier : par téléphone, au plus tard 48 h avant.</p>' + phoneLinks([{ nom: r.praticienneNom, telephone: r.telephone }], true)
+            : '') + '</div>';
+      }, function (err) {
+        res.innerHTML = '<div class="alert" role="alert">' + esc(err.message) + '</div>';
+      }).then(function () { btn.disabled = false; btn.classList.remove('is-loading'); });
+    });
+
+    /* ---------------- Démarrage ---------------- */
+    function boot() {
+      if (API.isDemo) $('#demo').hidden = false;
+      $('#boot').innerHTML = $('#boot').innerHTML; // squelette
+      API.call('public.config').then(function (cfg) {
+        S.cfg = cfg;
+        $('#boot').hidden = true;
+        $('#footAddr').textContent = cfg.salon.nom + ' · ' + cfg.salon.adresse;
+        try { history.replaceState({ step: 1 }, ''); } catch (e) { /* ignore */ }
+        S.step = 1; render(false);
+        $('#progress').hidden = false;
+      }, function (err) {
+        $('#boot').innerHTML = '<div class="error-box" role="alert"><p>' + esc(err.message) + '</p><button type="button" class="btn btn--ink" id="bootRetry"><span class="btn__label">Réessayer</span><span class="btn__orb">' + icon('i-arrow') + '</span></button></div>';
+        $('#bootRetry').addEventListener('click', function () { location.reload(); });
+      });
+    }
+    boot();
+  })();
+  </script>
+</body>
+</html>
