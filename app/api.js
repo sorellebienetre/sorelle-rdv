@@ -16,8 +16,18 @@ window.SorelleAPI = (function () {
   function safeGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   function safeSet(k, v) { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { /* ignore */ } }
 
+  // Date du jour à Paris au format YYYY-MM-DD, construite pièce par pièce :
+  // certains navigateurs (Safari notamment) ne formatent pas 'en-CA' en AAAA-MM-JJ.
   function parisToday() {
-    return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+    var d = new Date();
+    try {
+      var parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(d);
+      var g = function (t) { for (var i = 0; i < parts.length; i++) if (parts[i].type === t) return parts[i].value; return ''; };
+      var s = g('year') + '-' + g('month') + '-' + g('day');
+      if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+    } catch (e) { /* repli ci-dessous */ }
+    var p2 = function (n) { return (n < 10 ? '0' : '') + n; };
+    return d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate());
   }
 
   /* ---------------- MODE DÉMO : même moteur, stockage navigateur ---------------- */
@@ -117,7 +127,7 @@ window.SorelleAPI = (function () {
     }
     // Une demande en attente pour montrer le flux de validation
     var d2 = U.addDays(today, 8);
-    while (!U.dayRules(SorelleCore.DEFAULT_CONFIG, d2)) d2 = U.addDays(d2, 1);
+    for (var g2 = 0; g2 < 14 && !U.dayRules(SorelleCore.DEFAULT_CONFIG, d2); g2++) d2 = U.addDays(d2, 1);
     var r = app.handle('admin.creerRdv', { praticienne: 'lea', services: ['extension'], date: d2, debut: '09:00', prenom: 'Anaïs', nom: 'Nouvelle', nouvelle: true, ongles: 'rien' }, tok);
     if (r.ok) app.handle('admin.statut', { id: r.data.id, statut: 'en_attente' }, tok);
   }
@@ -134,12 +144,21 @@ window.SorelleAPI = (function () {
     if (isDemo) {
       return new Promise(function (resolve, reject) {
         setTimeout(function () {
-          var res = getDemoApp().handle(action, c(payload || {}), token);
-          if (res.ok) resolve(res.data); else reject(toError(res.error));
+          try {
+            var res = getDemoApp().handle(action, c(payload || {}), token);
+            if (res.ok) resolve(res.data); else reject(toError(res.error));
+          } catch (e) {
+            console.error(e);
+            reject(toError({ code: 'erreur_demo', message: 'Erreur du mode démo : réinitialisez la démo dans Réglages.' }));
+          }
         }, 180);
       });
     }
+    // Délai max 40 s (Google peut être lent au premier appel) : jamais de chargement infini
+    var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    var timer = ctrl ? setTimeout(function () { ctrl.abort(); }, 40000) : null;
     return fetch(API_URL, {
+      signal: ctrl ? ctrl.signal : undefined,
       method: 'POST',
       redirect: 'follow',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // évite le pré-contrôle CORS
@@ -150,6 +169,7 @@ window.SorelleAPI = (function () {
     }, function () {
       throw toError({ code: 'reseau', message: 'Connexion impossible. Vérifiez votre réseau et réessayez.' });
     }).then(function (res) {
+      if (timer) clearTimeout(timer);
       if (res && res.ok) return res.data;
       throw toError(res && res.error);
     });
