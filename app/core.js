@@ -12,7 +12,7 @@
 var SorelleCore = (function () {
   'use strict';
 
-  var VERSION = '1.2.2';
+  var VERSION = '1.2.3';
 
   /* ------------------------------------------------------------------------
    * CONFIGURATION PAR DÉFAUT (modifiable depuis l'écran Réglages)
@@ -52,7 +52,7 @@ var SorelleCore = (function () {
     trouMax: 30,                 // trou "maîtrisé" toléré en dernier recours (min)
     maxRdvParCliente: 2,         // RDV futurs actifs max par nom (en ligne)
     retentionMois: 24,           // purge des RDV passés au-delà (24 mois : statistiques)
-    magie: { horizonJours: 7, services: ['remplissage'], seuilRemplissage: 50, retardMaxRelance: 30, afficherPriorites: true, afficherRelances: true },
+    magie: { horizonJours: 7, services: ['remplissage'], seuilRemplissage: 50, retardMaxRelance: 30, afficherPriorites: true, afficherRelances: false },
     affichage: { heureFin: false }, // planning : seulement l'heure de début (la plage complète en option) // « Remplir l'agenda »
     services: [
       { id: 'remplissage',      nom: 'Remplissage gel',                     categorie: 'main',    duree: 120, famille: 'gel',  enLigne: true, info: 'Vous avez déjà du gel posé chez nous.' },
