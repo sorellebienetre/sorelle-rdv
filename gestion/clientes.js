@@ -18,9 +18,11 @@
   var SOIN = { remplissage: 'remplissage', extension: 'rendez-vous', renfort: 'renfort', semi: 'semi-permanent', depose_pose_semi: 'semi-permanent',
     depose_gel: 'rendez-vous', depose_semi: 'rendez-vous', yumi: 'soin des pieds', yumi_semi: 'soin des pieds', yumi_depose_semi: 'soin des pieds' };
 
-  var st = { q: '', prat: null, statut: 'tous', tri: 'derniere', n: 60 };
+  var st = { q: '', prat: null, statut: 'tous', tri: 'derniere', n: 60, dupOpen: false, dupKeep: {} };
+  var dups = [];
   var root = null, mounted = false, hooked = false, tok = 0, profils = null, err = null;
   var fiches = []; // fiches ouvertes {cle, panel, tok}
+  var ficheUid = 0;
 
   /* ---------------- outils ---------------- */
   function U() { return G.U || (window.SorelleCore && window.SorelleCore._); }
@@ -38,6 +40,8 @@
   function fDateY(d) { return dayNum(d) + ' ' + MOIS[+d.slice(5, 7) - 1] + (d.slice(0, 4) !== today().slice(0, 4) ? ' ' + d.slice(0, 4) : ''); }
   function fLong(d) { return JOURS[wd(d)] + ' ' + dayNum(d) + ' ' + MOIS_L[+d.slice(5, 7) - 1]; }
   function fH(h) { if (!h) return ''; var p = h.split(':'); return (+p[0]) + 'h' + (p[1] === '00' ? '' : p[1]); }
+  /** Heure d'un RDV selon le réglage Apparence (début seul par défaut, plage si activée). */
+  function fHR(h, fin) { try { if (G.heure) return G.heure(h, fin); } catch (e) { /* repli */ } return fH(h); }
   function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
   function pcol(id) { try { return G.pratColor(id) || '#8E9583'; } catch (e) { return '#8E9583'; } }
   function pname(id) { try { return G.pratName(id) || id || ''; } catch (e) { return id || ''; } }
@@ -180,6 +184,55 @@
     '.mod-clientes .rl .off b,.mod-clientes .rl .off small{color:var(--muted)}',
     '.mod-clientes .rl .off b{text-decoration:line-through;text-decoration-color:var(--line)}',
     '.mod-clientes .f-empty{color:var(--muted);font-size:14px;padding:6px 0}',
+    '.mod-clientes .f-hero .f-ed{margin-left:auto;align-self:flex-start;flex:0 0 auto;width:40px;height:40px;margin-top:-6px;margin-right:-6px;border-radius:50%;display:grid;place-items:center;color:var(--hf);opacity:.6;transition:opacity .15s,background .15s}',
+    '.mod-clientes .f-hero .f-ed:hover{opacity:1;background:color-mix(in srgb,var(--pc) 22%,transparent)}',
+    '.mod-clientes .f-hero .f-ed svg{width:18px;height:18px;display:block}',
+    '.mod-clientes .f-hero.edit{display:block}',
+    '.mod-clientes .rn-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}',
+    '.mod-clientes .rn-f label{display:block;font-size:13px;font-weight:500;color:var(--text-sub);margin:0 0 5px}',
+    '.mod-clientes .rn-f input{width:100%;min-height:46px;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);padding:0 12px;color-scheme:light dark}',
+    '.mod-clientes .rn-f input[aria-invalid="true"]{border-color:var(--danger)}',
+    '.mod-clientes .rn-err{margin:8px 0 0;font-size:13.5px;color:var(--danger);font-weight:500;line-height:1.4}',
+    '.mod-clientes .rn-err:empty{display:none}',
+    '.mod-clientes .rn-help{margin:8px 0 0;font-size:12.5px;color:var(--text-sub);line-height:1.4}',
+    '.mod-clientes .rn-act{display:flex;gap:8px;margin-top:12px}',
+    '.mod-clientes .rn-act .btn{flex:1;min-height:44px}',
+    '.mod-clientes .f-act .btn.sub{min-height:42px;font-size:14px;color:var(--text-sub);border-style:dashed}',
+    '.mod-clientes .mg{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);padding:12px 14px;margin-bottom:16px}',
+    '.mod-clientes .mg h4{font-size:15px;font-weight:600;margin:0 0 8px;color:var(--text)}',
+    '.mod-clientes .mg .cl-search input{padding-left:42px}',
+    '.mod-clientes .mg-mode{margin:8px 0 4px;font-size:13px;color:var(--text-sub);line-height:1.45}',
+    '.mod-clientes .mg-mode b{color:var(--text);font-weight:600}',
+    '.mod-clientes .mg-mode .lnk{min-height:32px;padding:0;font-size:13px;text-decoration:underline;text-underline-offset:2px}',
+    '.mod-clientes .mg-res{list-style:none;margin:6px 0 0;padding:0}',
+    '.mod-clientes .mg-res li+li{border-top:1px solid var(--line)}',
+    '.mod-clientes .mg-res button{display:flex;align-items:center;gap:10px;width:100%;min-height:52px;padding:6px 2px;text-align:left}',
+    '.mod-clientes .mg-res .av{width:34px;height:34px;font-size:13px}',
+    '.mod-clientes .mg-res b{display:block;font-weight:600;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+    '.mod-clientes .mg-res small{display:block;color:var(--text-sub);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+    '.mod-clientes .mg-res .sug{font-size:11px;font-weight:600;color:var(--warn);margin-left:auto;flex:0 0 auto}',
+    '.mod-clientes .mg-foot{display:flex;justify-content:flex-end;margin-top:6px}',
+    '.mod-clientes .dup{border:1px solid color-mix(in srgb,var(--warn) 45%,var(--line));background:color-mix(in srgb,var(--warn) 7%,var(--surface));border-radius:var(--radius-lg);margin:0 0 14px;overflow:hidden}',
+    '.mod-clientes .dup-h{display:flex;align-items:center;gap:10px;width:100%;min-height:52px;padding:8px 14px;text-align:left}',
+    '.mod-clientes .dup-h .ico{color:var(--warn)}',
+    '.mod-clientes .dup-h b{font-weight:600;font-size:15px}',
+    '.mod-clientes .dup-h small{color:var(--text-sub);font-size:13px;margin-left:auto;display:inline-flex;align-items:center;gap:4px}',
+    '.mod-clientes .dup-h small svg{width:16px;height:16px;transition:transform .15s}',
+    '.mod-clientes .dup-h[aria-expanded="true"] small svg{transform:rotate(180deg)}',
+    '.mod-clientes .dup-l{list-style:none;margin:0;padding:0 14px 6px;display:grid;grid-template-columns:minmax(0,1fr);gap:0}',
+    '@container (min-width:900px){.mod-clientes .dup-l{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:24px}}',
+    '.mod-clientes .dup-p{border-top:1px solid var(--line);padding:10px 0}',
+    '.mod-clientes .dup-k{font-size:12.5px;color:var(--text-sub);margin:0 0 6px}',
+    '.mod-clientes .dup-o{display:flex;align-items:center;gap:10px;width:100%;min-height:48px;padding:6px 10px;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);text-align:left;margin-top:6px}',
+    '.mod-clientes .dup-o[aria-pressed="true"]{border-color:var(--text);box-shadow:inset 0 0 0 1px var(--text)}',
+    '.mod-clientes .dup-o .av{width:32px;height:32px;font-size:12.5px}',
+    '.mod-clientes .dup-o b{display:block;font-weight:600;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+    '.mod-clientes .dup-o small{display:block;color:var(--text-sub);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+    '.mod-clientes .dup-o .keep{margin-left:auto;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--text);color:var(--bg);flex:0 0 auto}',
+    '.mod-clientes .dup-o[aria-pressed="false"] .keep{display:none}',
+    '.mod-clientes .dup-a{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px}',
+    '.mod-clientes .dup-a .btn{min-height:40px;font-size:14px;padding:0 16px}',
+    '.mod-clientes .dup-a .lnk{min-height:40px;font-size:13.5px;color:var(--text-sub)}',
     '.mod-clientes .msg{margin-top:8px;padding:10px 12px;border-radius:var(--radius);background:var(--surface-2);font-size:14px;color:var(--text);line-height:1.45;white-space:pre-wrap}'
   ].join('\n');
 
@@ -202,7 +255,7 @@
       '<div class="chips" role="group" aria-label="Praticienne" data-r="prats"></div>' +
       '<div class="chips" role="group" aria-label="Statut" data-r="statuts"></div>' +
       '<label class="sel">Trier par <select data-r="tri">' + TRIS.map(function (t) { return '<option value="' + t[0] + '"' + (st.tri === t[0] ? ' selected' : '') + '>' + t[1] + '</option>'; }).join('') + '</select></label></div>' +
-      '<div data-r="list"></div>';
+      '<div data-r="dup"></div><div data-r="list"></div>';
     renderList();
   }
 
@@ -213,6 +266,7 @@
       el.innerHTML = '<div class="empty"><div class="big">' + icon('alert') + '</div><h3>Impossible de charger les clientes</h3><p>' + esc(err) + '</p><button class="btn pri" data-act="retry">Réessayer</button></div>';
       return;
     }
+    var de = root.querySelector('[data-r="dup"]'); if (de) de.innerHTML = dupHtml();
     if (!profils) { el.innerHTML = skeleton(8); if (cnt) cnt.textContent = 'Chargement…'; renderChips(null); return; }
     var t = today(), q = norm(st.q), pf = pratFilter();
     var byQ = profils.filter(function (p) {
@@ -305,6 +359,19 @@
       if ((a = b.getAttribute('data-prat'))) { st.prat = a; st.n = 60; renderList(); return; }
       if ((a = b.getAttribute('data-statut'))) { st.statut = a; st.n = 60; renderList(); return; }
       a = b.getAttribute('data-act');
+      if (a === 'dup-toggle') { st.dupOpen = !st.dupOpen; renderList(); return; }
+      if (a && a.indexOf('dup-') === 0) {
+        var x = dups[+b.getAttribute('data-dup')]; if (!x) return;
+        if (a === 'dup-keep') { st.dupKeep[x.key] = b.getAttribute('data-keep'); renderList(); return; }
+        if (a === 'dup-no') { ignorePair(x.key); renderList(); if (G.toast) G.toast('Paire masquée : ' + fullName(x.a) + ' / ' + fullName(x.b), { type: 'info' }); return; }
+        if (a === 'dup-merge') {
+          var keepB = st.dupKeep[x.key] === x.b.cle, dst = keepB ? x.b : x.a, src = keepB ? x.a : x.b;
+          b.disabled = true;
+          doMerge(src, dst).then(function (res) { b.disabled = false; if (res) delete st.dupKeep[x.key]; })
+            .catch(function (e) { b.disabled = false; if (G.toast) G.toast((e && e.message) || 'Fusion impossible.', { type: 'err' }); });
+        }
+        return;
+      }
       if (a === 'more') { st.n += 60; renderList(); }
       else if (a === 'retry') load();
       else if (a === 'new' && G.newRdv) G.newRdv({});
@@ -327,7 +394,7 @@
     var box = document.createElement('div');
     box.className = 'mod-clientes fiche';
     box.innerHTML = ficheSkeleton();
-    var f = { cle: cle, el: box, tok: 0, data: null, recos: null, recoErr: null, recoLoading: false, showPast: 10 };
+    var f = { cle: cle, el: box, tok: 0, data: null, recos: null, recoErr: null, recoLoading: false, showPast: 10, rn: null, mg: null, uid: ++ficheUid };
     var known = (profils || []).filter(function (p) { return p.cle === cle; })[0];
     var title = known ? fullName(known) : 'Fiche cliente';
     f.panel = G.panel({ title: title, size: 'side', content: box, onClose: function () { fiches = fiches.filter(function (x) { return x !== f; }); } });
@@ -362,12 +429,17 @@
     var col = pcol(d.praticienne || h.praticienne), H = '';
     var dp = d.premiere ? diff(d.premiere, t) : null;
     var since = dp == null ? '' : dp > 0 ? 'Cliente depuis ' + ago(d.premiere).replace('il y a ', '') : dp === 0 ? 'Première visite aujourd’hui' : 'Nouvelle cliente · 1re visite ' + ago(d.premiere);
-    H += '<div class="f-hero" style="--pc:' + col + ';--pf:' + tOn(col) + ';--hb:' + tint(col, 0.22) + ';--hf:var(--text)"><span class="av">' + esc(initials(d)) + '</span><div style="min-width:0"><h3>' + esc(fullName(d)) + '</h3><p>' +
-      esc([d.praticienne ? 'Avec ' + pname(d.praticienne) : '', since].filter(Boolean).join(' · ')) + '</p></div></div>';
+    var heroStyle = '--pc:' + col + ';--pf:' + tOn(col) + ';--hb:' + tint(col, 0.22) + ';--hf:var(--text)';
+    if (f.rn) H += renameHtml(f, heroStyle);
+    else H += '<div class="f-hero" style="' + heroStyle + '"><span class="av">' + esc(initials(d)) + '</span><div style="min-width:0"><h3>' + esc(fullName(d)) + '</h3><p>' +
+      esc([d.praticienne ? 'Avec ' + pname(d.praticienne) : '', since].filter(Boolean).join(' · ')) + '</p></div>' +
+      '<button class="f-ed" data-act="f-rn" aria-label="Modifier le nom" title="Modifier le nom">' + icon('edit') + '</button></div>';
 
-    H += '<div class="f-act">' +
+    if (f.mg) H += mergeBlock(f);
+    else H += '<div class="f-act">' +
       '<button class="btn pri" data-act="f-new">' + icon('plus') + 'Nouveau RDV</button>' +
       '<button class="btn" data-act="f-copy">' + icon('copy') + 'Message de relance</button>' +
+      '<button class="btn sub full" data-act="f-mg">' + icon('users') + 'Fusionner avec une autre fiche</button>' +
       '</div>';
 
     // Chiffres clés
@@ -456,7 +528,7 @@
     if (!c.length) return '<p class="f-empty">Aucun créneau libre dans les 3 prochaines semaines pour ce soin. Essayez « Nouveau RDV » pour choisir une autre date.</p>';
     return '<div class="recos">' + c.map(function (x, i) {
       var col = pcol(x.praticienne);
-      return '<button class="reco" data-reco="' + i + '" style="--pc:' + col + '"><span class="r1"><b>' + esc(cap(fDate(x.date))) + ' · ' + esc(fH(x.debut)) + '</b><span class="who"><i></i>' + esc(pname(x.praticienne)) + '</span>' + (i === 0 ? '<span class="best">Recommandé</span>' : '') + '</span>' +
+      return '<button class="reco" data-reco="' + i + '" style="--pc:' + col + '"><span class="r1"><b>' + esc(cap(fDate(x.date))) + ' · ' + esc(fHR(x.debut, x.fin)) + '</b><span class="who"><i></i>' + esc(pname(x.praticienne)) + '</span>' + (i === 0 ? '<span class="best">Recommandé</span>' : '') + '</span>' +
         '<span class="rs">' + esc((x.raisons && x.raisons.length ? x.raisons : ['Créneau disponible']).join(' · ').replace(/\b0?(\d{1,2})h(\d{2})\b/g, function (m, h, mi) { return (+h) + 'h' + (mi === '00' ? '' : mi); })) + '</span></button>';
     }).join('') + '</div>';
   }
@@ -480,8 +552,235 @@
     var stt = STATUT[r.statut] || [r.statut, ''], off = !ACTIVE[r.statut];
     var done = r.statut === 'confirme' && r.date < t;
     var svc = r.type === 'massage' ? (r.services || []).map(function (x) { return sname(x); }).join(' + ') : (r.services || []).map(function (x) { return sname(x, true); }).join(' + ');
-    return '<li><button data-rdv="' + esc(r.id) + '" class="' + (off ? 'off' : '') + '" style="--pc:' + pcol(r.praticienne) + '"><span class="mcl-stripe"></span><span style="min-width:0"><b>' + esc(cap(fDate(r.date))) + (r.date.slice(0, 4) !== t.slice(0, 4) ? ' ' + r.date.slice(0, 4) : '') + ' · ' + esc(fH(r.debut)) + '</b><small>' + esc(pname(r.praticienne)) + ' · ' + esc(svc) + '</small></span>' +
+    return '<li><button data-rdv="' + esc(r.id) + '" class="' + (off ? 'off' : '') + '" style="--pc:' + pcol(r.praticienne) + '"><span class="mcl-stripe"></span><span style="min-width:0"><b>' + esc(cap(fDate(r.date))) + (r.date.slice(0, 4) !== t.slice(0, 4) ? ' ' + r.date.slice(0, 4) : '') + ' · ' + esc(fHR(r.debut, r.fin)) + '</b><small>' + esc(pname(r.praticienne)) + ' · ' + esc(svc) + '</small></span>' +
       '<span class="tag ' + (done ? '' : stt[1]) + '">' + (done ? 'Réalisé' : stt[0]) + '</span></button></li>';
+  }
+
+  /* ---------------- doublons possibles ---------------- */
+  var PARTICULES = { de: 1, du: 1, des: 1, d: 1, le: 1, la: 1, les: 1, l: 1, di: 1, da: 1, del: 1, della: 1, van: 1, von: 1, der: 1 };
+  function nk(s) { return norm(s).replace(/[’`]/g, "'").replace(/\s+/g, ' '); }
+  function compact(s) { return nk(s).replace(/[\s'.\-]+/g, ''); }
+  /** Formes comparables d'un nom : collé, sans particules, sans particule collée en tête (« Dupont » → « pont »). */
+  function variants(s) {
+    var n = nk(s).replace(/\./g, ' '), out = {};
+    var toks = n.split(/[\s'\-]+/).filter(Boolean);
+    var all = toks.join(''); if (all) out[all] = 1;
+    var sans = toks.filter(function (t) { return !PARTICULES[t]; }).join(''); if (sans) out[sans] = 1;
+    ['des', 'del', 'du', 'de', 'di', 'da', 'le', 'la', 'd', 'l'].forEach(function (pp) { if (all.indexOf(pp) === 0 && all.length - pp.length >= 3) out[all.slice(pp.length)] = 1; });
+    return Object.keys(out);
+  }
+  function lev(a, b) {
+    if (Math.abs(a.length - b.length) > 2) return 3;
+    var prev = [], cur, i, j;
+    for (j = 0; j <= b.length; j++) prev[j] = j;
+    for (i = 1; i <= a.length; i++) {
+      cur = [i];
+      for (j = 1; j <= b.length; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+      prev = cur;
+    }
+    return prev[b.length];
+  }
+  /** Raison pour laquelle deux fiches semblent être la même cliente, ou null. */
+  function dupReason(a, b) {
+    if (a.cle === b.cle || !nk(a.prenom) || nk(a.prenom) !== nk(b.prenom)) return null;
+    var na = compact(a.nom), nb = compact(b.nom);
+    if (!na || !nb) return 'nom manquant sur une fiche';
+    if (na === nb) return 'même nom, écrit autrement';
+    var s = na.length <= nb.length ? na : nb, l = s === na ? nb : na;
+    if (l.indexOf(s) === 0) return s.length === 1 ? 'initiale du nom' : 'nom abrégé';
+    var va = variants(a.nom), vb = variants(b.nom);
+    for (var i = 0; i < va.length; i++) if (vb.indexOf(va[i]) >= 0) return 'même nom, écrit autrement';
+    if (na.length >= 5 && nb.length >= 5 && lev(na, nb) <= 2) return 'orthographe proche';
+    return null;
+  }
+  function pairKey(a, b) { return [a, b].sort().join('||'); }
+  var IGN_KEY = 'sorelle.gestion.doublonsIgnores';
+  var ignored = (function () { try { var v = JSON.parse(localStorage.getItem(IGN_KEY) || '[]'); return Array.isArray(v) ? v : []; } catch (e) { return []; } })();
+  function ignorePair(k) { if (ignored.indexOf(k) < 0) ignored.push(k); try { localStorage.setItem(IGN_KEY, JSON.stringify(ignored.slice(-500))); } catch (e) { /* appareil sans stockage */ } }
+  function findDups(list) {
+    var by = {}, out = [];
+    (list || []).forEach(function (p) { var k = nk(p.prenom); if (k) (by[k] = by[k] || []).push(p); });
+    Object.keys(by).forEach(function (k) {
+      var g = by[k]; if (g.length < 2) return;
+      for (var i = 0; i < g.length; i++) for (var j = i + 1; j < g.length; j++) {
+        var r = dupReason(g[i], g[j]); if (!r) continue;
+        var key = pairKey(g[i].cle, g[j].cle); if (ignored.indexOf(key) >= 0) continue;
+        // par défaut on garde la fiche avec le plus de visites (puis la plus complète)
+        var A = g[i], B = g[j];
+        var keepA = (A.realises || 0) !== (B.realises || 0) ? (A.realises || 0) > (B.realises || 0) : (A.total || 0) !== (B.total || 0) ? (A.total || 0) > (B.total || 0) : compact(A.nom).length >= compact(B.nom).length;
+        out.push({ key: key, a: keepA ? A : B, b: keepA ? B : A, raison: r });
+      }
+    });
+    out.sort(function (x, y) { return fullName(x.a).localeCompare(fullName(y.a), 'fr'); });
+    return out;
+  }
+  function visitsLine(p) {
+    return [pl(p.realises || 0, 'visite'), p.derniere ? 'dernière ' + ago(p.derniere) : (p.prochain ? 'RDV ' + fDate(p.prochain.date) : 'pas encore venue')].join(' · ');
+  }
+  function avatar(p) { var c = pcol(p.praticienne); return '<span class="av" style="background:' + c + ';color:' + tOn(c) + '" title="' + esc(pname(p.praticienne)) + '">' + esc(initials(p)) + '</span>'; }
+  function mergeText(src, dst) {
+    var n = src.total || src.rdvs && src.rdvs.length || 0;
+    var debut = n === 1 ? 'Le rendez-vous de « ' + fullName(src) + ' » passera' : (n ? 'Les ' + n + ' rendez-vous' : 'Les rendez-vous') + ' de « ' + fullName(src) + ' » passeront';
+    return debut + ' sur la fiche « ' + fullName(dst) + ' ». La fiche « ' + fullName(src) + ' » disparaîtra.';
+  }
+  /** Fusionne la fiche src dans dst (src prend le nom de dst). Promise<{cle,…}|null> (null = annulé). */
+  function doMerge(src, dst) {
+    return Promise.resolve(G.confirm ? G.confirm({ title: 'Fusionner les deux fiches ?', text: mergeText(src, dst), ok: 'Fusionner' }) : true).then(function (ok) {
+      if (!ok) return null;
+      return G.API.admin('admin.renommerCliente', { cle: src.cle, prenom: dst.prenom, nom: dst.nom || '-', fusionner: true }).then(function (res) {
+        if (G.toast) G.toast('Fiches fusionnées', { type: 'ok' });
+        var cle = (res && res.cle) || dst.cle;
+        fiches.forEach(function (x) { if (x.cle === src.cle) x.cle = cle; });
+        if (G.emit) G.emit('change', { source: 'fusionClientes', ancienne: src.cle, cle: cle });
+        return res || { cle: cle };
+      });
+    });
+  }
+
+  function dupHtml() {
+    if (!profils || st.q) return '';
+    var d = findDups(profils); dups = d;
+    if (!d.length) return '';
+    var H = '<section class="dup"><button class="dup-h" data-act="dup-toggle" aria-expanded="' + !!st.dupOpen + '"><span class="ico">' + icon('users') + '</span><b>Doublons possibles (' + d.length + ')</b><small>' + (st.dupOpen ? 'Masquer' : 'Vérifier') + icon('chevronD') + '</small></button>';
+    if (st.dupOpen) {
+      H += '<ul class="dup-l">' + d.map(function (x, i) {
+        var keepB = st.dupKeep[x.key] === x.b.cle;
+        return '<li class="dup-p" data-dup="' + i + '"><p class="dup-k">Même cliente ? ' + esc(x.raison) + '. Nom à garder :</p>' +
+          [x.a, x.b].map(function (p, k) {
+            var on = k === 0 ? !keepB : keepB;
+            return '<button class="dup-o" data-act="dup-keep" data-dup="' + i + '" data-keep="' + esc(p.cle) + '" aria-pressed="' + on + '">' + avatar(p) + '<span style="min-width:0"><b>' + esc(fullName(p)) + '</b><small>' + esc(pname(p.praticienne) + ' · ' + visitsLine(p)) + '</small></span><span class="keep">Nom gardé</span></button>';
+          }).join('') +
+          '<div class="dup-a"><button class="btn pri" data-act="dup-merge" data-dup="' + i + '">Fusionner</button><button class="lnk" data-act="dup-no" data-dup="' + i + '">Ce n’est pas un doublon</button></div></li>';
+      }).join('') + '</ul>';
+    }
+    return H + '</section>';
+  }
+
+  /* ---------------- fusion depuis la fiche ---------------- */
+  function mergeBlock(f) {
+    var m = f.mg, d = f.data;
+    return '<div class="mg" data-r="mg"><h4>Fusionner avec une autre fiche</h4>' +
+      '<div class="cl-search"><span class="ico">' + icon('search') + '</span><input type="search" data-mg="q" placeholder="Rechercher l’autre fiche" autocomplete="off" aria-label="Rechercher la fiche à fusionner" value="' + esc(m.q) + '"></div>' +
+      '<p class="mg-mode">' + (m.inverse ? 'Le nom gardé sera <b>' + esc(fullName(d)) + '</b> (cette fiche). <button class="lnk" data-act="mg-inv">Garder plutôt le nom de l’autre fiche</button>'
+        : 'Le nom gardé sera celui de la fiche choisie. <button class="lnk" data-act="mg-inv">Garder plutôt le nom de cette fiche</button>') + '</p>' +
+      '<div data-r="mg-res">' + mergeResults(f) + '</div>' +
+      '<div class="mg-foot"><button class="btn" data-act="mg-cancel">Annuler</button></div></div>';
+  }
+  function mergeResults(f) {
+    var m = f.mg;
+    if (m.err) return '<p class="f-empty">' + esc(m.err) + '</p>';
+    if (!m.list) return '<p class="f-empty">Chargement…</p>';
+    var me = f.data, q = norm(m.q), toks = q.split(/\s+/).filter(Boolean);
+    var others = m.list.filter(function (p) { return p.cle !== f.cle; });
+    var sug = others.filter(function (p) { return dupReason(me, p); });
+    var res;
+    if (!toks.length) res = sug;
+    else res = others.filter(function (p) { var s = norm(p.prenom + ' ' + p.nom); return toks.every(function (t) { return s.indexOf(t) >= 0; }); })
+      .sort(function (a, b) { return (dupReason(me, b) ? 1 : 0) - (dupReason(me, a) ? 1 : 0) || (b.realises || 0) - (a.realises || 0); });
+    if (!res.length) return '<p class="f-empty">' + (toks.length ? 'Aucune fiche ne correspond.' : 'Tapez le nom de l’autre fiche (aucun doublon évident trouvé).') + '</p>';
+    return (!toks.length ? '<p class="mg-mode" style="margin-top:4px">Doublons possibles :</p>' : '') +
+      '<ul class="mg-res">' + res.slice(0, 8).map(function (p) {
+        return '<li><button data-mg-cle="' + esc(p.cle) + '">' + avatar(p) + '<span style="min-width:0;flex:1"><b>' + esc(fullName(p)) + '</b><small>' + esc(pname(p.praticienne) + ' · ' + visitsLine(p)) + '</small></span>' + (dupReason(me, p) ? '<span class="sug">Doublon ?</span>' : '') + '</button></li>';
+      }).join('') + '</ul>';
+  }
+  function startMerge(f) {
+    f.rn = null; f.mg = { q: '', inverse: false, list: null, err: null };
+    renderFiche(f);
+    var i = f.el.querySelector('[data-mg="q"]'); if (i && !G.isMobile()) i.focus();
+    Promise.resolve().then(function () { return G.clientes(); }).then(function (l) { if (!f.mg) return; f.mg.list = l || []; paintMerge(f); },
+      function (e) { if (!f.mg) return; f.mg.err = (e && e.message) || 'Clientes indisponibles.'; paintMerge(f); });
+  }
+  function paintMerge(f) { var b = f.el.querySelector('[data-r="mg-res"]'); if (b) b.innerHTML = mergeResults(f); }
+  function pickMerge(f, cle) {
+    var m = f.mg; if (!m || m.busy) return;
+    var other = (m.list || []).filter(function (p) { return p.cle === cle; })[0]; if (!other) return;
+    var me = { cle: f.cle, prenom: f.data.prenom, nom: f.data.nom, total: f.data.total };
+    var src = m.inverse ? other : me, dst = m.inverse ? me : other;
+    m.busy = true;
+    doMerge(src, dst).then(function (res) {
+      if (!f.mg) return;
+      m.busy = false;
+      if (!res) return;
+      f.mg = null; f.cle = res.cle;
+      try { if (f.panel && f.panel.setTitle) f.panel.setTitle(fullName(dst)); } catch (e) { /* ignore */ }
+      if (!G.emit) loadFiche(f);
+    }).catch(function (e) {
+      m.busy = false;
+      if (G.toast) G.toast((e && e.message) || 'Fusion impossible.', { type: 'err' });
+    });
+  }
+
+  /* ---------------- renommer / fusionner ---------------- */
+  // Même règle que le moteur (app/core.js NAME_RE) : lettres, espaces, tiret, apostrophe, point (initiales « B. »)
+  var NAME_RE = /^[A-Za-zÀ-ÖØ-öø-ÿŒœ' .\-]{1,40}$/;
+  function clean(s) { return String(s || '').replace(/\s+/g, ' ').trim(); }
+  function checkName(prenom, nom) {
+    if (!prenom) return { champ: 'prenom', msg: 'Le prénom est obligatoire.' };
+    if (prenom.length > 40) return { champ: 'prenom', msg: 'Prénom : 40 caractères maximum.' };
+    if (!NAME_RE.test(prenom)) return { champ: 'prenom', msg: 'Prénom : lettres, espaces, tiret, apostrophe ou point uniquement.' };
+    if (nom.length > 40) return { champ: 'nom', msg: 'Nom : 40 caractères maximum.' };
+    if (!NAME_RE.test(nom)) return { champ: 'nom', msg: 'Nom : lettres, espaces, tiret, apostrophe ou point uniquement.' };
+    return null;
+  }
+  function renameHtml(f, style) {
+    var r = f.rn, bad = r.champ;
+    return '<div class="f-hero edit" style="' + style + '"><form data-r="rn" novalidate>' +
+      '<div class="rn-row"><div class="rn-f"><label for="rn-pre-' + f.uid + '">Prénom</label><input id="rn-pre-' + f.uid + '" data-rn="prenom" maxlength="40" autocomplete="off" autocapitalize="words" spellcheck="false" value="' + esc(r.prenom) + '"' + (bad === 'prenom' ? ' aria-invalid="true"' : '') + ' aria-describedby="rn-err-' + f.uid + '"></div>' +
+      '<div class="rn-f"><label for="rn-nom-' + f.uid + '">Nom</label><input id="rn-nom-' + f.uid + '" data-rn="nom" maxlength="40" autocomplete="off" autocapitalize="words" spellcheck="false" value="' + esc(r.nom) + '"' + (bad === 'nom' ? ' aria-invalid="true"' : '') + ' aria-describedby="rn-err-' + f.uid + '"></div></div>' +
+      '<p class="rn-err" id="rn-err-' + f.uid + '" role="alert">' + esc(r.err || '') + '</p>' +
+      '<p class="rn-help">Pour fusionner deux fiches en double, donnez à l’une exactement le nom de l’autre.</p>' +
+      '<div class="rn-act"><button type="button" class="btn" data-act="f-rn-cancel"' + (r.busy ? ' disabled' : '') + '>Annuler</button>' +
+      '<button type="submit" class="btn pri" data-act="f-rn-save"' + (r.busy ? ' disabled' : '') + '>' + (r.busy ? 'Enregistrement…' : 'Enregistrer') + '</button></div>' +
+      '</form></div>';
+  }
+  function startRename(f) {
+    var d = f.data; if (!d) return;
+    f.rn = { prenom: d.prenom || '', nom: d.nom === '-' ? '' : (d.nom || ''), err: '', champ: null, busy: false };
+    renderFiche(f);
+    setTimeout(function () { var i = f.el.querySelector('[data-rn="prenom"]'); if (i) { i.focus(); try { i.setSelectionRange(i.value.length, i.value.length); } catch (e) { /* ignore */ } } }, 30);
+  }
+  function stopRename(f) { f.rn = null; renderFiche(f); var b = f.el.querySelector('[data-act="f-rn"]'); if (b) b.focus(); }
+  function showRnErr(f) {
+    var r = f.rn, e = f.el.querySelector('.rn-err'); if (!r || !e) return;
+    e.textContent = r.err || '';
+    ['prenom', 'nom'].forEach(function (k) { var i = f.el.querySelector('[data-rn="' + k + '"]'); if (i) { if (r.champ === k) i.setAttribute('aria-invalid', 'true'); else i.removeAttribute('aria-invalid'); } });
+    f.el.querySelectorAll('.rn-act .btn').forEach(function (b) { b.disabled = !!r.busy; });
+    var s = f.el.querySelector('[data-act="f-rn-save"]'); if (s) s.textContent = r.busy ? 'Enregistrement…' : 'Enregistrer';
+  }
+  function saveRename(f, fusionner) {
+    var r = f.rn; if (!r || (r.busy && !fusionner)) return;
+    var prenom = clean(r.prenom), nomSaisi = clean(r.nom), nom = nomSaisi || '-';
+    var bad = checkName(prenom, nom);
+    if (bad) { r.err = bad.msg; r.champ = bad.champ; showRnErr(f); var i = f.el.querySelector('[data-rn="' + bad.champ + '"]'); if (i) i.focus(); return; }
+    if (U().clientKey(prenom, nom) === f.cle && prenom === (f.data.prenom || '') && nom === (f.data.nom || '-')) { stopRename(f); return; }
+    r.err = ''; r.champ = null; r.busy = true; showRnErr(f);
+    var oldCle = f.cle;
+    var payload = { cle: oldCle, prenom: prenom, nom: nom }; if (fusionner) payload.fusionner = true;
+    G.API.admin('admin.renommerCliente', payload).then(function (res) {
+      var n = (res && res.modifies) || 0;
+      f.cle = (res && res.cle) || U().clientKey(prenom, nom);
+      f.rn = null;
+      // les autres fiches ouvertes sur l'ancienne clé suivent la cliente
+      fiches.forEach(function (x) { if (x !== f && x.cle === oldCle) x.cle = f.cle; });
+      if (G.toast) G.toast(fusionner ? 'Fiches fusionnées' : 'Nom modifié sur ' + pl(n, 'rendez-vous', 'rendez-vous'), { type: 'ok' });
+      try { if (f.panel && f.panel.setTitle) f.panel.setTitle(res.prenom + ' ' + res.nom); } catch (e) { /* ignore */ }
+      if (G.emit) G.emit('change', { source: 'renommerCliente', ancienne: oldCle, cle: f.cle }); // vide les caches du shell, recharge la liste et les fiches
+      else loadFiche(f);
+    }).catch(function (e) {
+      if (!f.rn) return;
+      f.rn.busy = false;
+      if (e && e.code === 'cliente_existante' && !fusionner) {
+        showRnErr(f);
+        Promise.resolve(G.confirm ? G.confirm({ title: 'Fusionner les deux fiches ?', text: e.message, ok: 'Fusionner' }) : false).then(function (ok) {
+          if (ok && f.rn) saveRename(f, true);
+          else { var i = f.el.querySelector('[data-rn="nom"]'); if (i) i.focus(); }
+        });
+        return;
+      }
+      f.rn.err = (e && e.message) || 'Erreur inattendue.';
+      f.rn.champ = e && e.code === 'nom_requis' ? 'prenom' : null;
+      showRnErr(f);
+    });
   }
 
   function relanceText(f) {
@@ -510,6 +809,16 @@
   }
 
   function bindFiche(f) {
+    f.el.addEventListener('submit', function (e) { e.preventDefault(); saveRename(f, false); });
+    f.el.addEventListener('input', function (e) {
+      if (e.target.getAttribute && e.target.getAttribute('data-mg') === 'q' && f.mg) { f.mg.q = e.target.value; paintMerge(f); return; }
+      var k = e.target.getAttribute && e.target.getAttribute('data-rn'); if (!k || !f.rn) return;
+      f.rn[k] = e.target.value;
+      if (f.rn.err) { f.rn.err = ''; f.rn.champ = null; showRnErr(f); }
+    });
+    f.el.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && f.rn && e.target.getAttribute && e.target.getAttribute('data-rn')) { e.stopPropagation(); e.preventDefault(); if (!f.rn.busy) stopRename(f); }
+    });
     f.el.addEventListener('click', function (e) {
       var b = e.target.closest('button'); if (!b || !f.el.contains(b)) return;
       var a, d = f.data;
@@ -519,7 +828,14 @@
         G.newRdv({ cle: d.cle, prenom: d.prenom, nom: d.nom, praticienne: c.praticienne, services: (c.ordre && c.ordre.length ? c.ordre : (f.recos.services || [])).slice(), date: c.date, debut: c.debut });
         return;
       }
+      if ((a = b.getAttribute('data-mg-cle'))) { pickMerge(f, a); return; }
       a = b.getAttribute('data-act');
+      if (a === 'f-mg') { startMerge(f); return; }
+      if (a === 'mg-cancel') { f.mg = null; renderFiche(f); var mb = f.el.querySelector('[data-act="f-mg"]'); if (mb) mb.focus(); return; }
+      if (a === 'mg-inv') { f.mg.inverse = !f.mg.inverse; var mm = f.el.querySelector('.mg-mode'); if (mm) mm.outerHTML = (function () { var t = document.createElement('div'); t.innerHTML = mergeBlock(f); return t.querySelector('.mg-mode').outerHTML; })(); return; }
+      if (a === 'f-rn') { f.mg = null; startRename(f); return; }
+      if (a === 'f-rn-cancel') { stopRename(f); return; }
+      if (a === 'f-rn-save') { e.preventDefault(); saveRename(f, false); return; }
       if (a === 'f-new') { if (G.newRdv && d) G.newRdv({ cle: d.cle, prenom: d.prenom, nom: d.nom }); }
       else if (a === 'f-retry') { f.el.innerHTML = ficheSkeleton(); loadFiche(f); }
       else if (a === 'f-reco') { f.recoErr = null; var bb = f.el.querySelector('[data-r="recos-body"]'); if (bb) bb.innerHTML = recosHtml(f); loadRecos(f); }
@@ -547,7 +863,7 @@
     });
     G.on('filtre', function () { if (mounted) { st.prat = null; st.n = 60; renderList(); } });
     G.on('theme', function () { if (mounted) renderList(); fiches.forEach(function (f) { if (f.data) renderFiche(f); }); });
-    G.on('config', function () { if (mounted) renderList(); });
+    G.on('config', function () { if (mounted) renderList(); fiches.forEach(function (f) { if (f.data) renderFiche(f); }); });
     G.on('login', function () { profils = null; if (mounted) load(); });
   }
 
