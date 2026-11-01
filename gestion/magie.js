@@ -1212,59 +1212,78 @@
     return { h: y, ops: ops, hidden: hidden };
   }
 
-  // Mise en page AGENDA : vraie grille horaire (heures en lignes, jours × praticiennes en colonnes) sur une feuille
+  // Mise en page AGENDA : une colonne par jour (sous-colonnes par praticienne), heures complètes empilées
+  // dans l'ordre chronologique, en deux temps (matin, après-midi) alignés d'une colonne à l'autre
   function layoutAgenda(ctx, m, items, f) {
-    var days = storyDays(items), pids = m.pids, multi = pids.length > 1, u = U();
+    var days = storyDays(items), pids = m.pids, multi = pids.length > 1, u = U(), single = !!m.oneDay;
     var cols = [];
-    days.forEach(function (d) { pids.forEach(function (pid) { var g = d.groups.filter(function (x) { return x.pid === pid; })[0]; cols.push({ date: d.date, pid: pid, items: g ? g.items : [] }); }); });
-    var n = cols.length;
+    days.forEach(function (d, di) { pids.forEach(function (pid, pi) { var g = d.groups.filter(function (x) { return x.pid === pid; })[0]; cols.push({ date: d.date, di: di, pi: pi, pid: pid, items: g ? g.items : [] }); }); });
+    var n = cols.length, nd = days.length, np = pids.length;
     if (!n || n > 6) return { h: 1e9, ops: [] };
-    var P = Math.round(f * 0.7), axisW = Math.round(f * 1.75), cg = Math.round(f * 0.42);
-    var gridW = CW - 2 * P - axisW, cw = (gridW - cg * (n - 1)) / n;
-    var full = n <= 2 && !m.shortTok;
-    var tokPad = Math.round(f * 0.3), tokH = Math.round(f * 1.4), tg = Math.round(f * 0.18), rowPad = Math.round(f * 0.26);
+    var P = Math.round(f * 0.66), dg = Math.round(f * (np > 1 ? 0.62 : 0.4)), pg = Math.round(f * 0.24);
+    var gridW = CW - 2 * P, dayW = (gridW - dg * (nd - 1)) / nd, cw = (dayW - pg * (np - 1)) / np;
+    var tokPad = Math.round(f * 0.38), tokH = Math.round(f * 1.46), tg = Math.round(f * 0.22);
     ctx.font = sf('500', f);
-    var tokW = Math.ceil(ctx.measureText(full ? '10h45' : '45').width) + tokPad * 2;
+    var tokW = Math.ceil(ctx.measureText('10h45').width) + tokPad * 2;
     if (tokW > cw) return { h: 1e9, ops: [] };
-    var perLine = Math.max(1, Math.floor((cw + tg) / (tokW + tg)));
-    var mins = items.map(function (it) { return u.toMin(it.debut); });
-    var h0 = Math.floor(Math.min.apply(null, mins) / 60), h1 = Math.floor(Math.max.apply(null, mins) / 60);
-    var ops = [], y = P;
-    // En-têtes : jour (si plusieurs jours) puis praticienne
-    var single = !!m.oneDay;
-    var dsz = Math.round(f * 0.92), psz = Math.max(18, Math.round(f * (single ? 0.56 : 0.44)));
+    var maxFit = Math.max(1, Math.floor((cw + tg) / (tokW + tg)));
+    cols.forEach(function (c) { c.h = [[], []]; c.items.forEach(function (it) { c.h[u.toMin(it.debut) >= 720 ? 1 : 0].push(it); }); });
+    var has = [0, 1].map(function (k) { return cols.some(function (c) { return c.h[k].length; }); }), both = has[0] && has[1];
+    function colX(c) { return c.di * (dayW + dg) + c.pi * (cw + pg); }
+    // En-têtes de jour : sur une ligne si possible, sinon « Mar. » / « 24 nov. »
+    var dsz = Math.round(f * 0.84), dLines = 1;
     if (!single) {
-      days.forEach(function (d, di) {
-        var c0 = di * pids.length, x = axisW + c0 * (cw + cg), w = pids.length * cw + (pids.length - 1) * cg;
-        ops.push({ t: 'hday', x: x, y: y, w: w, size: dsz, date: d.date });
-      });
-      y += Math.round(dsz * 1.25);
+      ctx.font = tf(m.F, dsz);
+      days.forEach(function (d) { if (ctx.measureText(storyDayShort(d.date, m.style.mois)).width > dayW - 8) dLines = 2; });
     }
-    if (multi || single) {
-      cols.forEach(function (c, ci) { ops.push({ t: 'hpid', x: axisW + ci * (cw + cg), y: y, w: cw, size: psz, pid: c.pid, single: single }); });
-      y += Math.round(psz * 2.1);
-    }
-    ops.push({ t: 'hline', y: y });
-    var gridTop = y;
-    for (var hh = h0; hh <= h1; hh++) {
-      var cells = cols.map(function (c) { return c.items.filter(function (it) { return Math.floor(u.toMin(it.debut) / 60) === hh; }); });
-      var lines = Math.max.apply(null, cells.map(function (l) { return Math.ceil(l.length / perLine); }));
-      var rh = lines ? lines * tokH + (lines - 1) * tg + rowPad * 2 : Math.round(f * 0.95);
-      ops.push({ t: 'hour', y: y, h: rh, hour: hh, empty: !lines, size: Math.round(f * 0.9) });
-      cells.forEach(function (l, ci) {
-        var x0 = axisW + ci * (cw + cg), w = (cw - tg * (perLine - 1)) / perLine;
-        l.forEach(function (it, i) {
-          var mn = u.toMin(it.debut) % 60;
-          ops.push({ t: 'tok', x: x0 + (i % perLine) * (w + tg), y: y + rowPad + Math.floor(i / perLine) * (tokH + tg), w: w, h: tokH, f: f, pid: cols[ci].pid,
-            text: full ? hfr(it.debut) : pad(mn) });
+    function build(pl) {
+      var ops = [], y = P, top = P;
+      if (!single) {
+        days.forEach(function (d, di) {
+          var t = storyDayShort(d.date, m.style.mois), sp = t.indexOf(' ');
+          ops.push({ t: 'hday', x: di * (dayW + dg), y: y, w: dayW, size: dsz, lines: dLines === 2 ? [t.slice(0, sp), t.slice(sp + 1)] : [t] });
         });
+        y += Math.round(dLines === 2 ? dsz * 0.66 + dsz * m.F.k * 1.06 : dsz * m.F.k * 1.08);
+      }
+      var pTop = y;
+      if (multi) {
+        var psz = Math.max(17, Math.round(f * (single ? 0.52 : 0.4)));
+        y += single ? 0 : Math.round(f * 0.22);
+        cols.forEach(function (c) { ops.push({ t: 'hpid', x: colX(c), y: y, w: cw, size: psz, pid: c.pid }); });
+        y += Math.round(psz * 1.75);
+      }
+      y += Math.round(f * 0.34);
+      ops.push({ t: 'hline', y: y });
+      var gridTop = y;
+      y += Math.round(f * 0.5);
+      [0, 1].forEach(function (k) {
+        if (!has[k]) return;
+        if (both) {
+          var ls = Math.max(16, Math.round(f * 0.4));
+          if (k === 1) y += Math.round(f * 0.45);
+          ops.push({ t: 'sec', y: y, size: ls, text: k ? 'APRÈS-MIDI' : 'MATIN' });
+          y += Math.round(ls * 1.9);
+        }
+        var rows = Math.max.apply(null, cols.map(function (c) { return Math.ceil(c.h[k].length / pl); }));
+        cols.forEach(function (c) {
+          var list = c.h[k], x0 = colX(c);
+          if (!list.length) { ops.push({ t: 'dash', x: x0, y: y, w: cw, h: tokH }); return; }
+          var w = pl === 1 ? Math.min(cw, Math.round(tokW * 1.7)) : (cw - tg * (pl - 1)) / pl, off = pl === 1 ? (cw - w) / 2 : 0;
+          list.forEach(function (it, i) {
+            ops.push({ t: 'tok', x: x0 + off + (i % pl) * (w + tg), y: y + Math.floor(i / pl) * (tokH + tg), w: w, h: tokH, f: f, pid: c.pid, text: hfr(it.debut) });
+          });
+        });
+        y += rows * tokH + (rows - 1) * tg;
       });
-      y += rh;
-      ops.push({ t: 'rline', y: y, last: hh === h1 });
+      // Filets verticaux : entre deux jours (sur toute la hauteur), entre praticiennes d'un même jour (plus légers)
+      var vl = [];
+      for (var di = 1; di < nd; di++) vl.push({ t: 'vline', x: di * (dayW + dg) - dg / 2, y: top, h: y - top, strong: true });
+      if (np > 1) days.forEach(function (d, di2) { for (var pi = 1; pi < np; pi++) vl.push({ t: 'vline', x: di2 * (dayW + dg) + pi * (cw + pg) - pg / 2, y: gridTop + Math.round(f * 0.3), h: y - gridTop - Math.round(f * 0.3) }); });
+      return { h: y + P, ops: vl.concat(ops) };
     }
-    // Séparateurs verticaux discrets entre colonnes (plus marqués entre deux jours)
-    for (var ci = 1; ci < n; ci++) ops.push({ t: 'vline', x: axisW + ci * (cw + cg) - cg / 2, y: gridTop, h: y - gridTop, strong: ci % pids.length === 0 });
-    return { h: y + P, ops: ops, full: full };
+    var L = null;
+    for (var pl = 1; pl <= maxFit; pl++) { L = build(pl); if (L.h <= (m.agAvail || 1e9)) return L; }
+    return L;
   }
 
   function layoutFor(m) { return m.layout === 'agenda' ? layoutAgenda : layoutList; }
@@ -1276,13 +1295,9 @@
       for (var f = fMax; f >= lo; f -= 2) { var L = lay(ctx, m, list, f, cap); if (L.h <= avail) return { f: f, L: L }; }
       return null;
     }
-    // Agenda : heures complètes (« 9h15 ») ou minutes seules sous l'axe des heures, selon ce qui est le plus lisible
-    function bestAg(list, lo) {
-      m.shortTok = false; var a = best(list, lo);
-      if (!ag || (a && a.f >= 38)) return a;
-      m.shortTok = true; var b = best(list, lo); m.shortTok = false;
-      return b && (!a || b.f >= a.f + 4) ? b : a;
-    }
+    // Agenda : heures toujours complètes ; la mise en page s'adapte à la hauteur disponible
+    m.agAvail = avail;
+    function bestAg(list, lo) { return best(list, lo); }
     var one = bestAg(items, fMin);
     if (one) return [{ items: items, f: one.f, L: one.L }];
     var days = storyDays(items), pages = [], cur = [];
@@ -1415,31 +1430,44 @@
       ctx.fillStyle = th.card; rrect(ctx, x0, y0, CW, L.h, 18); ctx.fill();
       ctx.restore();
       if (!th.dark) { ctx.strokeStyle = th.cardLine; ctx.lineWidth = 1.5; rrect(ctx, x0, y0, CW, L.h, 18); ctx.stroke(); }
-      var P = Math.round(pg.f * 0.7), ix = x0 + P;
+      var P = Math.round(pg.f * 0.66), ix = x0 + P, iw = CW - 2 * P;
       L.ops.forEach(function (o) {
         if (o.t === 'hday') {
-          var D = fitText(ctx, storyDayShort(o.date, m.style.mois), function (s) { return tf(m.F, s); }, o.size, 18, o.w, 1);
-          ctx.font = tf(m.F, D.size); ctx.fillStyle = th.cardInk; ctx.textAlign = 'center';
-          ctx.fillText(D.lines[0], ix + o.x + o.w / 2, y0 + o.y + Math.round(o.size * m.F.k * 0.82)); ctx.textAlign = 'left';
+          var cx = ix + o.x + o.w / 2, by = y0 + o.y + Math.round(o.size * m.F.k * 0.8);
+          ctx.fillStyle = th.cardInk; ctx.textAlign = 'center';
+          if (o.lines.length === 1) {
+            var D = fitText(ctx, o.lines[0], function (s) { return tf(m.F, s); }, o.size, 18, o.w - 4, 1);
+            ctx.font = tf(m.F, D.size); ctx.fillText(D.lines[0], cx, by);
+          } else {
+            var D1 = fitText(ctx, o.lines[1], function (s) { return tf(m.F, s); }, o.size, 18, o.w - 4, 1);
+            ctx.font = sf('500', Math.round(o.size * 0.56)); ctx.fillStyle = th.cardSub;
+            spacedText(ctx, o.lines[0].toUpperCase(), cx, y0 + o.y + Math.round(o.size * 0.5), o.size * 0.08, 'center');
+            ctx.font = tf(m.F, D1.size); ctx.fillStyle = th.cardInk; ctx.fillText(D1.lines[0], cx, y0 + o.y + Math.round(o.size * 0.66 + o.size * m.F.k * 0.8));
+          }
+          ctx.textAlign = 'left';
         } else if (o.t === 'hpid') {
-          var nm = pn(o.pid).toUpperCase(), s0 = fitSpaced(ctx, nm, '500', o.size, 14, o.size * 0.2, o.w - o.size * 1.2);
-          var tw = spacedW(ctx, nm, o.size * 0.2 * s0 / o.size), cx = ix + o.x + o.w / 2, cy = y0 + o.y + o.size;
-          ctx.fillStyle = pc(o.pid); ctx.beginPath(); ctx.arc(cx - tw / 2 - s0 * 0.55, cy - s0 * 0.34, s0 * 0.26, 0, Math.PI * 2); ctx.fill();
-          ctx.font = sf('500', s0); ctx.fillStyle = th.cardSub; spacedText(ctx, nm, cx + s0 * 0.3, cy, o.size * 0.2 * s0 / o.size, 'center');
+          var nm = pn(o.pid).toUpperCase(), sp0 = o.size * 0.18, s0 = fitSpaced(ctx, nm, '500', o.size, 13, sp0, o.w - o.size * 1.3);
+          var sp = sp0 * s0 / o.size, tw = spacedW(ctx, nm, sp), col = pc(o.pid), cx2 = ix + o.x + o.w / 2, cy = y0 + o.y + s0;
+          ctx.fillStyle = col; ctx.beginPath(); ctx.arc(cx2 - (tw + s0 * 0.85) / 2 + s0 * 0.24, cy - s0 * 0.36, s0 * 0.24, 0, Math.PI * 2); ctx.fill();
+          ctx.font = sf('500', s0); ctx.fillStyle = mix(col, INK, 0.55); spacedText(ctx, nm, cx2 + s0 * 0.42, cy, sp, 'center');
         } else if (o.t === 'hline') {
-          ctx.fillStyle = rgba(INK, 0.55); ctx.fillRect(ix, y0 + o.y - 1, CW - 2 * P, 2);
+          ctx.fillStyle = rgba(INK, 0.28); ctx.fillRect(ix, y0 + o.y - 0.75, iw, 1.5);
         } else if (o.t === 'vline') {
-          ctx.fillStyle = o.strong ? rgba(INK, 0.22) : th.cardLine; ctx.fillRect(ix + o.x - 0.75, y0 + o.y, 1.5, o.h);
-        } else if (o.t === 'rline') {
-          if (!o.last) { ctx.fillStyle = th.cardLine; ctx.fillRect(ix, y0 + o.y, CW - 2 * P, 1.5); }
-        } else if (o.t === 'hour') {
-          ctx.font = '600 ' + Math.round(Math.max(o.size * 1.06, 32)) + 'px ' + SERIF; ctx.fillStyle = o.empty ? rgba(INK, 0.35) : th.cardInk;
-          ctx.fillText(o.hour + 'h', ix, y0 + o.y + (o.empty ? o.h / 2 + o.size * 0.32 : Math.round(pg.f * 0.26) + Math.round(pg.f * 1.4) / 2 + o.size * 0.34));
+          ctx.fillStyle = o.strong ? rgba(INK, 0.13) : rgba(INK, 0.07); ctx.fillRect(ix + o.x - 0.75, y0 + o.y, 1.5, o.h);
+        } else if (o.t === 'sec') {
+          ctx.font = sf('500', o.size); ctx.fillStyle = mix(TERRA, INK, 0.75);
+          var sw = spacedW(ctx, o.text, o.size * 0.28);
+          ctx.fillStyle = th.card; ctx.fillRect(ix - 2, y0 + o.y - 4, sw + o.size * 0.8, o.size * 1.3);
+          ctx.fillStyle = mix(TERRA, INK, 0.75); spacedText(ctx, o.text, ix, y0 + o.y + o.size * 0.85, o.size * 0.28, 'left');
+          ctx.fillStyle = rgba(INK, 0.08); ctx.fillRect(ix + sw + o.size * 0.8, y0 + o.y + o.size * 0.5, iw - sw - o.size * 0.8, 1.5);
+        } else if (o.t === 'dash') {
+          ctx.fillStyle = rgba(INK, 0.2); ctx.fillRect(ix + o.x + o.w / 2 - 12, y0 + o.y + o.h / 2 - 1, 24, 2);
         } else if (o.t === 'tok') {
-          var col = pc(o.pid);
-          ctx.fillStyle = mix(col, th.card, 0.17); rrect(ctx, ix + o.x, y0 + o.y, o.w, o.h, Math.round(o.h * 0.2)); ctx.fill();
+          var c2 = pc(o.pid);
+          ctx.fillStyle = mix(c2, th.card, 0.15); rrect(ctx, ix + o.x, y0 + o.y, o.w, o.h, Math.round(o.h / 2)); ctx.fill();
+          ctx.strokeStyle = rgba(c2, 0.32); ctx.lineWidth = 1.5; rrect(ctx, ix + o.x + 0.75, y0 + o.y + 0.75, o.w - 1.5, o.h - 1.5, Math.round(o.h / 2)); ctx.stroke();
           ctx.font = sf('500', o.f); ctx.fillStyle = th.cardInk; ctx.textAlign = 'center';
-          ctx.fillText(o.text, ix + o.x + o.w / 2 + 1, y0 + o.y + o.h / 2 + o.f * 0.35); ctx.textAlign = 'left';
+          ctx.fillText(o.text, ix + o.x + o.w / 2, y0 + o.y + o.h / 2 + o.f * 0.35); ctx.textAlign = 'left';
         }
       });
       return;
@@ -1708,7 +1736,7 @@
     h += '<div class="mg-f"><span class="mg-lab" id="mg-l-lay">Mise en page</span><div class="mg-seg" role="group" aria-labelledby="mg-l-lay">' + LAYOUTS.map(function (l) {
       return '<button type="button" data-s="layout" data-v="' + l[0] + '" class="' + (s.layout === l[0] ? 'on' : '') + '" aria-pressed="' + (s.layout === l[0]) + '">' + l[1] + '</button>';
     }).join('') + '</div>';
-    if (s.layout === 'agenda') h += '<p class="mg-help">Grille horaire : une ligne par heure, une colonne par jour et par praticienne.</p>';
+    if (s.layout === 'agenda') h += '<p class="mg-help">Une colonne par jour (et par praticienne), heures en entier, matin puis après-midi.</p>';
     if (s.layout === 'vedette' && pids.length > 1) {
       var ved = pids.indexOf(s.vedette) >= 0 ? s.vedette : pids[0];
       h += '<div class="mg-seg" role="group" aria-label="Praticienne en avant" style="margin-top:8px">' + pids.map(function (pid) {
