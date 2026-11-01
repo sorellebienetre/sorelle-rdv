@@ -123,8 +123,14 @@
 
     /* Écran d'accueil */
     .hero { text-align: center; margin: 4px auto 26px; max-width: 460px; }
-    .hero__logo { width: min(200px, 52vw); height: auto; aspect-ratio: 1; margin: 0 auto 22px; border-radius: 34px; object-fit: cover;
-      box-shadow: 0 1px 2px rgba(30,34,24,.06), 0 24px 48px -20px rgba(79,96,70,.45); }
+    .hero__media { position: relative; width: min(230px, 60vw); aspect-ratio: 1 / 1; margin: 0 auto 6px; border-radius: 50%; overflow: hidden;
+      -webkit-mask-image: radial-gradient(circle at 50% 46%, #000 52%, rgba(0,0,0,.6) 63%, transparent 71%);
+              mask-image: radial-gradient(circle at 50% 46%, #000 52%, rgba(0,0,0,.6) 63%, transparent 71%); }
+    .hero__media img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 38%; transform: scale(1.12); animation: heroIn 1s var(--ease) both; }
+    @keyframes heroIn { from { opacity: 0; transform: scale(1.16); } to { opacity: 1; transform: scale(1.12); } }
+    @media (prefers-reduced-motion: reduce) { .hero__media img { animation: none; } }
+    @media (min-width: 560px) { .hero__media { width: 250px; } }
+    .hero__media + .hero__kicker { margin-top: 4px; }
     .hero__kicker { font-size: 11.5px; letter-spacing: .28em; text-transform: uppercase; color: var(--clay-d); font-weight: 500; margin-bottom: 10px; }
     .hero h1 { font-family: var(--serif); font-weight: 600; font-size: clamp(31px, 8.4vw, 40px); line-height: 1.08; letter-spacing: 0; color: var(--brand-d); }
     .hero__sub { color: var(--text-sub); font-size: 15px; margin: 12px auto 0; max-width: 380px; }
@@ -554,7 +560,7 @@
       <!-- ACCUEIL : déjà cliente ? -->
       <section class="step" data-step="0" tabindex="-1" aria-labelledby="h1-0" hidden>
         <div class="hero">
-          <img class="hero__logo" src="../assets/logo-600.jpg" alt="Sorelle Bien-Être" width="600" height="600">
+          <div class="hero__media"><img src="../assets/hero-soeurs.jpg" srcset="../assets/hero-soeurs-720.jpg 720w, ../assets/hero-soeurs.jpg 2265w" sizes="250px" alt="Laurie et Léa, Sorelle Bien-Être" width="2265" height="4030" fetchpriority="high"></div>
           <p class="hero__kicker">Réservation en ligne</p>
           <h1 id="h1-0">Êtes-vous déjà cliente de l'institut&nbsp;?</h1>
           <p class="hero__sub">La réservation en ligne est réservée aux clientes déjà venues chez nous.</p>
