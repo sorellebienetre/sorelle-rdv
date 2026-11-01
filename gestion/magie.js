@@ -1,8 +1,9 @@
 /**
  * gestion/magie.js : module MAGIE
- *   « ★ Remplir l'agenda » (analyse admin.remplir, alertes, relances, créneaux à proposer)
- *   + studio de story Instagram (canvas 1080×1920, thèmes, mises en page, polices, fond photo,
- *     mode message ou lien éclair, partage navigator.share ou téléchargement).
+ *   « Remplir l'agenda » : jours (aujourd'hui, demain, semaine prochaine ou choisis un par un dans un calendrier),
+ *   alertes, toutes les heures de début valides à proposer, clientes à relancer (option)
+ *   + studio de story Instagram aux couleurs Sorelle (canvas 1080×1920, thèmes de la marque, liste ou
+ *     grille horaire, fond photo avec voile, mode message ou lien éclair, partage ou téléchargement).
  * N'utilise que le contrat window.G (docs/GESTION-V2-SPEC.md, section 1).
  */
 (function () {
@@ -76,6 +77,7 @@
   function activeIds() { try { return (G.prats() || []).filter(function (p) { return p.active !== false; }).map(function (p) { return p.id; }); } catch (e) { return ['laurie', 'lea']; } }
   function pratOrder(a, b) { var o = activeIds(); return o.indexOf(a) - o.indexOf(b); }
 
+
   /* =====================================================================
    * CSS (préfixé .mod-magie, jetons du shell uniquement)
    * =================================================================== */
@@ -83,49 +85,84 @@
     '.mod-magie{color:var(--text);font-size:15px;line-height:1.45;-webkit-tap-highlight-color:transparent}',
     '.mod-magie *{box-sizing:border-box}',
     '.mod-magie button{font:inherit;color:inherit;cursor:pointer}',
-    '.mod-magie .mg-pad{padding:16px 18px 0}',
+    '.mod-magie .mg-pad{padding:16px 20px 0}',
     '@media (max-width:699px){.mod-magie .mg-pad{padding:12px 16px 0}}',
-    '.mod-magie .mg-f{margin-bottom:14px}',
+    '.mod-magie .mg-f{margin-bottom:16px}',
     '.mod-magie .mg-f:last-child{margin-bottom:0}',
-    '.mod-magie .mg-lab{display:block;font-size:13px;font-weight:500;color:var(--text-sub);margin:0 0 6px}',
-    '.mod-magie .mg-ctrl{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius-lg);padding:14px}',
-    '.mod-magie .mg-seg{display:flex;gap:4px;padding:4px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);width:100%}',
+    '.mod-magie .mg-lab{display:block;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-sub);margin:0 0 8px}',
+    '.mod-magie .mg-ctrl{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);padding:16px}',
+    '@media (max-width:699px){.mod-magie .mg-ctrl{padding:14px 12px}}',
+    '.mod-magie .mg-seg{display:flex;gap:4px;padding:4px;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius);width:100%}',
     '.mod-magie .mg-seg button{flex:1 1 0;min-width:0;min-height:44px;border:0;background:transparent;border-radius:calc(var(--radius) - 4px);font-weight:500;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:0 8px;color:var(--text-sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
-    '.mod-magie .mg-seg button.on{background:var(--accent);color:var(--accent-text);font-weight:600}',
-    '.mod-magie .mg-seg button.on.pr{background:var(--pc);color:var(--pt)}',
+    '.mod-magie .mg-seg button.on{background:var(--surface);color:var(--text);font-weight:600;box-shadow:0 1px 2px var(--line),0 0 0 1px var(--line)}',
     '.mod-magie .mg-seg button:disabled{opacity:.5;cursor:default}',
-    '.mod-magie .mg-dot{width:10px;height:10px;border-radius:50%;background:var(--pc);flex:none;display:inline-block}',
-    '.mod-magie .mg-seg .mg-dot{width:12px;height:12px;box-shadow:0 0 0 2px var(--surface)}',
+    '.mod-magie .mg-dot{width:9px;height:9px;border-radius:50%;background:var(--pc);flex:none;display:inline-block}',
     '.mod-magie .mg-chips{display:flex;flex-wrap:wrap;gap:8px}',
-    '.mod-magie .mg-chip{min-height:44px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface);display:inline-flex;align-items:center;gap:8px;font-weight:500;color:var(--text)}',
+    '.mod-magie .mg-chip{min-height:44px;padding:0 15px;border-radius:999px;border:1px solid var(--line);background:var(--surface);display:inline-flex;align-items:center;gap:8px;font-weight:500;color:var(--text)}',
+    '.mod-magie .mg-chip svg{width:16px;height:16px;flex:none}',
     '.mod-magie .mg-chip.on{background:var(--accent);border-color:var(--accent);color:var(--accent-text)}',
-    '.mod-magie .mg-chip i{width:10px;height:10px;border-radius:50%;background:var(--sc);flex:none}',
+    '.mod-magie .mg-chip i{width:9px;height:9px;border-radius:50%;background:var(--sc);flex:none}',
     '.mod-magie .mg-chip small{font-size:12px;opacity:.8;font-weight:400}',
-    '.mod-magie .mg-range{margin-top:8px;font-size:13px;color:var(--text-sub)}',
+    '.mod-magie .mg-pers{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}',
+    '.mod-magie .mg-pers .mg-chip{justify-content:center;padding:0 8px;border-radius:var(--radius);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}',
+    '@media (max-width:520px){.mod-magie .mg-pers{grid-template-columns:repeat(2,minmax(0,1fr))}}',
+    '.mod-magie .mg-range{margin-top:10px;font-size:13.5px;color:var(--text-sub)}',
+    '.mod-magie .mg-range b{color:var(--text);font-weight:600}',
     '.mod-magie .mg-range.bad{color:var(--danger);font-weight:500}',
-    '.mod-magie .mg-dates{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;margin-top:10px;max-width:420px}',
-    '.mod-magie .mg-dates label{display:grid;grid-template-columns:minmax(0,1fr);gap:4px;font-size:13px;color:var(--text-sub);min-width:0}',
-    '.mod-magie .mg-dates input{width:100%;min-height:44px;border-radius:var(--radius);border:1px solid var(--line);background:var(--surface);color:var(--text);padding:0 8px;font:inherit;font-size:16px;min-width:0;max-width:100%;color-scheme:light dark}',
-    '.mod-magie .mg-dates input:focus{outline:3px solid var(--focus);outline-offset:1px}',
     '.mod-magie .mg-sep{display:inline-block;width:1px;height:28px;background:var(--line);align-self:center;margin:0 2px}',
-    '.mod-magie .mg-sec{margin-top:26px}',
-    '.mod-magie .mg-sec>h3{font-size:17px;font-weight:600;margin:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap}',
+    /* Calendrier de sélection des jours */
+    '.mod-magie .mg-cal{margin-top:12px;border:1px solid var(--line);border-radius:var(--radius-lg);background:var(--bg);padding:8px 10px 10px;max-width:460px}',
+    '.mod-magie .mg-calh{display:flex;align-items:center;gap:4px;margin-bottom:2px}',
+    '.mod-magie .mg-calh b{flex:1;text-align:center;font-family:var(--serif);font-size:21px;font-weight:600;letter-spacing:.01em}',
+    '.mod-magie .mg-calh button{width:44px;height:44px;border:0;background:transparent;border-radius:50%;display:grid;place-items:center;color:var(--text)}',
+    '.mod-magie .mg-calh button svg{width:20px;height:20px}',
+    '.mod-magie .mg-calh button:disabled{opacity:.25;cursor:default}',
+    '.mod-magie .mg-calg{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px}',
+    '.mod-magie .mg-calw{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:center;padding:4px 0 6px}',
+    '.mod-magie .mg-cd{position:relative;min-height:50px;min-width:0;border:0;border-radius:10px;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;font-variant-numeric:tabular-nums;padding:0;color:var(--text)}',
+    '.mod-magie .mg-cd .n{font-size:16px;font-weight:500;line-height:1}',
+    '.mod-magie .mg-cd .f{width:56%;max-width:30px;height:3px;border-radius:2px;background:var(--line);overflow:hidden;display:block}',
+    '.mod-magie .mg-cd .f i{display:block;height:100%;background:var(--sage);border-radius:2px}',
+    '.mod-magie .mg-cd .f.full i{background:var(--clay)}',
+    '.mod-magie .mg-cd .f.na{background:transparent;border-top:1px dashed var(--muted);height:0}',
+    '.mod-magie .mg-cd:not(:disabled):hover{background:var(--surface-2)}',
+    '.mod-magie .mg-cd.today .n{font-weight:700}',
+    '.mod-magie .mg-cd.today::after{content:"";position:absolute;top:5px;left:50%;margin-left:-2px;width:4px;height:4px;border-radius:50%;background:var(--clay)}',
+    '.mod-magie .mg-cd.on,.mod-magie .mg-cd.on:hover{background:var(--accent);color:var(--accent-text)}',
+    '.mod-magie .mg-cd.on .f{background:rgba(255,255,255,.28)}',
+    '.mod-magie .mg-cd.on .f i{background:currentColor}',
+    '.mod-magie .mg-cd.pl{box-shadow:inset 0 0 0 2px var(--accent)}',
+    '.mod-magie .mg-cd:disabled{cursor:default;color:var(--muted)}',
+    '.mod-magie .mg-cd:disabled .n{opacity:.55;font-weight:400}',
+    '.mod-magie .mg-cd.closed .n{text-decoration:line-through;text-decoration-color:var(--line-3,var(--line))}',
+    '.mod-magie .mg-cd:focus-visible{outline:3px solid var(--focus);outline-offset:1px}',
+    '.mod-magie .mg-calf{display:flex;gap:6px 14px;flex-wrap:wrap;align-items:center;margin-top:8px;padding-top:8px;border-top:1px solid var(--line);font-size:12.5px;color:var(--text-sub)}',
+    '.mod-magie .mg-calf .sp{flex:1}',
+    '.mod-magie .mg-calf .lg{display:inline-flex;align-items:center;gap:6px}',
+    '.mod-magie .mg-calf .lg i{display:inline-block;width:18px;height:3px;border-radius:2px;background:var(--sage)}',
+    '.mod-magie .mg-calf .lg i.full{background:var(--clay)}',
+    '.mod-magie .mg-calf .mg-link{min-height:40px;font-size:13.5px}',
+    '.mod-magie .mg-tgl{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-size:13px;font-weight:500;color:var(--text)}',
+    '.mod-magie .mg-tgl.on{background:var(--accent);border-color:var(--accent);color:var(--accent-text)}',
+    '.mod-magie .mg-tgl svg{width:15px;height:15px}',
+    '.mod-magie .mg-sec{margin-top:28px}',
+    '.mod-magie .mg-sec>h3{font-family:var(--serif);font-size:23px;font-weight:600;letter-spacing:.005em;margin:0;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;line-height:1.15}',
     '.mod-magie .mg-sec>h3 .mg-sp{flex:1}',
-    '.mod-magie .mg-sec>h3 .mg-n{font-size:13px;font-weight:500;color:var(--text-sub)}',
-    '.mod-magie .mg-aide{font-size:13px;color:var(--text-sub);margin:2px 0 10px}',
-    '.mod-magie .mg-link{border:0;background:transparent;color:var(--accent);font-weight:500;min-height:44px;padding:0 4px;font-size:14px}',
+    '.mod-magie .mg-sec>h3 .mg-n{font-family:var(--sans,inherit);font-size:13px;font-weight:500;color:var(--text-sub);letter-spacing:0}',
+    '.mod-magie .mg-aide{font-size:13.5px;color:var(--text-sub);margin:4px 0 10px}',
+    '.mod-magie .mg-link{border:0;background:transparent;color:var(--accent);font-weight:600;min-height:44px;padding:0 6px;font-size:14px}',
     '.mod-magie .mg-more{display:block;margin-top:4px}',
-    '.mod-magie .mg-empty{padding:12px 14px;border-radius:var(--radius);background:var(--surface-2);color:var(--text-sub);font-size:14px}',
+    '.mod-magie .mg-empty{padding:14px 16px;border-radius:var(--radius);background:var(--surface-2);color:var(--text-sub);font-size:14px}',
     /* Résumé */
     '.mod-magie .mg-sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-top:18px}',
-    '.mod-magie .mg-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);padding:14px}',
-    '.mod-magie .mg-card-h{display:flex;align-items:center;gap:8px;font-weight:600;font-size:15px}',
-    '.mod-magie .mg-big{display:flex;align-items:baseline;gap:8px;margin-top:6px}',
-    '.mod-magie .mg-big b{font-size:32px;font-weight:600;line-height:1.05}',
-    '.mod-magie .mg-big span{font-size:15px;color:var(--text)}',
-    '.mod-magie .mg-gauge{height:8px;border-radius:99px;background:var(--surface-2);margin-top:10px;overflow:hidden}',
+    '.mod-magie .mg-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);padding:14px 16px}',
+    '.mod-magie .mg-card-h{display:flex;align-items:center;gap:8px;font-weight:600;font-size:14px}',
+    '.mod-magie .mg-big{display:flex;align-items:baseline;gap:8px;margin-top:4px}',
+    '.mod-magie .mg-big b{font-family:var(--serif);font-size:38px;font-weight:600;line-height:1.05}',
+    '.mod-magie .mg-big span{font-size:14px;color:var(--text-sub)}',
+    '.mod-magie .mg-gauge{height:4px;border-radius:99px;background:var(--surface-2);margin-top:10px;overflow:hidden}',
     '.mod-magie .mg-gauge i{display:block;height:100%;background:var(--pc);border-radius:99px}',
-    '.mod-magie .mg-card p{margin:6px 0 0;font-size:13px;color:var(--text-sub)}',
+    '.mod-magie .mg-card p{margin:6px 0 0;font-size:12.5px;color:var(--text-sub)}',
     /* Cartes compactes (priorités, relances) */
     '.mod-magie .mg-list{display:flex;flex-direction:column;gap:8px}',
     '.mod-magie .mg-it{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:10px 12px 12px;min-width:0}',
@@ -140,46 +177,47 @@
     '.mod-magie .mg-late{display:inline-block;font-size:12px;font-weight:500;color:var(--danger);border:1px solid var(--danger);border-radius:999px;padding:0 7px;margin-left:4px;white-space:nowrap;line-height:18px}',
     '.mod-magie .mg-name{border:0;background:transparent;padding:0;font-weight:600;font-size:15px;color:var(--text);text-align:left;min-height:30px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}',
     '.mod-magie .mg-hrs{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}',
-    '.mod-magie .mg-h{min-height:44px;min-width:64px;padding:0 14px;border-radius:999px;border:1px solid var(--pc);background:var(--pbg);font-weight:600;font-size:16px;color:var(--text);white-space:nowrap}',
+    '.mod-magie .mg-h{min-height:44px;min-width:64px;padding:0 14px;border-radius:10px;border:1px solid var(--pc);background:var(--pbg);font-weight:600;font-size:15px;color:var(--text);white-space:nowrap;font-variant-numeric:tabular-nums}',
     '.mod-magie .mg-acts{display:flex;gap:8px;margin-top:8px;max-width:460px}',
     '.mod-magie .mg-acts .mg-btn{flex:1 1 0;min-width:0}',
-    '.mod-magie .mg-btn{min-height:44px;padding:0 14px;border-radius:var(--radius);border:1px solid var(--line);background:var(--surface);font-weight:500;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;color:var(--text)}',
+    '.mod-magie .mg-btn{min-height:44px;padding:0 16px;border-radius:var(--radius);border:1px solid var(--line);background:var(--surface);font-weight:500;display:inline-flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap;color:var(--text)}',
     '.mod-magie .mg-btn svg{width:18px;height:18px;flex:none}',
     '.mod-magie .mg-btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-text);font-weight:600}',
+    '.mod-magie .mg-btn.pri svg{opacity:.9}',
     '.mod-magie .mg-btn.blk{width:100%}',
     '.mod-magie .mg-btn:disabled{opacity:.5;cursor:default}',
-    '.mod-magie .mg-btn:focus-visible,.mod-magie .mg-chip:focus-visible,.mod-magie .mg-seg button:focus-visible,.mod-magie .mg-h:focus-visible,.mod-magie .mg-hb:focus-visible,.mod-magie .mg-link:focus-visible,.mod-magie .mg-name:focus-visible{outline:3px solid var(--focus);outline-offset:2px}',
-    /* Créneaux à proposer */
-    '.mod-magie .mg-day{margin-top:16px}',
-    '.mod-magie .mg-day>h4{font-size:15px;font-weight:600;margin:0 0 8px}',
-    '.mod-magie .mg-day.full>h4{margin:0;font-weight:500;color:var(--text-sub);font-size:14px}',
-    '.mod-magie .mg-pblk{border-radius:var(--radius);border-left:4px solid var(--pc);padding:8px 10px 10px 12px;background:var(--pbg)}',
-    '.mod-magie .mg-pblk+.mg-pblk,.mod-magie .mg-pblk+.mg-pgrey,.mod-magie .mg-pgrey+.mg-pblk{margin-top:8px}',
-    '.mod-magie .mg-ph{display:flex;align-items:center;gap:8px;font-weight:600;font-size:14px}',
+    '.mod-magie .mg-btn:focus-visible,.mod-magie .mg-chip:focus-visible,.mod-magie .mg-seg button:focus-visible,.mod-magie .mg-h:focus-visible,.mod-magie .mg-t:focus-visible,.mod-magie .mg-link:focus-visible,.mod-magie .mg-name:focus-visible,.mod-magie .mg-tgl:focus-visible{outline:3px solid var(--focus);outline-offset:2px}',
+    /* Créneaux à proposer : jour > praticienne > heures */
+    '.mod-magie .mg-tools{display:flex;gap:6px;margin:4px 0 0;flex-wrap:wrap;align-items:center}',
+    '.mod-magie .mg-tools .mg-sp{flex:1}',
+    '.mod-magie .mg-legend{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--text-sub)}',
+    '.mod-magie .mg-legend i{width:6px;height:6px;border-radius:50%;background:var(--clay);display:inline-block}',
+    '.mod-magie .mg-day{margin-top:20px}',
+    '.mod-magie .mg-day>h4{font-family:var(--serif);font-size:20px;font-weight:600;margin:0 0 8px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;line-height:1.2}',
+    '.mod-magie .mg-day>h4 small{font-family:var(--sans,inherit);font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--clay)}',
+    '.mod-magie .mg-day.full>h4{margin:0;font-size:17px;font-weight:500;color:var(--text-sub)}',
+    '.mod-magie .mg-pblk{border-radius:var(--radius);border:1px solid var(--line);background:var(--surface);padding:10px 12px 12px}',
+    '.mod-magie .mg-pblk+.mg-pblk,.mod-magie .mg-pblk+.mg-pgrey,.mod-magie .mg-pgrey+.mg-pblk,.mod-magie .mg-alt+.mg-pblk,.mod-magie .mg-pblk+.mg-alt{margin-top:8px}',
+    '.mod-magie .mg-ph{display:flex;align-items:center;gap:8px;font-weight:600;font-size:14.5px;min-height:32px}',
     '.mod-magie .mg-ph small{font-weight:400;color:var(--text-sub);font-size:13px}',
+    '.mod-magie .mg-ph .mg-sp{flex:1}',
+    '.mod-magie .mg-ph .mg-link{min-height:36px;font-size:13.5px;display:inline-flex;align-items:center;gap:4px}',
+    '.mod-magie .mg-ph .mg-link svg{width:16px;height:16px}',
     '.mod-magie .mg-pgrey{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);padding:2px 2px 2px 4px}',
     '.mod-magie .mg-pgrey .mg-dot{opacity:.6}',
-    '.mod-magie .mg-hc{display:inline-flex;align-items:stretch;min-height:44px;border-radius:999px;border:1px solid var(--pc);background:var(--surface);overflow:hidden}',
-    '.mod-magie .mg-hc.off{opacity:.5;border-style:dashed}',
-    '.mod-magie .mg-hk{position:relative;display:grid;place-items:center;width:40px;flex:none;cursor:pointer}',
-    '.mod-magie .mg-hk input{position:absolute;inset:0;opacity:0;width:100%;height:100%;margin:0;cursor:pointer}',
-    '.mod-magie .mg-hk span{width:22px;height:22px;border-radius:6px;border:2px solid var(--muted);display:grid;place-items:center;color:var(--accent-text)}',
-    '.mod-magie .mg-hk span svg{width:15px;height:15px;opacity:0}',
-    '.mod-magie .mg-hk input:checked+span{background:var(--accent);border-color:var(--accent)}',
-    '.mod-magie .mg-hk input:checked+span svg{opacity:1}',
-    '.mod-magie .mg-hk input:focus-visible+span{outline:3px solid var(--focus);outline-offset:2px}',
-    '.mod-magie .mg-hb{border:0;background:transparent;padding:0 14px 0 2px;font-weight:600;font-size:16px;color:var(--text);white-space:nowrap;display:inline-flex;align-items:center;gap:4px}',
-    '.mod-magie .mg-hb svg{width:16px;height:16px;color:var(--text-sub)}',
+    '.mod-magie .mg-tg{display:grid;grid-template-columns:repeat(auto-fill,minmax(66px,1fr));gap:6px;margin-top:8px}',
+    '.mod-magie .mg-t{position:relative;min-height:44px;min-width:0;padding:0 4px;border-radius:10px;border:1px dashed var(--line-3,var(--line));background:transparent;color:var(--muted);font-weight:500;font-size:15px;font-variant-numeric:tabular-nums;white-space:nowrap}',
+    '.mod-magie .mg-t.on{border-style:solid;border-color:var(--pc);background:var(--pbg);color:var(--text);font-weight:600}',
+    '.mod-magie .mg-t.id::after{content:"";position:absolute;top:6px;right:6px;width:5px;height:5px;border-radius:50%;background:var(--clay)}',
     '.mod-magie .mg-alt{font-size:13px;color:var(--text-sub);padding:0 2px 0 4px;margin-top:6px;line-height:20px;min-height:40px;display:flex;align-items:center;flex-wrap:wrap;column-gap:4px}',
     '.mod-magie .mg-alt .mg-dot{margin-right:6px;vertical-align:-1px}',
-    '.mod-magie .mg-alt button{display:inline-block;border:0;background:transparent;color:var(--accent);font-weight:500;font-size:14px;min-height:40px;line-height:20px;padding:0;white-space:nowrap}',
-    '.mod-magie .mg-alt+.mg-pblk,.mod-magie .mg-pblk+.mg-alt{margin-top:8px}',
-    '.mod-magie .mg-tools{display:flex;gap:4px;margin:2px 0 0;flex-wrap:wrap}',
-    '.mod-magie .mg-foot{position:sticky;bottom:0;z-index:3;margin-top:22px;background:var(--surface);border-top:1px solid var(--line);box-shadow:0 -6px 18px var(--shadow);padding:12px 18px calc(12px + env(safe-area-inset-bottom,0px));display:flex;align-items:center;gap:12px;flex-wrap:wrap}',
+    '.mod-magie .mg-alt button{display:inline-block;border:0;background:transparent;color:var(--accent);font-weight:600;font-size:14px;min-height:40px;line-height:20px;padding:0;white-space:nowrap}',
+    '.mod-magie .mg-foot{position:sticky;bottom:0;z-index:3;margin-top:24px;background:var(--surface);border-top:1px solid var(--line);box-shadow:0 -6px 18px var(--shadow);padding:12px 20px calc(12px + env(safe-area-inset-bottom,0px));display:flex;align-items:center;gap:12px;flex-wrap:wrap}',
+    '@media (max-width:699px){.mod-magie .mg-foot{padding-left:16px;padding-right:16px}}',
     '.mod-magie .mg-foot .mg-fi{flex:1 1 160px;font-size:13px;color:var(--text-sub);min-width:0}',
     '.mod-magie .mg-foot .mg-fi b{color:var(--text);font-size:15px}',
     '.mod-magie .mg-foot .mg-btn{flex:1 1 200px}',
-    '.mod-magie .mg-banner{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;border-radius:var(--radius);background:var(--surface);border:1px solid var(--accent);border-left:6px solid var(--accent);margin-bottom:12px}',
+    '.mod-magie .mg-banner{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;border-radius:var(--radius);background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--accent);margin-bottom:12px}',
     '.mod-magie .mg-banner span{flex:1 1 200px;font-weight:500}',
     '.mod-magie .mg-err{padding:14px;border-radius:var(--radius);border:1px solid var(--danger);color:var(--text);background:var(--surface)}',
     '.mod-magie .mg-load{display:flex;align-items:center;gap:10px;color:var(--text-sub);padding:22px 4px}',
@@ -187,43 +225,39 @@
     '@keyframes mgspin{to{transform:rotate(360deg)}}',
     '.mod-magie .mg-busy{font-size:12px;color:var(--text-sub);display:inline-flex;align-items:center;gap:6px;font-weight:400}',
     '.mod-magie .mg-busy .mg-spin{width:12px;height:12px}',
-    '@media (max-width:699px){.mod-magie .mg-sum{grid-template-columns:1fr 1fr;gap:8px}.mod-magie .mg-card{padding:12px}.mod-magie .mg-big b{font-size:28px}.mod-magie .mg-big{flex-wrap:wrap;gap:0 6px}.mod-magie .mg-big span{font-size:14px}}',
+    '@media (max-width:699px){.mod-magie .mg-sum{grid-template-columns:1fr 1fr;gap:8px}.mod-magie .mg-card{padding:12px}.mod-magie .mg-big b{font-size:32px}.mod-magie .mg-big{flex-wrap:wrap;gap:0 6px}.mod-magie .mg-big span{font-size:13px}}',
     '@media (max-width:370px){.mod-magie .mg-sum{grid-template-columns:1fr}}',
     /* Studio */
-    '.mod-magie.mg-studio .mg-st{display:grid;grid-template-columns:minmax(220px,300px) 1fr;gap:20px;align-items:start}',
+    '.mod-magie.mg-studio .mg-st{display:grid;grid-template-columns:minmax(240px,320px) 1fr;gap:24px;align-items:start}',
     '.mod-magie .mg-prev{position:sticky;top:0;z-index:2}',
-    '.mod-magie .mg-cv{position:relative;width:100%;aspect-ratio:9/16;border-radius:14px;overflow:hidden;background:var(--surface-2);box-shadow:0 8px 28px var(--shadow);border:1px solid var(--line)}',
+    '.mod-magie .mg-cv{position:relative;width:100%;aspect-ratio:9/16;border-radius:14px;overflow:hidden;background:var(--surface-2);box-shadow:0 10px 30px var(--shadow);border:1px solid var(--line)}',
     '.mod-magie .mg-cv canvas{position:absolute;inset:0;width:100%;height:100%;display:block}',
-    '.mod-magie .mg-cv .mg-safe{position:absolute;left:0;right:0;pointer-events:none;border:0 dashed var(--accent);opacity:0;transition:opacity .2s}',
-    '.mod-magie .mg-pager{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:8px}',
+    '.mod-magie .mg-cv .mg-load{position:absolute;inset:0;justify-content:center}',
+    '.mod-magie .mg-pager{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:8px;flex-wrap:wrap}',
     '.mod-magie .mg-pager button{min-width:44px;min-height:44px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-weight:600}',
     '.mod-magie .mg-pager button.on{background:var(--accent);color:var(--accent-text);border-color:var(--accent)}',
     '.mod-magie .mg-note{font-size:13px;color:var(--text-sub);text-align:center;margin:8px 0 0}',
-    '.mod-magie .mg-themes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}',
-    '.mod-magie .mg-th{border:2px solid var(--line);border-radius:var(--radius);padding:0;background:var(--surface);overflow:hidden;display:flex;flex-direction:column;min-height:44px}',
+    '.mod-magie .mg-themes{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}',
+    '.mod-magie .mg-th{border:1px solid var(--line);border-radius:var(--radius);padding:0;background:var(--surface);overflow:hidden;display:flex;flex-direction:column;min-height:44px;min-width:0}',
     '.mod-magie .mg-th.on{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}',
-    '.mod-magie .mg-th i{display:grid;place-items:center;height:56px;font-style:normal;font-size:22px;font-weight:600;background:var(--tb);color:var(--tt)}',
-    '.mod-magie .mg-th i b{display:block;width:30px;height:6px;border-radius:3px;background:var(--ta);margin-top:2px}',
-    '.mod-magie .mg-th span{font-size:12px;font-weight:500;padding:5px 4px;text-align:center;line-height:1.2;color:var(--text)}',
+    '.mod-magie .mg-th i{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;height:62px;font-style:normal;font-family:var(--serif);font-size:24px;font-weight:600;background:var(--tb);color:var(--tt);line-height:1}',
+    '.mod-magie .mg-th i b{display:block;width:22px;height:2px;background:var(--ta)}',
+    '.mod-magie .mg-th span{font-size:12px;font-weight:500;padding:6px 2px;text-align:center;line-height:1.2;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
     '.mod-magie .mg-inp{width:100%;min-height:44px;border-radius:var(--radius);border:1px solid var(--line);background:var(--surface);color:var(--text);padding:0 12px;font:inherit;font-size:16px}',
     '.mod-magie .mg-inp:focus{outline:3px solid var(--focus);outline-offset:1px}',
     '.mod-magie .mg-txt{display:grid;gap:8px}',
     '.mod-magie .mg-txt label{display:grid;gap:4px;font-size:13px;color:var(--text-sub)}',
     '.mod-magie .mg-fonts .mg-chip{font-size:16px}',
-    '.mod-magie .mg-colrow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:8px}',
+    '.mod-magie .mg-colrow{display:flex;align-items:center;gap:2px;flex-wrap:wrap;margin-bottom:8px}',
     '.mod-magie .mg-colrow>b{flex-basis:100%;font-size:13px;font-weight:500;color:var(--text-sub);margin-bottom:-2px}',
-    '.mod-magie .mg-colrow{gap:2px}',
     '.mod-magie .mg-sw{width:44px;height:44px;border-radius:50%;border:0;background:transparent;display:grid;place-items:center;padding:0}',
     '.mod-magie .mg-sw i{width:30px;height:30px;border-radius:50%;background:var(--c);box-shadow:inset 0 0 0 1px var(--line)}',
     '.mod-magie .mg-sw.on i{box-shadow:0 0 0 3px var(--surface),0 0 0 5px var(--accent)}',
-    '.mod-magie .mg-pick{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);padding:0;background:var(--surface);overflow:hidden;cursor:pointer}',
-    '.mod-magie .mg-pick::-webkit-color-swatch-wrapper{padding:6px}',
-    '.mod-magie .mg-pick::-webkit-color-swatch{border-radius:50%;border:0}',
     '.mod-magie .mg-slider{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;font-size:13px;color:var(--text-sub);min-height:44px}',
     '.mod-magie .mg-slider input{width:100%;accent-color:var(--accent);min-height:32px}',
     '.mod-magie .mg-tog{display:flex;align-items:center;gap:10px;min-height:44px;cursor:pointer}',
     '.mod-magie .mg-tog input{width:22px;height:22px;accent-color:var(--accent);flex:none}',
-    '.mod-magie .mg-adv{border:1px solid var(--line);border-radius:var(--radius-lg);background:var(--surface-2);margin-bottom:14px}',
+    '.mod-magie .mg-adv{border:1px solid var(--line);border-radius:var(--radius-lg);background:var(--surface);margin-bottom:14px}',
     '.mod-magie .mg-adv>summary{list-style:none;min-height:48px;display:flex;align-items:center;gap:8px;padding:0 14px;font-weight:600;cursor:pointer}',
     '.mod-magie .mg-adv>summary::-webkit-details-marker{display:none}',
     '.mod-magie .mg-adv>summary svg{width:18px;height:18px;margin-left:auto;transition:transform .2s}',
@@ -233,6 +267,7 @@
     '.mod-magie .mg-linkbox input{flex:1;min-width:0;font-size:14px}',
     '.mod-magie .mg-help{font-size:13px;color:var(--text-sub);margin:6px 0 0}',
     '.mod-magie .mg-warn{font-size:13px;color:var(--text);margin:8px 0 0;padding:8px 10px;border-radius:var(--radius);border:1px solid var(--warn);background:var(--surface)}',
+    '.mod-magie .mg-warn .mg-link{min-height:36px;padding:0 4px}',
     '.mod-magie .mg-photo{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}',
     '.mod-magie .mg-file{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}',
     '.mod-magie .mg-steps{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;font-size:13px;color:var(--text-sub);align-items:center}',
@@ -240,15 +275,19 @@
     '@media (max-width:699px){',
     '  .mod-magie.mg-studio .mg-st{grid-template-columns:1fr;gap:12px}',
     '  .mod-magie .mg-prev{background:var(--bg);padding:6px 0 8px;margin:0 -16px;border-bottom:1px solid var(--line)}',
-    '  .mod-magie .mg-cv{width:auto;height:min(38vh,340px);margin:0 auto;aspect-ratio:9/16}',
-    '  .mod-magie.mg-studio .mg-ctl button,.mod-magie.mg-studio .mg-ctl input,.mod-magie.mg-studio .mg-ctl summary{scroll-margin-top:calc(min(38vh,340px) + 90px);scroll-margin-bottom:140px}',
+    '  .mod-magie .mg-cv{width:auto;height:min(40vh,360px);margin:0 auto;aspect-ratio:9/16}',
+    '  .mod-magie.mg-studio .mg-ctl button,.mod-magie.mg-studio .mg-ctl input,.mod-magie.mg-studio .mg-ctl summary{scroll-margin-top:calc(min(40vh,360px) + 90px);scroll-margin-bottom:140px}',
     '  .mod-magie .mg-pager{margin-top:6px}',
     '  .mod-magie .mg-note{margin-top:4px}',
+    '  .mod-magie .mg-themes{gap:6px}',
+    '  .mod-magie .mg-th i{height:54px;font-size:21px}',
     '}'
   ].join('\n');
   function ensureCss() {
-    if (document.querySelector('style[data-module="magie"]')) return;
-    var s = document.createElement('style'); s.setAttribute('data-module', 'magie'); s.textContent = CSS;
+    var old = document.querySelector('style[data-module="magie"]');
+    if (old && old.getAttribute('data-v') === '3') return;
+    if (old) old.remove();
+    var s = document.createElement('style'); s.setAttribute('data-module', 'magie'); s.setAttribute('data-v', '3'); s.textContent = CSS;
     document.head.appendChild(s);
   }
 
@@ -280,42 +319,123 @@
   function dayMid(d) { var p = dp(d); return cap1(JOURS[wd(d)]) + ' ' + p.j + ' ' + MOIS_C[p.m - 1]; }
   function dayLabel(d) { return rel(d) || dayMid(d); }
   function showSec(name) { var c = cfg() || {}, m = c.magie || {}; return name === 'afficherRelances' ? m[name] === true : m[name] !== false; }
+  function isDateStr(s) { return typeof s === 'string' && /^\d{4}-\d\d-\d\d$/.test(s); }
+  function isOpenDay(d) { try { return !!U().dayRules(cfg(), d); } catch (e) { return true; } }
+  function stepMin() { var c = cfg() || {}; return +c.pasMinutes > 0 ? +c.pasMinutes : 15; }
 
-  var PERSO_MAX = 31; // jours, bornes incluses
-  function persoDefault() { var t = G.today(); return { du: t, au: U().addDays(t, 13) }; }
-  function persoCheck(p) {
+  /* --- Jours : périodes rapides + sélection libre dans un calendrier --- */
+  var MAXJ = 31;
+  var PERIODES = [['auj', 'Aujourd\'hui'], ['demain', 'Demain'], ['semaine', 'Semaine prochaine'], ['perso', 'Personnalisée']];
+  var PERS = ['auj', 'demain', 'semaine', 'perso'];
+  function nextWeek() {
+    var u = U(), t = G.today(), mon = u.addDays(t, 7 - ((wd(t) + 6) % 7)), out = [];
+    for (var i = 0; i < 7; i++) out.push(u.addDays(mon, i));
+    return out;
+  }
+  function selDays(st) {
     var t = G.today(), u = U();
-    if (!p || !/^\d{4}-\d\d-\d\d$/.test(p.du || '') || !/^\d{4}-\d\d-\d\d$/.test(p.au || '')) return 'Choisissez les deux dates.';
-    if (p.du < t) return 'La date de début ne peut pas être passée.';
-    if (p.au < p.du) return 'La date de fin doit être après la date de début.';
-    if (u.diffDays(p.du, p.au) + 1 > PERSO_MAX) return PERSO_MAX + ' jours au maximum : rapprochez la date de fin.';
-    return null;
+    if (st.per === 'auj') return [t];
+    if (st.per === 'demain') return [u.addDays(t, 1)];
+    if (st.per === 'semaine') return nextWeek();
+    return Object.keys(st.sel).filter(function (d) { return st.sel[d] && d >= t; }).sort();
   }
-  function persoInit() {
-    var p = ls.get('perso', null), t = G.today(), u = U();
-    if (!p || typeof p !== 'object' || !p.du || !p.au) return persoDefault();
-    p = { du: String(p.du), au: String(p.au) };
-    if (p.du < t) { var len = Math.max(0, u.diffDays(p.du, p.au)); p.du = t; p.au = u.addDays(t, Math.min(len, PERSO_MAX - 1)); }
-    return persoCheck(p) ? persoDefault() : p;
+  function openDays(st) { return selDays(st).filter(isOpenDay); }
+  function contiguous(days) { for (var i = 1; i < days.length; i++) if (U().diffDays(days[i - 1], days[i]) !== 1) return false; return days.length > 1; }
+  function rangeText(days) {
+    if (!days.length) return '';
+    if (days.length === 1) return dayTitle(days[0]);
+    var a = dp(days[0]), b = dp(days[days.length - 1]);
+    if (contiguous(days)) return 'Du ' + dayLong(days[0]) + ' au ' + dayLong(days[days.length - 1]);
+    var lst = days.slice(0, 5).map(function (d) { var p = dp(d); return JOURS_C[wd(d)] + ' ' + p.j + (a.m === b.m ? '' : ' ' + MOIS_C[p.m - 1]); }).join(', ');
+    return lst + (a.m === b.m ? ' ' + MOIS[a.m - 1] : '') + (days.length > 5 ? ', et ' + plural(days.length - 5, 'autre jour', 'autres jours') : '');
   }
-
-  function periods(st) {
-    var u = U(), t = G.today(), w = wd(t), mon = u.addDays(t, -((w + 6) % 7));
-    var c = cfg() || {}, hz = Math.max(1, Math.min(31, (c.magie && +c.magie.horizonJours) || 7));
-    var l = [
-      { id: 'auj', nom: 'Aujourd\'hui et demain', du: t, au: u.addDays(t, 1) },
-      { id: '7j', nom: hz + ' prochains jours', du: t, au: u.addDays(t, hz - 1) },
-      { id: 'semaine', nom: 'Cette semaine', du: t, au: u.addDays(mon, 6) },
-      { id: 'prochaine', nom: 'Semaine prochaine', du: u.addDays(mon, 7), au: u.addDays(mon, 13) }
-    ];
-    if (st.jour) l.push({ id: 'jour', nom: st.jour.du === st.jour.au ? 'Jour affiché' : 'Période affichée', du: st.jour.du, au: st.jour.au });
-    l.push({ id: 'perso', nom: 'Personnalisée', du: st.perso.du, au: st.perso.au, bad: persoCheck(st.perso) });
-    return l;
-  }
-  function curPer(st) { var l = periods(st); return l.filter(function (p) { return p.id === st.per; })[0] || l[1]; }
   function shownPids(st) { return st.qui === 'tous' ? activeIds() : [st.qui]; }
   function key(date, pid, debut) { return date + '|' + pid + '|' + debut; }
-  var PERS = ['auj', '7j', 'semaine', 'prochaine', 'perso'];
+  function ym(d) { return String(d).slice(0, 7); }
+  function ymAdd(m, n) { var y = +m.slice(0, 4), mo = +m.slice(5, 7) - 1 + n; y += Math.floor(mo / 12); mo = ((mo % 12) + 12) % 12; return y + '-' + pad(mo + 1); }
+  function monthLast(m) { var y = +m.slice(0, 4), mo = +m.slice(5, 7); return m + '-' + pad(new Date(Date.UTC(y, mo, 0)).getUTCDate()); }
+
+  /* Remplissage du mois (pour le calendrier) : RDV et indisponibilités via admin.planning, mis en cache */
+  var MCACHE = {};
+  function monthData(m) {
+    if (!MCACHE[m]) {
+      var p = G.API.admin('admin.planning', { du: m + '-01', au: monthLast(m) }).then(function (d) { return { rdvs: (d && d.rdvs) || [], bls: (d && d.blocages) || [] }; });
+      p.catch(function () { delete MCACHE[m]; });
+      MCACHE[m] = p;
+    }
+    return MCACHE[m];
+  }
+  function dayFill(st, d) {
+    var md = st.month && st.month.m === ym(d) ? st.month.data : null;
+    if (!md) return null;
+    var c = cfg() || {}, max = +c.maxClientesJour || 6, rules = null;
+    try { rules = U().dayRules(c, d); } catch (e) { rules = null; }
+    var pids = shownPids(st), n = 0, cap = 0;
+    pids.forEach(function (pid) {
+      var off = md.bls.some(function (b) {
+        if (d < b.du || d > b.au || (b.praticienne !== 'tous' && b.praticienne !== pid)) return false;
+        if (!b.heureDebut && !b.heureFin) return true;
+        if (!rules) return false;
+        return U().toMin(b.heureDebut || '00:00') <= rules.debut && U().toMin(b.heureFin || '23:59') >= rules.fin;
+      });
+      if (off) return;
+      cap += max;
+      n += md.rdvs.filter(function (r) { return r.date === d && r.praticienne === pid && r.type !== 'massage' && (r.statut === 'confirme' || r.statut === 'en_attente'); }).length;
+    });
+    return { n: n, cap: cap, off: cap === 0 };
+  }
+  function loadMonth(st) {
+    var m = st.cal;
+    if (st.month && st.month.m === m && st.month.data) return;
+    st.month = { m: m, data: null };
+    monthData(m).then(function (d) {
+      if (st.closed || st.cal !== m) return;
+      st.month = { m: m, data: d }; renderCal(st);
+    }, function () { /* calendrier sans remplissage */ });
+  }
+
+  function calHTML(st) {
+    var u = U(), t = G.today(), m = st.cal, first = m + '-01', last = monthLast(m);
+    var p = dp(first), lead = (wd(first) + 6) % 7, minM = ym(t), maxM = ymAdd(minM, 6);
+    var h = '<div class="mg-cal" role="group" aria-label="Choisir les jours"><div class="mg-calh">' +
+      '<button type="button" data-a="cal" data-v="-1" aria-label="Mois précédent"' + (m <= minM ? ' disabled' : '') + '>' + ic('chevronL') + '</button>' +
+      '<b aria-live="polite">' + esc(cap1(MOIS[p.m - 1]) + ' ' + p.y) + '</b>' +
+      '<button type="button" data-a="cal" data-v="1" aria-label="Mois suivant"' + (m >= maxM ? ' disabled' : '') + '>' + ic('chevronR') + '</button></div>';
+    h += '<div class="mg-calg">' + ['lun', 'mar', 'mer', 'jeu', 'ven', 'sam', 'dim'].map(function (x) { return '<span class="mg-calw" aria-hidden="true">' + x + '</span>'; }).join('');
+    for (var i = 0; i < lead; i++) h += '<span></span>';
+    for (var d = first; d <= last; d = u.addDays(d, 1)) {
+      var past = d < t, open = isOpenDay(d), on = !!st.sel[d] && !past && open, f = open && !past ? dayFill(st, d) : null;
+      var cls = 'mg-cd' + (on ? ' on' : '') + (d === t ? ' today' : '') + (!open ? ' closed' : '') + (st.plage === d ? ' pl' : '');
+      var bar = '';
+      if (open && !past) {
+        if (f && f.off) bar = '<span class="f na"></span>';
+        else if (f) { var pc100 = f.cap ? Math.min(100, Math.round(f.n / f.cap * 100)) : 0; bar = '<span class="f' + (pc100 >= 100 ? ' full' : '') + '"><i style="width:' + Math.max(pc100, pc100 ? 8 : 0) + '%"></i></span>'; }
+        else bar = '<span class="f"></span>';
+      }
+      var lab = cap1(dayLong(d)) + (past ? ', passé' : !open ? ', fermé' : f ? (f.off ? ', indisponible' : ', ' + f.n + ' rendez-vous sur ' + f.cap) : '');
+      h += '<button type="button" class="' + cls + '" data-a="day" data-d="' + d + '"' + (past || !open ? ' disabled' : '') + ' aria-pressed="' + on + '" aria-label="' + esc(lab) + '"><span class="n">' + dp(d).j + '</span>' + bar + '</button>';
+    }
+    h += '</div><div class="mg-calf"><span class="lg"><i></i>Remplissage</span><span class="lg"><i class="full"></i>Complet</span><span class="sp"></span>' +
+      '<button type="button" class="mg-tgl' + (st.plageOn ? ' on' : '') + '" data-a="plage" aria-pressed="' + !!st.plageOn + '">' + ic('calendar') + 'Plage</button>' +
+      (selDays(st).length ? '<button type="button" class="mg-link" data-a="clear">Effacer</button>' : '') + '</div>';
+    if (st.plageOn) h += '<div class="mg-range" role="status">' + (st.plage ? 'Touchez le dernier jour de la plage.' : 'Touchez le premier jour, puis le dernier : les jours ouverts entre les deux sont ajoutés.') + '</div>';
+    return h + '</div>';
+  }
+  function renderCal(st) {
+    var b = st.root && st.root.querySelector('[data-box="cal"]');
+    if (b) b.innerHTML = st.per === 'perso' ? calHTML(st) : '';
+    var r = st.root && st.root.querySelector('[data-box="range"]');
+    if (r) r.innerHTML = rangeHTML(st);
+  }
+  function rangeHTML(st) {
+    var days = selDays(st), od = days.filter(isOpenDay);
+    if (!days.length) return '<div class="mg-range">' + (st.per === 'perso' ? 'Touchez les jours à remplir dans le calendrier.' : '') + '</div>';
+    var txt = esc(rangeText(days));
+    if (st.per === 'perso') txt = '<b>' + plural(days.length, 'jour') + '</b> · ' + txt;
+    if (!od.length) txt += ' · fermé';
+    else if (od.length < days.length && days.length > 1) txt += ' · ' + plural(od.length, 'jour ouvert', 'jours ouverts');
+    return '<div class="mg-range">' + txt + '</div>';
+  }
 
   function open(opts) {
     opts = opts || {};
@@ -323,14 +443,37 @@
     if (!c || !c.services) { toast('Connectez-vous d\'abord.', 'err'); return null; }
     ensureCss();
     if (M && !M.closed) { try { M.panel.close(); } catch (e) { /* ignore */ } }
-    var ids = activeIds();
+    var ids = activeIds(), t = G.today(), u = U();
     var qui = opts.praticienne || (G.filtre && G.filtre.prat) || 'tous';
     if (qui !== 'tous' && ids.indexOf(qui) < 0) qui = 'tous';
     if (qui === 'tous' && ids.length === 1) qui = ids[0];
-    var jour = opts.du ? { du: opts.du, au: opts.au && opts.au >= opts.du ? opts.au : opts.du } : null;
-    var per = jour ? 'jour' : ls.get('per', '7j');
-    if (PERS.indexOf(per) < 0 && !jour) per = '7j';
-    var st = { qui: qui, per: per, jour: jour, perso: persoInit(), services: defaultServices(), excl: {}, data: null, loading: false, err: null, req: 0,
+    var per = null, sel = {};
+    var jours = Array.isArray(opts.jours) ? opts.jours.filter(function (d, i, a) { return isDateStr(d) && d >= t && a.indexOf(d) === i; }).sort().slice(0, MAXJ) : [];
+    if (!jours.length && isDateStr(opts.du) && opts.du >= t) { // compatibilité : plage du → au
+      var au = isDateStr(opts.au) && opts.au >= opts.du ? opts.au : opts.du;
+      for (var d = opts.du; d <= au && jours.length < MAXJ; d = u.addDays(d, 1)) jours.push(d);
+    }
+    if (jours.length) {
+      if (jours.length === 1 && jours[0] === t) per = 'auj';
+      else if (jours.length === 1 && jours[0] === u.addDays(t, 1)) per = 'demain';
+      else { per = 'perso'; jours.forEach(function (x) { sel[x] = true; }); }
+    } else {
+      per = ls.get('per', 'auj');
+      if (PERS.indexOf(per) < 0) per = 'auj';
+      if (per === 'perso') (ls.get('sel', []) || []).forEach(function (x) { if (isDateStr(x) && x >= t) sel[x] = true; });
+      // Raccourci sans jour ouvert (salon fermé aujourd'hui, demain…) : le suivant qui en a
+      if (per !== 'perso') {
+        var order = PERS.slice(PERS.indexOf(per), 3).concat(['semaine']);
+        for (var oi = 0; oi < order.length; oi++) { if (openDays({ per: order[oi], sel: {} }).length) { per = order[oi]; break; } }
+      }
+    }
+    var calM = ym(t);
+    var firstSel = Object.keys(sel).sort()[0];
+    if (firstSel) calM = ym(firstSel);
+    else if (isDateStr(opts.jour) && opts.jour >= t) calM = ym(opts.jour);
+    if (calM > ymAdd(ym(t), 6)) calM = ym(t);
+    var st = { qui: qui, per: per, sel: sel, cal: calM, plageOn: false, plage: null, month: null,
+      services: defaultServices(), excl: {}, data: null, loading: false, err: null, req: 0,
       changed: false, closed: false, relMore: false, alMore: false, loadP: Promise.resolve() };
     M = st;
     var root = document.createElement('div');
@@ -344,12 +487,23 @@
     return st.panel;
   }
 
+  var loadT = null;
+  function loadSoon(st) { clearTimeout(loadT); st.loading = true; renderBusy(st); loadT = setTimeout(function () { if (!st.closed) load(st); }, 380); }
+  function renderBusy(st) {
+    var b = st.root && st.root.querySelector('[data-box="busy"]');
+    if (b) b.innerHTML = st.loading && st.data ? '<span class="mg-busy" role="status"><span class="mg-spin"></span>Mise à jour…</span>' : '';
+  }
   function load(st) {
-    var my = ++st.req, p = curPer(st);
-    if (p.bad) { st.loading = false; st.err = null; st.data = null; renderMain(st); st.loadP = Promise.resolve(); return st.loadP; }
+    clearTimeout(loadT);
+    var my = ++st.req, days = selDays(st);
+    if (!days.length) { st.loading = false; st.err = null; st.data = null; renderMain(st); st.loadP = Promise.resolve(); return st.loadP; }
     st.loading = true; st.err = null; st.alMore = false; st.relMore = false; renderMain(st);
-    st.loadP = G.API.admin('admin.remplir', { praticienne: st.qui, du: p.du, au: p.au, services: st.services }).then(function (d) {
+    if (st.per === 'perso' || !(st.month && st.month.data)) loadMonth(st);
+    st.loadP = G.API.admin('admin.remplir', { praticienne: st.qui, jours: days, du: days[0], au: days[days.length - 1], services: st.services }).then(function (d) {
       if (my !== st.req || st.closed) return;
+      // Serveur plus ancien (sans « jours ») : on ne garde que les jours choisis
+      var want = {}; days.forEach(function (x) { want[x] = true; });
+      d.jours = (d.jours || []).filter(function (j) { return want[j.date]; });
       st.data = d; st.loading = false; renderMain(st);
     }, function (e) {
       if (my !== st.req || st.closed) return;
@@ -359,6 +513,13 @@
   }
 
   function dayOf(st, date) { return st.data ? st.data.jours.filter(function (x) { return x.date === date; })[0] : null; }
+  // Toutes les heures valides (serveur ≥ 1.3) ; sinon les heures « idéales » sans chevauchement
+  function slotsOf(P) {
+    if (!P) return [];
+    if (Array.isArray(P.toutes) && P.toutes.length) return P.toutes;
+    return (P.creneaux || []).map(function (c) { return { debut: c.debut, fin: c.fin, ordre: c.ordre, classe: c.classe, ideal: true }; });
+  }
+  function isBlocked(P) { return (P.alertes || []).some(function (a) { return a.niveau === 'info'; }); }
 
   function collectAlerts(st) {
     var out = [];
@@ -370,7 +531,6 @@
         if (!al.length) return;
         var crit = al.some(function (a) { return a.niveau === 'critique'; });
         al.sort(function (a, b) { return (a.niveau === 'critique' ? 0 : 1) - (b.niveau === 'critique' ? 0 : 1); });
-        // « Demain : 2 places à remplir » : le jour est déjà dans l'en-tête de la carte
         var txt = String(al[0].texte || '').replace(/^(Aujourd'hui|Aujourd’hui|Demain)\s*:\s*/, '');
         out.push({ date: j.date, pid: pid, niveau: crit ? 'critique' : 'attention', texte: cap1(txt), P: P });
       });
@@ -379,52 +539,47 @@
     return out;
   }
 
-  function checkedItems(st) {
-    var out = [];
-    if (!st.data) return out;
+  function eachSlot(st, fn) {
+    if (!st.data) return;
     st.data.jours.forEach(function (j) {
       shownPids(st).forEach(function (pid) {
-        var P = j.praticiennes[pid]; if (!P) return;
-        (P.creneaux || []).forEach(function (c) {
-          var k = key(j.date, pid, c.debut);
-          if (!st.excl[k]) out.push({ key: k, date: j.date, praticienne: pid, debut: c.debut, fin: c.fin, ordre: c.ordre });
-        });
+        var P = j.praticiennes[pid]; if (!P || isBlocked(P)) return;
+        slotsOf(P).forEach(function (c) { fn(j, pid, c, key(j.date, pid, c.debut)); });
       });
     });
+  }
+  function checkedItems(st) {
+    var out = [];
+    eachSlot(st, function (j, pid, c, k) { if (!st.excl[k]) out.push({ key: k, date: j.date, praticienne: pid, debut: c.debut, fin: c.fin, ordre: c.ordre, ideal: !!c.ideal }); });
     return out;
   }
-  function allSlots(st) {
-    var n = 0;
-    if (st.data) st.data.jours.forEach(function (j) { shownPids(st).forEach(function (pid) { var P = j.praticiennes[pid]; if (P) n += (P.creneaux || []).length; }); });
-    return n;
-  }
+  function allSlots(st) { var n = 0; eachSlot(st, function () { n++; }); return n; }
   function findSlot(st, k) {
     var f = null;
-    if (st.data) st.data.jours.forEach(function (j) { Object.keys(j.praticiennes).forEach(function (pid) { (j.praticiennes[pid].creneaux || []).forEach(function (c) { if (key(j.date, pid, c.debut) === k) f = { date: j.date, pid: pid, c: c }; }); }); });
+    if (st.data) st.data.jours.forEach(function (j) { Object.keys(j.praticiennes).forEach(function (pid) {
+      var P = j.praticiennes[pid];
+      (P.creneaux || []).concat(slotsOf(P)).forEach(function (c) { if (!f && key(j.date, pid, c.debut) === k) f = { date: j.date, pid: pid, c: c }; });
+    }); });
     return f;
   }
 
-  function pStyle(pid) { var c = pc(pid); return '--pc:' + c + ';--pt:' + inkOn(c) + ';--pbg:' + tnt(c, 0.1); }
+  function pStyle(pid) { var c = pc(pid); return '--pc:' + c + ';--pt:' + inkOn(c) + ';--pbg:' + tnt(c, 0.12); }
   function who(pid) { return '<span class="mg-who" style="' + pStyle(pid) + '"><span class="mg-dot"></span>' + esc(pn(pid)) + '</span>'; }
 
   function ctrlHTML(st) {
-    var ids = activeIds(), p = curPer(st), h = '<div class="mg-ctrl">';
-    h += '<div class="mg-f"><span class="mg-lab" id="mg-l-qui">Pour qui</span><div class="mg-seg" role="group" aria-labelledby="mg-l-qui">';
-    if (ids.length > 1) h += '<button type="button" data-a="qui" data-v="tous" class="' + (st.qui === 'tous' ? 'on' : '') + '" aria-pressed="' + (st.qui === 'tous') + '">Les deux</button>';
-    ids.forEach(function (id) {
-      h += '<button type="button" data-a="qui" data-v="' + esc(id) + '" class="pr' + (st.qui === id ? ' on' : '') + '" style="' + pStyle(id) + '" aria-pressed="' + (st.qui === id) + '"><span class="mg-dot"></span>' + esc(pn(id)) + '</button>';
-    });
-    h += '</div></div>';
-    h += '<div class="mg-f"><span class="mg-lab" id="mg-l-per">Période</span><div class="mg-chips" role="group" aria-labelledby="mg-l-per">' + periods(st).map(function (x) {
-      return '<button type="button" class="mg-chip' + (x.id === p.id ? ' on' : '') + '" data-a="per" data-v="' + x.id + '" aria-pressed="' + (x.id === p.id) + '">' + esc(x.nom) + '</button>';
-    }).join('') + '</div>';
-    if (p.id === 'perso') {
-      var t = G.today();
-      h += '<div class="mg-dates"><label>Du<input type="date" data-a="perso" data-k="du" min="' + t + '" value="' + esc(st.perso.du) + '"></label>' +
-        '<label>Au<input type="date" data-a="perso" data-k="au" min="' + esc(st.perso.du >= t ? st.perso.du : t) + '" max="' + esc(U().addDays(st.perso.du >= t ? st.perso.du : t, PERSO_MAX - 1)) + '" value="' + esc(st.perso.au) + '"></label></div>';
+    var ids = activeIds(), h = '<div class="mg-ctrl">';
+    if (ids.length > 1) {
+      h += '<div class="mg-f"><span class="mg-lab" id="mg-l-qui">Pour qui</span><div class="mg-seg" role="group" aria-labelledby="mg-l-qui">';
+      h += '<button type="button" data-a="qui" data-v="tous" class="' + (st.qui === 'tous' ? 'on' : '') + '" aria-pressed="' + (st.qui === 'tous') + '">Les deux</button>';
+      ids.forEach(function (id) {
+        h += '<button type="button" data-a="qui" data-v="' + esc(id) + '" class="' + (st.qui === id ? 'on' : '') + '" style="' + pStyle(id) + '" aria-pressed="' + (st.qui === id) + '"><span class="mg-dot"></span>' + esc(pn(id)) + '</button>';
+      });
+      h += '</div></div>';
     }
-    if (p.bad) h += '<div class="mg-range bad" role="alert">' + esc(p.bad) + '</div></div>';
-    else h += '<div class="mg-range">' + esc(p.du === p.au ? cap1(dayLong(p.du)) : 'Du ' + dayLong(p.du) + ' au ' + dayLong(p.au)) + (p.id === 'perso' ? '\u00a0(' + (U().diffDays(p.du, p.au) + 1) + '\u00a0j)' : '') + '</div></div>';
+    h += '<div class="mg-f"><span class="mg-lab" id="mg-l-per">Jours</span><div class="mg-chips mg-pers" role="group" aria-labelledby="mg-l-per">' + PERIODES.map(function (x) {
+      var on = x[0] === st.per;
+      return '<button type="button" class="mg-chip' + (on ? ' on' : '') + '" data-a="per" data-v="' + x[0] + '" aria-pressed="' + on + '">' + esc(x[1]) + '</button>';
+    }).join('') + '</div><div data-box="range">' + rangeHTML(st) + '</div><div data-box="cal">' + (st.per === 'perso' ? calHTML(st) : '') + '</div></div>';
     h += '<div class="mg-f"><span class="mg-lab" id="mg-l-svc">Prestation à proposer</span><div class="mg-chips" role="group" aria-labelledby="mg-l-svc">';
     var mains = svcList('main'), pieds = svcList('pied');
     function chip(s) {
@@ -445,12 +600,13 @@
   function fmtDur(m) { m = +m || 0; var h = Math.floor(m / 60), r = m % 60; return h ? h + ' h' + (r ? ' ' + pad(r) : '') : r + ' min'; }
 
   function summaryHTML(st) {
-    var d = st.data, pids = Object.keys(d.resume).sort(pratOrder);
+    var d = st.data, pids = Object.keys(d.resume || {}).filter(function (p) { return shownPids(st).indexOf(p) >= 0; }).sort(pratOrder);
+    if (!pids.length || !d.jours.length) return '';
     var h = '<div class="mg-sum' + (pids.length === 1 ? '" style="grid-template-columns:1fr' : '') + '" role="group" aria-label="Résumé">';
     pids.forEach(function (pid) {
       var r = d.resume[pid], taux = r.max ? Math.round(r.clientes / r.max * 100) : 0, n = r.capacite;
       h += '<div class="mg-card" style="' + pStyle(pid) + '"><div class="mg-card-h"><span class="mg-dot"></span>' + esc(pn(pid)) + '</div>' +
-        '<div class="mg-big">' + (n ? '<b>' + n + '</b><span>place' + (n > 1 ? 's' : '') + ' à remplir</span>' : '<b style="font-size:22px">Complet</b>') + '</div>' +
+        '<div class="mg-big">' + (n ? '<b>' + n + '</b><span>place' + (n > 1 ? 's' : '') + ' à remplir</span>' : '<b style="font-size:26px">Complet</b>') + '</div>' +
         '<div class="mg-gauge" role="img" aria-label="Remplie à ' + taux + ' %"><i style="width:' + Math.min(100, taux) + '%"></i></div>' +
         '<p>Remplie à ' + taux + ' %</p></div>';
     });
@@ -464,9 +620,9 @@
 
   function alertsHTML(st) {
     var al = collectAlerts(st);
+    if (!al.length) return '';
     var h = '<section class="mg-sec" aria-labelledby="mg-h-al"><h3 id="mg-h-al">À remplir en priorité</h3>' +
-      '<p class="mg-aide">Les jours proches ou peu remplis où une cliente rentre encore.</p>';
-    if (!al.length) return h + '<div class="mg-empty">Rien d\'urgent : les jours proches sont bien remplis.</div></section>';
+      '<p class="mg-aide">Les heures conseillées : elles remplissent le planning sans laisser de trou. Touchez une heure pour réserver.</p>';
     var lim = st.alMore ? al.length : 4;
     h += '<div class="mg-list">' + al.slice(0, lim).map(function (a) {
       var crit = a.niveau === 'critique';
@@ -505,28 +661,33 @@
     return h + '</section>';
   }
 
+  function timeChip(j, pid, c, st) {
+    var k = key(j.date, pid, c.debut), on = !st.excl[k];
+    return '<button type="button" class="mg-t' + (on ? ' on' : '') + (c.ideal ? ' id' : '') + '" data-a="tg" data-key="' + esc(k) + '" aria-pressed="' + on + '" aria-label="' +
+      esc(hfr(c.debut) + (c.ideal ? ', heure conseillée' : '') + ', dans la story : ' + (on ? 'oui' : 'non')) + '">' + esc(hfr(c.debut)) + '</button>';
+  }
   function slotsHTML(st) {
     var d = st.data, total = allSlots(st), n = checkedItems(st).length;
-    var h = '<section class="mg-sec" aria-labelledby="mg-h-sl"><h3 id="mg-h-sl">Créneaux à proposer' + (total ? '<span class="mg-n" data-n="sel">' + n + '/' + total + ' pour la story</span>' : '') + '</h3>';
+    var h = '<section class="mg-sec" aria-labelledby="mg-h-sl"><h3 id="mg-h-sl">Heures à proposer' + (total ? '<span class="mg-n" data-n="sel">' + n + ' sur ' + total + ' dans la story</span>' : '') + '</h3>';
     if (!d.jours.length) {
-      var p = curPer(st);
-      return h + '<div class="mg-empty" style="margin-top:10px">' + (p.au < G.today() ? 'Ce jour est passé : choisissez une autre période.' : 'Le salon est fermé sur cette période.') + '</div></section>';
+      var days = selDays(st);
+      return h + '<div class="mg-empty" style="margin-top:10px">' + (days.length === 1 ? 'Le salon est fermé ce jour-là : choisissez un autre jour.' : 'Le salon est fermé sur ces jours : choisissez-en d\'autres.') + '</div></section>';
     }
-    h += '<p class="mg-aide">Touchez une heure pour réserver. Les heures cochées iront dans la story.</p>';
-    if (total) h += '<div class="mg-tools"><button type="button" class="mg-link" data-a="all" data-v="1">Tout cocher</button><button type="button" class="mg-link" data-a="all" data-v="0">Tout décocher</button></div>';
+    if (total) {
+      h += '<p class="mg-aide">Toutes les heures où une cliente peut encore commencer. Touchez une heure pour la retirer de la story ; la réservation par lien revérifie chaque heure.</p>';
+      h += '<div class="mg-tools"><button type="button" class="mg-link" data-a="all" data-v="1">Tout</button><button type="button" class="mg-link" data-a="all" data-v="0">Aucune</button>' +
+        '<button type="button" class="mg-link" data-a="all" data-v="ideal">Conseillées seulement</button><span class="mg-sp"></span><span class="mg-legend"><i></i>Heure conseillée</span></div>';
+    }
     d.jours.forEach(function (j) {
       var live = [], grey = [];
       shownPids(st).forEach(function (pid) {
         var P = j.praticiennes[pid]; if (!P) return;
-        var blocked = (P.alertes || []).some(function (a) { return a.niveau === 'info'; });
-        var cr = P.creneaux || [], alts = P.alternatives || [];
-        if (!blocked && P.capacite > 0 && cr.length) {
-          live.push('<div class="mg-pblk" style="' + pStyle(pid) + '"><div class="mg-ph">' + esc(pn(pid)) + '</div><div class="mg-hrs">' + cr.map(function (c) {
-            var k = key(j.date, pid, c.debut), on = !st.excl[k];
-            return '<span class="mg-hc' + (on ? '' : ' off') + '" data-key="' + esc(k) + '"><label class="mg-hk"><input type="checkbox" data-a="chk" data-key="' + esc(k) + '"' + (on ? ' checked' : '') +
-              ' aria-label="Mettre ' + esc(hfr(c.debut)) + ' avec ' + esc(pn(pid)) + ' dans la story"><span>' + ic('check') + '</span></label>' +
-              '<button type="button" class="mg-hb" data-a="book" data-key="' + esc(k) + '" aria-label="Réserver ' + esc(dayLabel(j.date) + ' à ' + hfr(c.debut) + ' avec ' + pn(pid)) + '">' + esc(hr(c.debut, c.fin)) + '</button></span>';
-          }).join('') + '</div></div>');
+        var blocked = isBlocked(P), list = slotsOf(P), alts = P.alternatives || [];
+        if (!blocked && list.length) {
+          var places = P.capacite > 0 ? ' · ' + plural(P.capacite, 'place') : '';
+          live.push('<div class="mg-pblk" style="' + pStyle(pid) + '"><div class="mg-ph"><span class="mg-dot"></span>' + esc(pn(pid)) + '<small>' + plural(list.length, 'heure') + places + '</small><span class="mg-sp"></span>' +
+            '<button type="button" class="mg-link" data-a="bookp" data-d="' + j.date + '" data-p="' + esc(pid) + '">' + ic('plus') + 'Réserver</button></div>' +
+            '<div class="mg-tg">' + list.map(function (c) { return timeChip(j, pid, c, st); }).join('') + '</div></div>');
         } else if (!blocked && P.placesRestantes > 0 && alts.length) {
           live.push('<div class="mg-alt" style="' + pStyle(pid) + '"><span class="mg-dot"></span><span>' + esc(pn(pid)) + ' · encore possible : </span>' + alts.slice(0, 1).map(function (a, ai) {
             return '<button type="button" data-a="alt" data-d="' + j.date + '" data-p="' + esc(pid) + '" data-i="' + ai + '">' + esc(svcName(a.service, true) || a.nom) + ' à ' + esc(hr(a.debut, a.fin)) + '</button>';
@@ -535,13 +696,14 @@
           grey.push({ pid: pid, txt: blocked ? 'indisponible' : P.clientes >= P.max ? 'complet' : 'plus de place' });
         }
       });
+      var r = rel(j.date), title = cap1(dayLong(j.date));
       if (!live.length) {
-        var all = grey.every(function (g) { return g.txt === grey[0].txt; });
-        var t = !grey.length ? '' : (all ? ' · ' + (grey.length > 1 && grey[0].txt === 'complet' ? 'complet' : grey[0].txt) + (grey.length === 1 && shownPids(st).length === 1 ? '' : '') : ' · ' + grey.map(function (g) { return pn(g.pid) + ' ' + g.txt; }).join(', '));
-        h += '<div class="mg-day full"><h4>' + esc(cap1(dayLabel(j.date)) + t) + '</h4></div>';
+        var same = grey.every(function (g) { return g.txt === grey[0].txt; });
+        var t = !grey.length ? '' : ' · ' + (same ? grey[0].txt : grey.map(function (g) { return pn(g.pid) + ' ' + g.txt; }).join(', '));
+        h += '<div class="mg-day full"><h4>' + esc(title + t) + '</h4></div>';
         return;
       }
-      h += '<div class="mg-day"><h4>' + esc(dayTitle(j.date)) + '</h4>' + live.join('') + grey.map(function (g) {
+      h += '<div class="mg-day"><h4>' + (r ? '<small>' + esc(r) + '</small>' : '') + esc(title) + '</h4>' + live.join('') + grey.map(function (g) {
         return '<div class="mg-pgrey" style="' + pStyle(g.pid) + '"><span class="mg-dot"></span>' + esc(pn(g.pid) + ' : ' + g.txt) + '</div>';
       }).join('') + '</div>';
     });
@@ -550,34 +712,42 @@
 
   function footHTML(st) {
     var n = checkedItems(st).length;
-    return '<div class="mg-foot"><div class="mg-fi" data-n="foot"><b>' + plural(n, 'heure', 'heures') + '</b> pour la story</div>' +
-      '<button type="button" class="mg-btn pri" data-a="story"' + (n ? '' : ' disabled') + '>' + ic('image') + 'Créer la story</button></div>';
+    return '<div class="mg-foot"><div class="mg-fi" data-n="foot"><b>' + plural(n, 'heure', 'heures') + '</b> dans la story</div>' +
+      '<button type="button" class="mg-btn pri" data-a="story"' + (n ? '' : ' disabled') + '>' + ic('sparkle') + 'Créer la story</button></div>';
   }
 
   function renderMain(st) {
     if (st.closed || !st.root) return;
     var h = '<div class="mg-pad">';
-    if (st.changed && st.data) h += '<div class="mg-banner" role="status"><span>Le planning a changé : pensez à mettre la story à jour.</span><button type="button" class="mg-btn pri" data-a="story">' + ic('image') + 'Mettre la story à jour</button></div>';
+    if (st.changed && st.data) h += '<div class="mg-banner" role="status"><span>Le planning a changé : pensez à mettre la story à jour.</span><button type="button" class="mg-btn pri" data-a="story">' + ic('sparkle') + 'Mettre la story à jour</button></div>';
     h += ctrlHTML(st);
-    var bad = curPer(st).bad;
-    if (bad) h += '<div class="mg-sec"><div class="mg-empty">Corrigez les dates ci-dessus pour voir les places à remplir.</div></div>';
+    h += '<div data-box="busy" style="min-height:0;margin-top:8px"></div>';
+    var none = !selDays(st).length;
+    if (none) h += '<div class="mg-sec"><div class="mg-empty">Choisissez au moins un jour pour voir les heures à proposer.</div></div>';
     else if (st.err) h += '<div class="mg-sec"><div class="mg-err" role="alert">' + esc(st.err) + ' <button type="button" class="mg-btn" data-a="retry">Réessayer</button></div></div>';
     else if (!st.data) h += '<div class="mg-load" role="status"><span class="mg-spin"></span>Analyse des agendas…</div>';
     else {
-      if (st.loading) h += '<div class="mg-busy" role="status" style="margin-top:10px"><span class="mg-spin"></span>Mise à jour…</div>';
-      h += summaryHTML(st) + (showSec('afficherPriorites') ? alertsHTML(st) : '') + (showSec('afficherRelances') ? relancesHTML(st) : '') + slotsHTML(st);
+      h += summaryHTML(st) + (showSec('afficherPriorites') && st.data.jours.length > 1 ? alertsHTML(st) : '') + (showSec('afficherRelances') ? relancesHTML(st) : '') + slotsHTML(st);
     }
     h += '</div>';
-    if (!bad && st.data && !st.err && allSlots(st)) h += footHTML(st);
+    if (!none && st.data && !st.err && allSlots(st)) h += footHTML(st);
     else h += '<div style="height:24px"></div>';
     st.root.innerHTML = h;
+    renderBusy(st);
   }
 
   function updCounts(st) {
     var n = checkedItems(st).length, total = allSlots(st);
-    var a = st.root.querySelector('[data-n="sel"]'); if (a) a.textContent = n + '/' + total + ' pour la story';
-    var f = st.root.querySelector('[data-n="foot"]'); if (f) f.innerHTML = '<b>' + plural(n, 'heure', 'heures') + '</b> pour la story';
+    var a = st.root.querySelector('[data-n="sel"]'); if (a) a.textContent = n + ' sur ' + total + ' dans la story';
+    var f = st.root.querySelector('[data-n="foot"]'); if (f) f.innerHTML = '<b>' + plural(n, 'heure', 'heures') + '</b> dans la story';
     var b = st.root.querySelector('.mg-foot [data-a="story"]'); if (b) b.disabled = !n;
+  }
+  function syncChips(st) {
+    Array.prototype.forEach.call(st.root.querySelectorAll('.mg-t[data-key]'), function (el) {
+      var on = !st.excl[el.getAttribute('data-key')];
+      el.classList.toggle('on', on); el.setAttribute('aria-pressed', String(on));
+    });
+    updCounts(st);
   }
 
   function afterBook(st, r) {
@@ -588,31 +758,83 @@
     try { p = G.newRdv(prefill); } catch (e) { toast((e && e.message) || 'Création impossible', 'err'); return; }
     if (p && typeof p.then === 'function') p.then(function (r) { afterBook(st, r); }, function () { /* annulé */ });
   }
+  function saveSel(st) { if (st.per === 'perso') ls.set('sel', selDays(st)); }
 
   function bindMain(st) {
     var root = st.root;
     root.addEventListener('click', function (e) {
-      var b = e.target.closest('[data-a]'); if (!b || !root.contains(b)) return;
+      var b = e.target.closest('[data-a]'); if (!b || !root.contains(b) || b.disabled) return;
       var a = b.getAttribute('data-a');
-      if (a === 'chk' || a === 'perso') return; // géré par 'change'
       if (a === 'qui') { var v = b.getAttribute('data-v'); if (v !== st.qui) { st.qui = v; st.excl = {}; load(st); } return; }
-      if (a === 'per') { var pv = b.getAttribute('data-v'); if (pv !== st.per) { st.per = pv; if (pv !== 'jour') ls.set('per', pv); load(st); } return; }
+      if (a === 'per') {
+        var pv = b.getAttribute('data-v');
+        if (pv === st.per) return;
+        var before = selDays(st).filter(isOpenDay);
+        st.per = pv; ls.set('per', pv);
+        if (pv === 'perso') {
+          // Calendrier vide : on part des jours affichés jusque-là
+          if (!selDays(st).length) { st.sel = {}; before.forEach(function (x) { st.sel[x] = true; }); }
+          var f0 = selDays(st)[0]; if (f0) st.cal = ym(f0);
+          saveSel(st);
+        }
+        st.plageOn = false; st.plage = null;
+        load(st); return;
+      }
+      if (a === 'cal') {
+        st.cal = ymAdd(st.cal, +b.getAttribute('data-v') || 0); st.plage = null;
+        renderCal(st); loadMonth(st); return;
+      }
+      if (a === 'plage') { st.plageOn = !st.plageOn; st.plage = null; renderCal(st); return; }
+      if (a === 'clear') { st.sel = {}; st.plage = null; saveSel(st); renderCal(st); load(st); return; }
+      if (a === 'day') {
+        var d = b.getAttribute('data-d'), n0 = selDays(st).length;
+        if (st.plageOn) {
+          if (!st.plage) { st.plage = d; st.sel[d] = true; }
+          else {
+            var lo = st.plage < d ? st.plage : d, hi = st.plage < d ? d : st.plage, added = 0;
+            for (var x = lo; x <= hi; x = U().addDays(x, 1)) {
+              if (x >= G.today() && isOpenDay(x) && !st.sel[x]) { if (selDays(st).length >= MAXJ) { toast(MAXJ + ' jours au maximum.', 'info'); break; } st.sel[x] = true; added++; }
+            }
+            st.plage = null; st.plageOn = false;
+          }
+        } else if (st.sel[d]) delete st.sel[d];
+        else {
+          if (n0 >= MAXJ) { toast(MAXJ + ' jours au maximum : retirez-en un d\'abord.', 'info'); return; }
+          st.sel[d] = true;
+        }
+        saveSel(st); renderCal(st);
+        if (selDays(st).length) loadSoon(st); else load(st);
+        return;
+      }
       if (a === 'svc') {
-        var id = b.getAttribute('data-v'), cat = svcCat(id), cur = st.services.slice();
-        if (cur.indexOf(id) >= 0) { if (cur.length === 1) { toast('Gardez au moins une prestation.', 'info'); return; } cur = cur.filter(function (x) { return x !== id; }); }
-        else { cur = cur.filter(function (x) { return svcCat(x) !== cat; }); cur.push(id); }
-        cur.sort(function (x, y) { return (svcCat(x) === 'pied') - (svcCat(y) === 'pied'); });
-        st.services = cur; st.excl = {}; load(st); return;
+        var id = b.getAttribute('data-v'), cat = svcCat(id), cur2 = st.services.slice();
+        if (cur2.indexOf(id) >= 0) { if (cur2.length === 1) { toast('Gardez au moins une prestation.', 'info'); return; } cur2 = cur2.filter(function (x) { return x !== id; }); }
+        else { cur2 = cur2.filter(function (x) { return svcCat(x) !== cat; }); cur2.push(id); }
+        cur2.sort(function (x, y) { return (svcCat(x) === 'pied') - (svcCat(y) === 'pied'); });
+        st.services = cur2; st.excl = {}; load(st); return;
       }
       if (a === 'retry') { load(st); return; }
       if (a === 'svc-open') { st.svcOpen = b.getAttribute('data-v') === '1'; renderMain(st); return; }
       if (a === 'al-more') { st.alMore = true; renderMain(st); return; }
       if (a === 'rel-more') { st.relMore = true; renderMain(st); return; }
-      if (a === 'goday') { var d = b.getAttribute('data-d'); try { st.panel.close(); } catch (x) { /* ignore */ } try { G.goDate(d, 'jour'); } catch (x2) { /* ignore */ } return; }
+      if (a === 'goday') { var gd = b.getAttribute('data-d'); try { st.panel.close(); } catch (x1) { /* ignore */ } try { G.goDate(gd, 'jour'); } catch (x2) { /* ignore */ } return; }
+      if (a === 'tg') {
+        var k = b.getAttribute('data-key');
+        if (st.excl[k]) delete st.excl[k]; else st.excl[k] = true;
+        var on = !st.excl[k]; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on));
+        updCounts(st); return;
+      }
       if (a === 'book') {
         var f = findSlot(st, b.getAttribute('data-key')); if (!f) return;
         newRdv(st, { praticienne: f.pid, date: f.date, debut: f.c.debut, services: (f.c.ordre && f.c.ordre.length ? f.c.ordre : st.services).slice() });
         return;
+      }
+      if (a === 'bookp') {
+        var bd = b.getAttribute('data-d'), bp = b.getAttribute('data-p'), Pj = dayOf(st, bd), Pb = Pj && Pj.praticiennes[bp];
+        var first = Pb && ((Pb.creneaux || [])[0] || slotsOf(Pb)[0]);
+        var pre = { praticienne: bp, date: bd, services: st.services.slice() };
+        if (first) { pre.debut = first.debut; if (first.ordre && first.ordre.length) pre.services = first.ordre.slice(); }
+        newRdv(st, pre); return;
       }
       if (a === 'alt') {
         var jd = dayOf(st, b.getAttribute('data-d')), ap = b.getAttribute('data-p'), Pa = jd && jd.praticiennes[ap];
@@ -624,104 +846,88 @@
         var r = (st.data.relances || [])[+b.getAttribute('data-i')]; if (!r) return;
         if (a === 'rel-copy') { copyText(relMsg(r), 'Message copié pour ' + r.prenom); return; }
         if (a === 'fiche') { try { G.openClient(r.cle); } catch (x3) { /* ignore */ } return; }
-        var s = r.suggestion, pre = { cle: r.cle, prenom: r.prenom, nom: r.nom, praticienne: (s && s.praticienne) || r.praticienne, services: (s && s.ordre && s.ordre.length ? s.ordre : r.services).slice() };
-        if (s) { pre.date = s.date; pre.debut = s.debut; }
-        newRdv(st, pre); return;
+        var s = r.suggestion, pr = { cle: r.cle, prenom: r.prenom, nom: r.nom, praticienne: (s && s.praticienne) || r.praticienne, services: (s && s.ordre && s.ordre.length ? s.ordre : r.services).slice() };
+        if (s) { pr.date = s.date; pr.debut = s.debut; }
+        newRdv(st, pr); return;
       }
       if (a === 'all') {
-        var on = b.getAttribute('data-v') === '1';
-        st.data.jours.forEach(function (jx) { shownPids(st).forEach(function (pid) { var Px = jx.praticiennes[pid]; if (!Px) return; (Px.creneaux || []).forEach(function (c) { var k = key(jx.date, pid, c.debut); if (on) delete st.excl[k]; else st.excl[k] = true; }); }); });
-        Array.prototype.forEach.call(root.querySelectorAll('input[data-a="chk"]'), function (i) { i.checked = on; var row = i.closest('.mg-hc'); if (row) row.classList.toggle('off', !on); });
-        updCounts(st); return;
+        var mode = b.getAttribute('data-v');
+        eachSlot(st, function (j, pid, c, kk) { var keep = mode === '1' || (mode === 'ideal' && c.ideal); if (keep) delete st.excl[kk]; else st.excl[kk] = true; });
+        syncChips(st); return;
       }
       if (a === 'story') {
         var go = function () { st.changed = false; renderMain(st); openStudio(st); };
         if (st.loading) st.loadP.then(go); else go();
       }
     });
-    root.addEventListener('change', function (e) {
-      var i = e.target; if (!i) return;
-      var a = i.getAttribute('data-a');
-      if (a === 'perso') {
-        var k0 = i.getAttribute('data-k'), np = { du: st.perso.du, au: st.perso.au };
-        np[k0] = i.value || '';
-        // Début déplacé après la fin (ou trop loin) : on garde la même durée
-        if (k0 === 'du' && np.du && /^\d{4}-\d\d-\d\d$/.test(np.du) && np.du >= G.today()) {
-          var len = Math.max(0, Math.min(PERSO_MAX - 1, U().diffDays(st.perso.du, st.perso.au)));
-          if (!np.au || np.au < np.du || U().diffDays(np.du, np.au) + 1 > PERSO_MAX) np.au = U().addDays(np.du, len);
-        }
-        st.perso = np;
-        if (!persoCheck(np)) ls.set('perso', np);
-        st.excl = {}; load(st); return;
-      }
-      if (a !== 'chk') return;
-      var k = i.getAttribute('data-key');
-      if (i.checked) delete st.excl[k]; else st.excl[k] = true;
-      var row = i.closest('.mg-hc'); if (row) row.classList.toggle('off', !i.checked);
-      updCounts(st);
-    });
   }
 
   /* =====================================================================
-   * STUDIO DE STORY
+   * STUDIO DE STORY (charte Sorelle : sauge, terracotta, crème, sable)
    * =================================================================== */
-  var SW = 1080, SH = 1920, SX = 90, CW = SW - 2 * SX;
-  var BODY = 'Outfit, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
-  function bf(w, px) { return w + ' ' + Math.round(px) + 'px ' + BODY; }
+  var SW = 1080, SH = 1920, SX = 96, CW = SW - 2 * SX;
+  var SANS = 'Outfit, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+  var SERIF = '"Cormorant Garamond", Georgia, "Times New Roman", serif';
+  var INK = '#2A2F23', CREAM = '#F6EFE3', SAND = '#E9DCC6', SAGE = '#5E7052', SAGE_D = '#4F6046', TERRA = '#C97B5A';
+  var OFFRE_MAX = 200;
+  function sf(w, px) { return w + ' ' + Math.round(px) + 'px ' + SANS; }
 
   var FONTS = [
-    { n: 'Outfit', q: 'Outfit:wght@400;500;600', w: '600', fb: '-apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif', k: 1 },
-    { n: 'Playfair Display', q: 'Playfair+Display:wght@500;600;700', w: '600', fb: 'Georgia, "Times New Roman", serif', k: 1 },
-    { n: 'DM Serif Display', q: 'DM+Serif+Display', w: '400', fb: 'Georgia, "Times New Roman", serif', k: 1 },
-    { n: 'Montserrat', q: 'Montserrat:wght@500;600;700', w: '600', fb: '"Helvetica Neue", Helvetica, Arial, sans-serif', k: 0.94 },
-    { n: 'Cormorant Garamond', q: 'Cormorant+Garamond:wght@500;600;700', w: '600', fb: 'Georgia, "Times New Roman", serif', k: 1.1 },
-    { n: 'Poppins', q: 'Poppins:wght@500;600', w: '600', fb: '"Helvetica Neue", Helvetica, Arial, sans-serif', k: 0.95 },
-    { n: 'Caveat', q: 'Caveat:wght@500;700', w: '700', fb: '"Segoe Print", "Bradley Hand", "Comic Sans MS", cursive', k: 1.2 }
+    { n: 'Cormorant Garamond', label: 'Cormorant', w: '600', fb: 'Georgia, "Times New Roman", serif', k: 1.12 },
+    { n: 'Playfair Display', label: 'Playfair', q: 'Playfair+Display:wght@500;600', w: '500', fb: 'Georgia, "Times New Roman", serif', k: 0.94 },
+    { n: 'Outfit', label: 'Outfit', w: '500', fb: '-apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif', k: 0.96 }
   ];
   function fontBy(n) { return FONTS.filter(function (f) { return f.n === n; })[0] || FONTS[0]; }
   function tf(F, px) { return F.w + ' ' + Math.round(px * F.k) + 'px "' + F.n + '", ' + F.fb; }
   var fontP = {};
-  function loadFont(n) {
-    if (fontP[n]) return fontP[n];
-    var F = fontBy(n);
-    try {
-      var id = 'mg-font-' + F.n.replace(/\s+/g, '-');
-      if (F.n !== 'Outfit' && !document.getElementById(id)) {
-        var l = document.createElement('link'); l.id = id; l.rel = 'stylesheet';
-        l.href = 'https://fonts.googleapis.com/css2?family=' + F.q + '&display=swap';
-        document.head.appendChild(l);
-      }
-    } catch (e) { /* repli système */ }
-    var p = new Promise(function (res) {
+  function waitFont(spec) {
+    return new Promise(function (res) {
       if (!document.fonts || !document.fonts.load) { res(false); return; }
-      var t = setTimeout(function () { res(false); }, 3500);
-      // Attendre la feuille de style puis la police (la feuille peut arriver après le premier load)
-      var tries = 0;
+      var t = setTimeout(function () { res(false); }, 3500), tries = 0;
       (function tryLoad() {
-        document.fonts.load(F.w + ' 80px "' + F.n + '"', 'Aa').then(function (l) {
+        document.fonts.load(spec, 'Aa').then(function (l) {
           if (l && l.length) { clearTimeout(t); res(true); }
           else if (++tries < 6) setTimeout(tryLoad, 450);
           else { clearTimeout(t); res(false); }
         }, function () { clearTimeout(t); res(false); });
       })();
     });
-    fontP[n] = p;
-    return p;
+  }
+  function loadFont(n) {
+    if (fontP[n]) return fontP[n];
+    var F = fontBy(n);
+    try {
+      var id = 'mg-font-' + F.n.replace(/\s+/g, '-');
+      if (F.q && !document.getElementById(id)) {
+        var l = document.createElement('link'); l.id = id; l.rel = 'stylesheet';
+        l.href = 'https://fonts.googleapis.com/css2?family=' + F.q + '&display=swap';
+        document.head.appendChild(l);
+      }
+    } catch (e) { /* repli système */ }
+    fontP[n] = waitFont(F.w + ' 80px "' + F.n + '"');
+    return fontP[n];
+  }
+  // Polices de la marque, attendues avant le premier dessin (repli Georgia / système)
+  var brandP = null;
+  function brandFonts() {
+    if (!brandP) brandP = Promise.all([waitFont('600 40px "Cormorant Garamond"'), waitFont('500 40px "Cormorant Garamond"'), waitFont('400 40px Outfit'), waitFont('500 40px Outfit')]);
+    return brandP;
   }
 
   var THEMES = [
-    { id: 'derniere', nom: 'Dernière minute', bg: '#1E2218', bg2: '#3A4A2F', text: '#FBF7EE', accent: '#E0A48A', fond: 'degrade', font: 'Outfit' },
-    { id: 'creme', nom: 'Crème', bg: '#F5EFE3', bg2: '#ECE3D0', text: '#1E2218', accent: '#A85F3F', fond: 'uni', font: 'Playfair Display' },
-    { id: 'sauge', nom: 'Sauge', bg: '#6F8161', bg2: '#3A4A2F', text: '#FBF7EE', accent: '#FBF7EE', fond: 'degrade', font: 'Cormorant Garamond' },
-    { id: 'terracotta', nom: 'Terracotta', bg: '#C97B5A', bg2: '#A85F3F', text: '#FFFFFF', accent: '#1E2218', fond: 'degrade', font: 'DM Serif Display' },
-    { id: 'minimal', nom: 'Minimal blanc', bg: '#FFFFFF', bg2: '#F5EFE3', text: '#1E2218', accent: '#1E2218', fond: 'uni', font: 'Montserrat' },
-    { id: 'nuit', nom: 'Nuit', bg: '#141824', bg2: '#2C2440', text: '#F4EFE6', accent: '#C9A86A', fond: 'degrade', font: 'Playfair Display' },
-    { id: 'poudre', nom: 'Poudré', bg: '#F7E6DC', bg2: '#EFD3C3', text: '#3C2A22', accent: '#A85F3F', fond: 'degrade', font: 'Caveat' },
-    { id: 'photo', nom: 'Photo', bg: '#1E2218', bg2: '#3A4A2F', text: '#FFFFFF', accent: '#E0A48A', fond: 'photo', font: 'Outfit', voile: '#1E2218', voileOp: 0.5 }
+    { id: 'creme', nom: 'Crème', bg: CREAM, bg2: '#EEE3CF', text: INK, accent: SAGE, fond: 'uni' },
+    { id: 'sable', nom: 'Sable', bg: SAND, bg2: '#DFCCAE', text: INK, accent: SAGE_D, fond: 'uni' },
+    { id: 'sauge', nom: 'Sauge', bg: SAGE, bg2: '#536548', text: CREAM, accent: CREAM, fond: 'degrade' },
+    { id: 'profond', nom: 'Sauge profond', bg: SAGE_D, bg2: '#3C4935', text: CREAM, accent: SAND, fond: 'degrade' },
+    { id: 'photo', nom: 'Photo', bg: SAGE_D, bg2: '#3C4935', text: CREAM, accent: CREAM, fond: 'photo', voile: '#3C4935', voileOp: 0.55 }
   ];
-  function themeBy(id) { return THEMES.filter(function (t) { return t.id === id; })[0] || THEMES[1]; }
-  var SWATCHES = ['#1E2218', '#3A4A2F', '#6F8161', '#8A9D7A', '#ECF0E0', '#FBF7EE', '#F5EFE3', '#E7DCC5', '#E0A48A', '#C97B5A', '#A85F3F', '#FFFFFF'];
+  // Anciens thèmes (hors charte) : remplacés par le plus proche de la marque
+  var OLD_THEMES = { derniere: 'profond', terracotta: 'sable', minimal: 'creme', nuit: 'profond', poudre: 'sable' };
+  function themeBy(id) { id = OLD_THEMES[id] || id; return THEMES.filter(function (t) { return t.id === id; })[0] || THEMES[0]; }
+  var SWATCHES = [CREAM, '#FFFDF8', SAND, SAGE, SAGE_D, INK, TERRA];
+  var VOILES = ['#3C4935', SAGE, INK, CREAM];
   var LAYOUTS = [['liste', 'Liste'], ['agenda', 'Agenda'], ['vedette', 'Une praticienne']];
+  function brandHex(h, list) { h = vHex(h); return h && (list || SWATCHES).some(function (c) { return c.toLowerCase() === h.toLowerCase(); }) ? h : null; }
 
   function normStyle(s) {
     s = s && typeof s === 'object' ? s : {};
@@ -729,11 +935,11 @@
     return {
       theme: th.id,
       layout: LAYOUTS.some(function (l) { return l[0] === s.layout; }) ? s.layout : 'liste',
-      font: FONTS.some(function (f) { return f.n === s.font; }) ? s.font : th.font,
-      bg: vHex(s.bg), text: vHex(s.text), accent: vHex(s.accent),
+      font: FONTS.some(function (f) { return f.n === s.font; }) ? s.font : FONTS[0].n,
+      bg: brandHex(s.bg), text: brandHex(s.text), accent: brandHex(s.accent),
       fond: ['uni', 'degrade', 'photo'].indexOf(s.fond) >= 0 ? s.fond : th.fond,
-      voile: vHex(s.voile) || th.voile || '#1E2218',
-      voileOp: typeof s.voileOp === 'number' ? Math.max(0, Math.min(0.85, s.voileOp)) : (th.voileOp != null ? th.voileOp : 0.45),
+      voile: brandHex(s.voile, VOILES) || th.voile || '#3C4935',
+      voileOp: typeof s.voileOp === 'number' ? Math.max(0, Math.min(0.85, s.voileOp)) : (th.voileOp != null ? th.voileOp : 0.55),
       flou: typeof s.flou === 'number' ? Math.max(0, Math.min(3, Math.round(s.flou))) : 1,
       photos: s.photos !== false, adresse: s.adresse !== false,
       vedette: typeof s.vedette === 'string' ? s.vedette : null
@@ -741,21 +947,23 @@
   }
   function effTheme(S) {
     var s = S.style, th = themeBy(s.theme);
-    var bg = s.bg || th.bg, text = s.text || th.text, accent = s.accent || th.accent;
-    var bg2 = s.bg ? (lum(bg) < 0.3 ? mix(bg, '#FFFFFF', 0.82) : mix(bg, '#1E2218', 0.88)) : th.bg2;
-    var photo = s.fond === 'photo' && S.bgImg;
-    var darkBg = photo ? lum(s.voile) < 0.4 || s.voileOp < 0.3 : lum(bg) < 0.4;
-    var card, cardBorder = null;
-    if (photo || darkBg || lum(bg) < 0.62) card = '#FBF7EE';
-    else if (lum(bg) > 0.95) { card = '#F4F0E8'; }
-    else card = '#FFFFFF';
-    if (!photo && !darkBg && lum(bg) > 0.62) cardBorder = rgba('#1E2218', 0.08);
+    var photo = s.fond === 'photo' && !!S.bgImg;
+    var bg = s.bg || th.bg;
+    var dark = photo ? !(lum(s.voile) > 0.5 && s.voileOp >= 0.45) : lum(bg) < 0.35;
+    if (s.fond === 'photo' && !photo && !s.bg) { bg = th.id === 'photo' ? th.bg : bg; dark = lum(bg) < 0.35; }
+    var text = s.text || (th.id === 'photo' || s.bg || s.fond === 'photo' ? (dark ? CREAM : INK) : th.text);
+    var accent = s.accent || (s.bg || s.fond === 'photo' ? (dark ? CREAM : SAGE) : th.accent);
+    if (contrast(accent, dark ? bg : bg) < 1.6 && !photo) accent = dark ? CREAM : SAGE_D;
+    var bg2 = s.bg ? mix(bg, dark ? '#000000' : '#5A4A30', 0.9) : th.bg2;
+    var ctaText = contrast(accent, CREAM) >= 4.2 ? CREAM : contrast(accent, SAGE_D) >= 4.2 ? SAGE_D : INK;
     return {
-      bg: bg, bg2: bg2, text: text, sub: rgba(text, 0.8), accent: accent, ctaText: inkOn(accent),
-      card: card, cardText: '#1E2218', cardSub: '#5A6453', cardBorder: cardBorder, photo: !!photo
+      bg: bg, bg2: bg2, text: text, sub: rgba(text, dark ? 0.8 : 0.74), faint: rgba(text, dark ? 0.24 : 0.16), accent: accent, ctaText: ctaText,
+      deco: TERRA, kick: dark ? rgba(text, 0.82) : mix(TERRA, INK, 0.82), dark: dark, photo: photo,
+      chip: dark ? rgba(CREAM, photo ? 0.16 : 0.12) : rgba(INK, 0.055), chipLine: dark ? rgba(CREAM, 0.26) : rgba(INK, 0.1),
+      card: dark ? CREAM : (lum(bg) > 0.8 ? '#FFFDF8' : CREAM), cardInk: INK, cardSub: '#5A6453', cardLine: rgba(INK, 0.1),
+      logoBig: dark ? CREAM : SAGE, logoWord: dark ? CREAM : SAGE
     };
   }
-
   /* --- Fond photo stocké sur l'appareil (IndexedDB, repli localStorage) --- */
   var IDB = {
     db: null,
@@ -875,6 +1083,71 @@
     ctx.font = fontFn(14); return { size: 14, lines: wrap(ctx, text, maxW) };
   }
 
+  // Texte espacé (capitales de la marque) : dessiné lettre à lettre, sans dépendre de ctx.letterSpacing
+  function spacedW(ctx, t, sp) { var w = 0; t = String(t); for (var i = 0; i < t.length; i++) w += ctx.measureText(t.charAt(i)).width; return w + sp * Math.max(0, t.length - 1); }
+  function spacedText(ctx, t, x, y, sp, align) {
+    t = String(t); var w = spacedW(ctx, t, sp), cx = align === 'center' ? x - w / 2 : align === 'right' ? x - w : x;
+    var a = ctx.textAlign; ctx.textAlign = 'left';
+    for (var i = 0; i < t.length; i++) { var ch = t.charAt(i); ctx.fillText(ch, cx, y); cx += ctx.measureText(ch).width + sp; }
+    ctx.textAlign = a; return w;
+  }
+  // Capitales espacées tenant dans maxW : renvoie la taille retenue
+  function fitSpaced(ctx, t, w0, size, minSize, sp, maxW) {
+    for (var s = size; s > minSize; s -= 1) { ctx.font = sf(w0, s); if (spacedW(ctx, t, sp * s / size) <= maxW) return s; }
+    ctx.font = sf(w0, minSize); return minSize;
+  }
+
+  /* --- Logo : deux ongles amande glacés (sauge + terracotta) et mot-symbole --- */
+  function nailPath(ctx, x, y, w, h) {
+    ctx.beginPath();
+    ctx.moveTo(x + w * 0.5, y);
+    ctx.bezierCurveTo(x + w * 0.88, y, x + w, y + h * 0.4, x + w, y + h * 0.66);
+    ctx.bezierCurveTo(x + w, y + h * 0.9, x + w * 0.79, y + h, x + w * 0.5, y + h);
+    ctx.bezierCurveTo(x + w * 0.21, y + h, x, y + h * 0.9, x, y + h * 0.66);
+    ctx.bezierCurveTo(x, y + h * 0.4, x + w * 0.12, y, x + w * 0.5, y);
+    ctx.closePath();
+  }
+  function drawNail(ctx, x, y, w, h, col) {
+    ctx.save();
+    ctx.shadowColor = 'rgba(30,34,24,0.22)'; ctx.shadowBlur = h * 0.1; ctx.shadowOffsetY = h * 0.04;
+    nailPath(ctx, x, y, w, h);
+    var g = ctx.createLinearGradient(x, y, x + w, y + h);
+    g.addColorStop(0, mix(col, '#FFFFFF', 0.78)); g.addColorStop(0.55, col); g.addColorStop(1, mix(col, '#1E2218', 0.8));
+    ctx.fillStyle = g; ctx.fill();
+    ctx.shadowColor = 'transparent';
+    ctx.clip();
+    // Reflet vernis
+    ctx.fillStyle = 'rgba(255,255,255,0.42)';
+    ctx.beginPath(); ctx.ellipse(x + w * 0.3, y + h * 0.36, w * 0.07, h * 0.24, -0.08, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.18)';
+    ctx.beginPath(); ctx.ellipse(x + w * 0.62, y + h * 0.18, w * 0.12, h * 0.05, 0.4, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+  function drawMark(ctx, x, y, h, th) {
+    var w = h * 0.56, h2 = h * 0.8, w2 = h2 * 0.6;
+    drawNail(ctx, x, y, w, h, th.logoBig);
+    drawNail(ctx, x + w * 0.86, y + h - h2, w2, h2, TERRA);
+    return w * 0.86 + w2;
+  }
+  // Logo horizontal centré en cx ; renvoie le bas
+  function drawLockup(ctx, cx, top, th, draw, scale) {
+    scale = scale || 1;
+    var mh = Math.round(76 * scale), ws = Math.round(60 * scale), ss = Math.round(16 * scale), sp = 6.2 * scale;
+    var markW = mh * 0.56 * 0.86 + mh * 0.8 * 0.6, gap = Math.round(20 * scale);
+    ctx.font = '600 ' + ws + 'px ' + SERIF; var w1 = ctx.measureText('Sorelle').width;
+    ctx.font = sf('400', ss); var w2 = spacedW(ctx, 'BIEN-ÊTRE', sp);
+    var tw = Math.max(w1, w2), total = markW + gap + tw, x0 = cx - total / 2;
+    if (draw) {
+      drawMark(ctx, x0, top, mh, th);
+      var tx = x0 + markW + gap + tw / 2;
+      ctx.fillStyle = th.logoWord; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+      ctx.font = '600 ' + ws + 'px ' + SERIF; ctx.fillText('Sorelle', tx, top + mh * 0.6);
+      ctx.font = sf('400', ss); spacedText(ctx, 'BIEN-ÊTRE', tx, top + mh * 0.6 + ss * 1.9, sp, 'center');
+      ctx.textAlign = 'left';
+    }
+    return top + mh;
+  }
+
   /* --- Contenu de la story --- */
   function storyDays(items) {
     var byDay = [], idx = {};
@@ -887,192 +1160,214 @@
       });
     return byDay;
   }
-  function storyDayLabel(d) { var r = rel(d); return r ? r + ' · ' + dayNum(d).toLowerCase() : cap1(dayLong(d)); }
+  function storyDayLabel(d) { return cap1(dayLong(d)); }
+  function flatDays(days) { var out = []; days.forEach(function (d) { d.groups.forEach(function (g) { out = out.concat(g.items); }); }); return out; }
 
-  // Mise en page LISTE : jours, puis une ligne par praticienne (étiquette + heures en pastilles)
-  function layoutList(ctx, m, items, f) {
-    var days = storyDays(items), multi = m.pids.length > 1 && m.layout !== 'vedette';
-    var ph = Math.round(f * 1.72), gap = Math.round(f * 0.3), band = Math.round(f * 0.26), padx = Math.round(f * 0.5);
-    var LW = 0;
-    if (multi) {
-      ctx.font = bf('600', f * 0.85);
-      m.pids.forEach(function (pid) { LW = Math.max(LW, ctx.measureText(pn(pid)).width + (m.imgs[pid] && m.style.photos ? ph + f * 0.35 : f * 0.75)); });
-      LW = Math.ceil(LW + f * 0.5);
-      if (LW > CW * 0.42) LW = Math.ceil(CW * 0.42);
-    }
-    var ops = [], y = 0;
+  // Mise en page LISTE : jour (titre + filet), praticienne (capitales espacées), heures en grille régulière
+  function layoutList(ctx, m, items, f, capLines) {
+    var days = storyDays(items), multi = m.pids.length > 1;
+    var ch = Math.round(f * 1.52), gap = Math.round(f * 0.24), padx = Math.round(f * 0.42);
+    var hs = Math.round(f * 1.06), ls = Math.max(20, Math.round(f * 0.48));
+    ctx.font = sf('500', f);
+    var tw = Math.ceil(ctx.measureText('10h45').width) + padx * 2;
+    var cols = Math.max(1, Math.floor((CW + gap) / (tw + gap))), cw = (CW - gap * (cols - 1)) / cols;
+    var ops = [], y = 0, hidden = 0;
     days.forEach(function (d, di) {
-      if (di) y += Math.round(f * 0.9);
-      var hs = Math.round(f * 0.92);
-      ops.push({ t: 'day', y: y, text: storyDayLabel(d.date), size: hs });
-      y += Math.round(hs * 1.5);
+      if (di) y += Math.round(f * 1.0);
+      // Un seul jour dans la story : la date est déjà dans le surtitre
+      if (!m.oneDay) {
+        ops.push({ t: 'day', y: y, text: storyDayLabel(d.date), rel: rel(d.date), size: hs });
+        y += Math.round(hs * m.F.k * 0.95) + Math.round(f * 0.34);
+        ops.push({ t: 'rule', y: y });
+        y += Math.round(f * 0.5);
+      }
       d.groups.forEach(function (g, gi) {
-        if (gi) y += Math.round(f * 0.42);
-        var x0 = multi ? LW : 0, x = x0;
-        if (multi) ops.push({ t: 'lab', y: y, pid: g.pid, f: f, h: ph, w: LW });
-        g.items.forEach(function (it) {
-          ctx.font = bf('600', f); var tw = ctx.measureText(hfr(it.debut)).width;
-          var w = Math.ceil(band + padx * 2 + tw);
-          if (x > x0 && x + w > CW) { x = x0; y += ph + gap; }
-          ops.push({ t: 'slot', x: x, y: y, w: w, h: ph, it: it, f: f, band: band, padx: padx });
-          x += w + gap;
+        if (gi) y += Math.round(f * 0.55);
+        if (multi) { ops.push({ t: 'lab', y: y, pid: g.pid, size: ls }); y += Math.round(ls * 1.85); }
+        var list = g.items, n = list.length, lines = Math.ceil(n / cols), plus = 0;
+        if (capLines && lines > capLines) { lines = capLines; plus = n - (capLines * cols - 1); list = list.slice(0, capLines * cols - 1); hidden += plus; }
+        list.forEach(function (it, i) {
+          ops.push({ t: 'slot', x: (i % cols) * (cw + gap), y: y + Math.floor(i / cols) * (ch + gap), w: cw, h: ch, text: hfr(it.debut), f: f });
         });
-        y += ph;
+        if (plus) { var i2 = list.length; ops.push({ t: 'slot', x: (i2 % cols) * (cw + gap), y: y + Math.floor(i2 / cols) * (ch + gap), w: cw, h: ch, text: '+' + plus, f: f, more: true }); }
+        y += lines * ch + (lines - 1) * gap;
       });
     });
-    return { h: y, ops: ops };
+    return { h: y, ops: ops, hidden: hidden };
   }
-  // Mise en page AGENDA : grille de jours (cartes), créneaux par praticienne dans chaque jour
+
+  // Mise en page AGENDA : vraie grille horaire (heures en lignes, jours × praticiennes en colonnes) sur une feuille
   function layoutAgenda(ctx, m, items, f) {
-    var days = storyDays(items), n = days.length;
-    var cols = n <= 1 ? 1 : n <= 4 ? 2 : 3, gapX = 24, gapY = 24;
-    var cwid = Math.floor((CW - gapX * (cols - 1)) / cols), p = Math.round(f * 0.55), iw = cwid - 2 * p;
-    var chh = Math.round(f * 1.4), cg = Math.round(f * 0.24), cpad = Math.round(f * 0.42), multi = m.pids.length > 1;
-    var cards = days.map(function (d) {
-      var ops = [], y = p;
-      ops.push({ t: 'cday', y: y, text: cols === 1 ? storyDayLabel(d.date) : cap1(dayShort(d.date)), size: Math.round(f * 0.95) });
-      y += Math.round(f * 0.95 * 1.25) + Math.round(f * 0.2);
-      d.groups.forEach(function (g, gi) {
-        if (gi) y += Math.round(f * 0.3);
-        if (multi) { ops.push({ t: 'clab', y: y, pid: g.pid, size: Math.round(f * 0.66) }); y += Math.round(f * 0.66 * 1.45); }
-        var x = 0;
-        g.items.forEach(function (it) {
-          ctx.font = bf('600', f * 0.86); var w = Math.ceil(ctx.measureText(hfr(it.debut)).width + cpad * 2);
-          if (w > iw) w = iw;
-          if (x > 0 && x + w > iw) { x = 0; y += chh + cg; }
-          ops.push({ t: 'chip', x: x, y: y, w: w, h: chh, it: it, size: Math.round(f * 0.86) });
-          x += w + cg;
-        });
-        y += chh;
+    var days = storyDays(items), pids = m.pids, multi = pids.length > 1, u = U();
+    var cols = [];
+    days.forEach(function (d) { pids.forEach(function (pid) { var g = d.groups.filter(function (x) { return x.pid === pid; })[0]; cols.push({ date: d.date, pid: pid, items: g ? g.items : [] }); }); });
+    var n = cols.length;
+    if (!n || n > 6) return { h: 1e9, ops: [] };
+    var P = Math.round(f * 0.7), axisW = Math.round(f * 1.75), cg = Math.round(f * 0.42);
+    var gridW = CW - 2 * P - axisW, cw = (gridW - cg * (n - 1)) / n;
+    var full = n <= 2 && !m.shortTok;
+    var tokPad = Math.round(f * 0.3), tokH = Math.round(f * 1.4), tg = Math.round(f * 0.18), rowPad = Math.round(f * 0.26);
+    ctx.font = sf('500', f);
+    var tokW = Math.ceil(ctx.measureText(full ? '10h45' : '45').width) + tokPad * 2;
+    if (tokW > cw) return { h: 1e9, ops: [] };
+    var perLine = Math.max(1, Math.floor((cw + tg) / (tokW + tg)));
+    var mins = items.map(function (it) { return u.toMin(it.debut); });
+    var h0 = Math.floor(Math.min.apply(null, mins) / 60), h1 = Math.floor(Math.max.apply(null, mins) / 60);
+    var ops = [], y = P;
+    // En-têtes : jour (si plusieurs jours) puis praticienne
+    var single = !!m.oneDay;
+    var dsz = Math.round(f * 0.92), psz = Math.max(18, Math.round(f * (single ? 0.56 : 0.44)));
+    if (!single) {
+      days.forEach(function (d, di) {
+        var c0 = di * pids.length, x = axisW + c0 * (cw + cg), w = pids.length * cw + (pids.length - 1) * cg;
+        ops.push({ t: 'hday', x: x, y: y, w: w, size: dsz, date: d.date });
       });
-      return { h: y + p, ops: ops, date: d.date };
-    });
-    var out = [], y = 0;
-    for (var i = 0; i < cards.length; i += cols) {
-      var row = cards.slice(i, i + cols), rh = Math.max.apply(null, row.map(function (c) { return c.h; }));
-      row.forEach(function (c, ci) { out.push({ t: 'card', x: ci * (cwid + gapX), y: y, w: cwid, h: rh, card: c, p: p }); });
-      y += rh + gapY;
+      y += Math.round(dsz * 1.25);
     }
-    return { h: Math.max(0, y - gapY), ops: out, minW: iw };
+    if (multi || single) {
+      cols.forEach(function (c, ci) { ops.push({ t: 'hpid', x: axisW + ci * (cw + cg), y: y, w: cw, size: psz, pid: c.pid, single: single }); });
+      y += Math.round(psz * 2.1);
+    }
+    ops.push({ t: 'hline', y: y });
+    var gridTop = y;
+    for (var hh = h0; hh <= h1; hh++) {
+      var cells = cols.map(function (c) { return c.items.filter(function (it) { return Math.floor(u.toMin(it.debut) / 60) === hh; }); });
+      var lines = Math.max.apply(null, cells.map(function (l) { return Math.ceil(l.length / perLine); }));
+      var rh = lines ? lines * tokH + (lines - 1) * tg + rowPad * 2 : Math.round(f * 0.95);
+      ops.push({ t: 'hour', y: y, h: rh, hour: hh, empty: !lines, size: Math.round(f * 0.9) });
+      cells.forEach(function (l, ci) {
+        var x0 = axisW + ci * (cw + cg), w = (cw - tg * (perLine - 1)) / perLine;
+        l.forEach(function (it, i) {
+          var mn = u.toMin(it.debut) % 60;
+          ops.push({ t: 'tok', x: x0 + (i % perLine) * (w + tg), y: y + rowPad + Math.floor(i / perLine) * (tokH + tg), w: w, h: tokH, f: f, pid: cols[ci].pid,
+            text: full ? hfr(it.debut) : pad(mn) });
+        });
+      });
+      y += rh;
+      ops.push({ t: 'rline', y: y, last: hh === h1 });
+    }
+    // Séparateurs verticaux discrets entre colonnes (plus marqués entre deux jours)
+    for (var ci = 1; ci < n; ci++) ops.push({ t: 'vline', x: axisW + ci * (cw + cg) - cg / 2, y: gridTop, h: y - gridTop, strong: ci % pids.length === 0 });
+    return { h: y + P, ops: ops, full: full };
   }
 
   function layoutFor(m) { return m.layout === 'agenda' ? layoutAgenda : layoutList; }
-  // Une seule page si possible, sinon pagination automatique (taille commune lisible)
+  // Une seule page si possible ; sinon une page par groupe de jours (jamais de texte coupé) ;
+  // « +N » seulement si un jour seul ne tient pas, même en petit.
   function paginate(ctx, m, items, avail) {
-    var lay = layoutFor(m), fMax = m.layout === 'agenda' ? 70 : 66, fMin = m.layout === 'agenda' ? 34 : 38;
-    function fit(list, a, b) { for (var f = a; f >= b; f -= 2) { var L = lay(ctx, m, list, f); if (L.h <= avail) return { f: f, L: L }; } return null; }
-    var one = fit(items, fMax, fMin);
-    if (one) return [{ items: items, f: one.f, L: one.L }];
-    // Remplissage glouton à une taille cible ; si une page reste trop serrée, on vise plus grand (plus de pages)
-    var target = m.layout === 'agenda' ? 46 : 46, pages, f, cur;
-    for (var guard = 0; guard < 8; guard++, target += 4) {
-      pages = []; cur = [];
-      items.forEach(function (it) {
-        var t = cur.concat([it]);
-        if (cur.length && lay(ctx, m, t, target).h > avail) { pages.push(cur); cur = [it]; } else cur = t;
-      });
-      if (cur.length) pages.push(cur);
-      f = Math.min.apply(null, pages.map(function (p) { var r = fit(p, fMax, 24); return r ? r.f : 24; }));
-      if (f >= fMin - 4) break;
+    var lay = layoutFor(m), ag = m.layout === 'agenda', fMax = ag ? 46 : 54, fMin = ag ? 30 : 32, fAbs = 26;
+    function best(list, lo, cap) {
+      for (var f = fMax; f >= lo; f -= 2) { var L = lay(ctx, m, list, f, cap); if (L.h <= avail) return { f: f, L: L }; }
+      return null;
     }
-    return pages.map(function (p) { return { items: p, f: f, L: lay(ctx, m, p, f) }; });
+    // Agenda : heures complètes (« 9h15 ») ou minutes seules sous l'axe des heures, selon ce qui est le plus lisible
+    function bestAg(list, lo) {
+      m.shortTok = false; var a = best(list, lo);
+      if (!ag || (a && a.f >= 38)) return a;
+      m.shortTok = true; var b = best(list, lo); m.shortTok = false;
+      return b && (!a || b.f >= a.f + 4) ? b : a;
+    }
+    var one = bestAg(items, fMin);
+    if (one) return [{ items: items, f: one.f, L: one.L }];
+    var days = storyDays(items), pages = [], cur = [];
+    days.forEach(function (d) {
+      var its = flatDays([d]), t = cur.concat(its);
+      if (cur.length && !bestAg(t, ag ? fMin : 36)) { pages.push(cur); cur = its; } else cur = t;
+    });
+    if (cur.length) pages.push(cur);
+    return pages.map(function (p) {
+      var r = bestAg(p, fMin) || bestAg(p, fAbs);
+      if (!r && !ag) for (var cap = 8; cap >= 1 && !r; cap--) r = best(p, fMin, cap);
+      if (!r) r = { f: fAbs, L: lay(ctx, m, p, fAbs, ag ? null : 1) };
+      return { items: p, f: r.f, L: r.L };
+    });
   }
 
-  function drawAvatar(ctx, m, pid, cx, cy, r, ring) {
+  function drawAvatar(ctx, m, pid, cx, cy, r, ring, ringCol) {
     var im = m.imgs[pid], col = pc(pid);
     ctx.save();
-    if (ring) { ctx.fillStyle = col; ctx.beginPath(); ctx.arc(cx, cy, r + ring, 0, Math.PI * 2); ctx.fill(); }
+    if (ring) { ctx.fillStyle = ringCol || col; ctx.beginPath(); ctx.arc(cx, cy, r + ring, 0, Math.PI * 2); ctx.fill(); }
     ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.closePath();
     if (im) { ctx.clip(); var d = r * 2; ctx.translate(cx - r, cy - r); coverDraw(ctx, im, d, d); }
     else {
       ctx.fillStyle = col; ctx.fill();
       ctx.fillStyle = inkOn(col); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.font = tf(m.F, r * 1.05); ctx.fillText((pn(pid) || '?').charAt(0).toUpperCase(), cx, cy + r * 0.04);
+      ctx.font = '600 ' + Math.round(r * 1.1) + 'px ' + SERIF; ctx.fillText((pn(pid) || '?').charAt(0).toUpperCase(), cx, cy + r * 0.06);
     }
     ctx.restore();
     ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
   }
 
-  // En-tête : nom du salon, titre, sous-titre, légende (ou praticienne en avant) ; renvoie le haut de la zone de contenu
+  // En-tête : logo, surtitre, titre, filet, sous-titre, légende ; renvoie le haut de la zone de contenu
   function head(ctx, m, th, draw, pi, np) {
-    var y = 262;
+    var y = drawLockup(ctx, SW / 2, 214, th, draw);
     ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
-    if (draw) {
-      ctx.fillStyle = th.sub; ctx.font = bf('500', 34); ctx.fillText(m.salon, SX, y);
-      if (np > 1) { ctx.textAlign = 'right'; ctx.fillText((pi + 1) + '/' + np, SW - SX, y); ctx.textAlign = 'left'; }
+    if (draw && np > 1) { ctx.fillStyle = th.sub; ctx.font = sf('500', 24); spacedText(ctx, (pi + 1) + ' / ' + np, SW - SX, 262, 2, 'right'); }
+    y += 74;
+    var kick = String(m.kicker || '').toUpperCase();
+    if (kick) {
+      var ks = fitSpaced(ctx, kick, '500', 25, 17, 6, CW);
+      if (draw) { ctx.font = sf('500', ks); ctx.fillStyle = th.kick; spacedText(ctx, kick, SW / 2, y, 6 * ks / 25, 'center'); }
+      y += 30;
     }
-    y += 26;
-    var tFn = function (s) { return tf(m.F, s); }, tMax = m.layout === 'vedette' ? 100 : 116;
-    var T = fitText(ctx, m.texts.titre, tFn, tMax, 84, CW, 1);
-    if (T.lines.length > 1 || T.size < 84) T = fitText(ctx, m.texts.titre, tFn, tMax, 60, CW, 2);
-    var lhT = Math.round(T.size * m.F.k * 1.08);
-    T.lines.forEach(function (l, i) {
-      var by = y + Math.round(T.size * m.F.k * 0.92) + i * lhT;
-      if (draw) { ctx.font = tf(m.F, T.size); ctx.fillStyle = th.text; ctx.fillText(l, SX, by); }
-    });
-    y += Math.round(T.size * m.F.k * 0.92) + (T.lines.length - 1) * lhT + Math.round(T.size * 0.2);
-    if (m.layout === 'vedette') {
-      var pid = m.vedette, d = 250, cy;
-      y += 40; cy = y + d / 2;
-      if (draw) drawAvatar(ctx, m, pid, SX + d / 2, cy, d / 2, 8);
-      var tx = SX + d + 50, tw = SW - SX - tx;
-      var N = fitText(ctx, pn(pid), function (s) { return tf(m.F, s); }, 92, 48, tw, 1);
-      var Sb = fitText(ctx, m.texts.sous, function (s) { return bf('400', s); }, 40, 28, tw, 3);
-      var blockH = Math.round(N.size * m.F.k) + 16 + Sb.lines.length * Math.round(Sb.size * 1.3);
-      var by0 = cy - blockH / 2 + Math.round(N.size * m.F.k * 0.85);
-      if (draw) {
-        ctx.font = tf(m.F, N.size); ctx.fillStyle = th.text; ctx.fillText(N.lines[0], tx, by0);
-        ctx.font = bf('400', Sb.size); ctx.fillStyle = th.sub;
-        Sb.lines.forEach(function (l, i) { ctx.fillText(l, tx, by0 + 16 + Math.round(Sb.size * 1.12) + i * Math.round(Sb.size * 1.3)); });
-      }
-      y = Math.max(y + d, cy + blockH / 2) + 8;
-    } else {
-      if (m.texts.sous) {
-        var S2 = fitText(ctx, m.texts.sous, function (s) { return bf('400', s); }, 44, 30, CW, 3), lh = Math.round(S2.size * 1.3);
-        y += 18;
-        S2.lines.forEach(function (l, i) { if (draw) { ctx.font = bf('400', S2.size); ctx.fillStyle = th.sub; ctx.fillText(l, SX, y + Math.round(S2.size * 0.95) + i * lh); } });
-        y += Math.round(S2.size * 0.95) + (S2.lines.length - 1) * lh + Math.round(S2.size * 0.3);
-      }
-      var withPh = m.style.photos && m.pids.some(function (p) { return m.imgs[p]; });
-      if ((m.layout === 'agenda' && (m.pids.length > 1 || withPh)) || (m.pids.length === 1 && withPh)) {
-        // Légende des praticiennes : pastilles avec photo (ou point de couleur)
-        y += 28;
-        var ch = withPh ? 92 : 76, x = SX;
-        m.pids.forEach(function (p) {
-          ctx.font = bf('600', 40);
-          var w = Math.ceil(ctx.measureText(pn(p)).width) + (withPh ? ch + 28 : 84);
-          if (x > SX && x + w > SX + CW) { x = SX; y += ch + 14; }
-          if (draw) {
-            ctx.fillStyle = th.card; rrect(ctx, x, y, w, ch, ch / 2); ctx.fill();
-            if (th.cardBorder) { ctx.strokeStyle = th.cardBorder; ctx.lineWidth = 2; ctx.stroke(); }
-            if (withPh) drawAvatar(ctx, m, p, x + ch / 2, y + ch / 2, ch / 2 - 9, 4);
-            else { ctx.fillStyle = pc(p); ctx.beginPath(); ctx.arc(x + 40, y + ch / 2, 16, 0, Math.PI * 2); ctx.fill(); }
-            ctx.fillStyle = th.cardText; ctx.font = bf('600', 40); ctx.fillText(pn(p), x + (withPh ? ch + 6 : 68), y + ch / 2 + 14);
-          }
-          x += w + 16;
-        });
-        y += ch;
-      }
+    var ved = m.layout === 'vedette';
+    if (ved) {
+      var r = 104; y += 30;
+      if (draw) drawAvatar(ctx, m, m.vedette, SW / 2, y + r, r, 6, th.dark ? rgba(CREAM, 0.9) : '#FFFDF8');
+      y += 2 * r + 16;
     }
-    return y + 56;
+    var tFn = function (s) { return tf(m.F, s); }, tMax = ved ? 84 : m.layout === 'agenda' ? 98 : 108;
+    var T = fitText(ctx, m.texts.titre, tFn, tMax, 76, CW, 1);
+    if (T.lines.length > 1 || T.size < 76) T = fitText(ctx, m.texts.titre, tFn, tMax, 56, CW, 2);
+    var asc = Math.round(T.size * m.F.k * 0.86), lhT = Math.round(T.size * m.F.k * 1.04);
+    y += 8;
+    T.lines.forEach(function (l, i) { if (draw) { ctx.font = tf(m.F, T.size); ctx.fillStyle = th.text; ctx.textAlign = 'center'; ctx.fillText(l, SW / 2, y + asc + i * lhT); ctx.textAlign = 'left'; } });
+    y += asc + (T.lines.length - 1) * lhT + 30;
+    if (draw) { ctx.fillStyle = th.deco; ctx.fillRect(SW / 2 - 28, y, 56, 3); }
+    y += 3;
+    if (m.texts.sous) {
+      var S2 = fitText(ctx, m.texts.sous, function (s) { return sf('400', s); }, 36, 27, CW - 40, 2), lh = Math.round(S2.size * 1.32);
+      y += 26;
+      S2.lines.forEach(function (l, i) { if (draw) { ctx.font = sf('400', S2.size); ctx.fillStyle = th.sub; ctx.textAlign = 'center'; ctx.fillText(l, SW / 2, y + Math.round(S2.size * 0.92) + i * lh); ctx.textAlign = 'left'; } });
+      y += Math.round(S2.size * 0.92) + (S2.lines.length - 1) * lh;
+    }
+    var withPh = m.style.photos && m.pids.some(function (p) { return m.imgs[p]; });
+    if (!ved && m.layout !== 'agenda' && withPh) {
+      // Légende des praticiennes, centrée : point de couleur (ou photo) et nom en capitales espacées
+      y += 34;
+      var hL = withPh ? 64 : 30, gapL = 44, parts = m.pids.map(function (p) {
+        ctx.font = sf('500', 23); var w = spacedW(ctx, pn(p).toUpperCase(), 4.5);
+        return { pid: p, w: w + (withPh ? hL + 14 : 26) };
+      });
+      var tot = parts.reduce(function (a, p) { return a + p.w; }, 0) + gapL * (parts.length - 1), x = SW / 2 - tot / 2;
+      if (draw) parts.forEach(function (p) {
+        var cy = y + hL / 2;
+        if (withPh) drawAvatar(ctx, m, p.pid, x + hL / 2, cy, hL / 2 - 3, 3, pc(p.pid));
+        else { ctx.fillStyle = pc(p.pid); ctx.beginPath(); ctx.arc(x + 8, cy, 8, 0, Math.PI * 2); ctx.fill(); if (th.dark) { ctx.strokeStyle = rgba(CREAM, 0.6); ctx.lineWidth = 2; ctx.stroke(); } }
+        ctx.font = sf('500', 23); ctx.fillStyle = th.text; spacedText(ctx, pn(p.pid).toUpperCase(), x + (withPh ? hL + 14 : 26), cy + 8, 4.5, 'left');
+        x += p.w + gapL;
+      });
+      y += hL;
+    }
+    return y + 52;
   }
   // Pied : appel à l'action + adresse ; renvoie le bas de la zone de contenu
   function foot(ctx, m, th, draw) {
-    var C = fitText(ctx, m.texts.cta, function (s) { return bf('600', s); }, 48, 30, CW - 110, 2);
-    var lh = Math.round(C.size * 1.25), h = C.lines.length * lh + 70;
-    var bottom = m.style.adresse ? 1640 : 1680, top = bottom - h;
+    var C = fitText(ctx, m.texts.cta, function (s) { return sf('500', s); }, 36, 27, CW - 120, 2);
+    var lh = Math.round(C.size * 1.3), h = C.lines.length * lh + 58;
+    var addr = m.style.adresse && m.adresse, bottom = addr ? 1632 : 1676, top = bottom - h;
     if (draw) {
-      ctx.fillStyle = th.accent; rrect(ctx, SX, top, CW, h, Math.min(h / 2, 64)); ctx.fill();
-      ctx.fillStyle = th.ctaText; ctx.font = bf('600', C.size); ctx.textAlign = 'center';
-      C.lines.forEach(function (l, i) { ctx.fillText(l, SW / 2, top + 35 + Math.round(C.size * 0.9) + i * lh); });
-      if (m.style.adresse && m.adresse) {
-        var A = fitText(ctx, m.adresse, function (s) { return bf('500', s); }, 34, 22, CW, 2);
-        ctx.font = bf('500', A.size); ctx.fillStyle = th.sub;
-        A.lines.forEach(function (l, i) { ctx.fillText(l, SW / 2, bottom + 54 + i * Math.round(A.size * 1.25)); });
+      ctx.fillStyle = th.accent; rrect(ctx, SX, top, CW, h, 10); ctx.fill();
+      ctx.fillStyle = th.ctaText; ctx.font = sf('500', C.size); ctx.textAlign = 'center';
+      C.lines.forEach(function (l, i) { ctx.fillText(l, SW / 2, top + 29 + Math.round(C.size * 0.9) + i * lh); });
+      if (addr) {
+        var A = String(m.adresse).toUpperCase(), as = fitSpaced(ctx, A, '400', 21, 15, 3.5, CW);
+        ctx.font = sf('400', as); ctx.fillStyle = th.sub;
+        spacedText(ctx, A, SW / 2, bottom + 50, 3.5 * as / 21, 'center');
       }
       ctx.textAlign = 'left';
     }
-    return top - 56 - (m.lien ? 190 : 0);
+    return top - 48 - (m.lien ? 190 : 0);
   }
 
   function drawBg(ctx, m, th) {
@@ -1080,65 +1375,83 @@
     if (s.fond === 'photo' && th.photo) {
       ctx.drawImage(blurred(m.S), 0, 0, SW, SH);
       ctx.fillStyle = rgba(s.voile, s.voileOp); ctx.fillRect(0, 0, SW, SH);
-      // Renfort discret en haut et en bas pour la lisibilité
       var g = ctx.createLinearGradient(0, 0, 0, SH);
-      g.addColorStop(0, rgba(s.voile, 0.35)); g.addColorStop(0.3, rgba(s.voile, 0)); g.addColorStop(0.75, rgba(s.voile, 0)); g.addColorStop(1, rgba(s.voile, 0.4));
+      g.addColorStop(0, rgba(s.voile, 0.35)); g.addColorStop(0.32, rgba(s.voile, 0)); g.addColorStop(0.72, rgba(s.voile, 0)); g.addColorStop(1, rgba(s.voile, 0.45));
       ctx.fillStyle = g; ctx.fillRect(0, 0, SW, SH);
     } else if (s.fond === 'degrade' || s.fond === 'photo') {
-      var gr = ctx.createLinearGradient(0, 0, SW * 0.35, SH);
+      var gr = ctx.createLinearGradient(0, 0, 0, SH);
       gr.addColorStop(0, th.bg); gr.addColorStop(1, th.bg2);
       ctx.fillStyle = gr; ctx.fillRect(0, 0, SW, SH);
+      var rg = ctx.createRadialGradient(SW / 2, 300, 40, SW / 2, 300, 900);
+      rg.addColorStop(0, rgba('#FFFFFF', th.dark ? 0.07 : 0.22)); rg.addColorStop(1, rgba('#FFFFFF', 0));
+      ctx.fillStyle = rg; ctx.fillRect(0, 0, SW, SH);
     } else { ctx.fillStyle = th.bg; ctx.fillRect(0, 0, SW, SH); }
   }
 
   function drawContent(ctx, m, th, pg, top) {
+    var L = pg.L;
     if (m.layout === 'agenda') {
-      pg.L.ops.forEach(function (o) {
-        var x0 = SX + o.x, y0 = top + o.y, c = o.card;
-        ctx.fillStyle = th.card; rrect(ctx, x0, y0, o.w, o.h, 28); ctx.fill();
-        if (th.cardBorder) { ctx.strokeStyle = th.cardBorder; ctx.lineWidth = 2; ctx.stroke(); }
-        var iw = o.w - 2 * o.p;
-        c.ops.forEach(function (q) {
-          var ix = x0 + o.p, iy = y0 + q.y;
-          if (q.t === 'cday') {
-            var D = fitText(ctx, q.text, function (s) { return tf(m.F, s); }, q.size, 18, iw, 1);
-            ctx.font = tf(m.F, D.size); ctx.fillStyle = th.cardText; ctx.fillText(D.lines[0], ix, iy + Math.round(q.size * 0.95));
-          } else if (q.t === 'clab') {
-            ctx.fillStyle = pc(q.pid); ctx.beginPath(); ctx.arc(ix + q.size * 0.35, iy + q.size * 0.62, q.size * 0.33, 0, Math.PI * 2); ctx.fill();
-            var Lb = fitText(ctx, pn(q.pid), function (s) { return bf('600', s); }, q.size, 16, iw - q.size, 1);
-            ctx.font = bf('600', Lb.size); ctx.fillStyle = th.cardSub; ctx.fillText(Lb.lines[0], ix + q.size * 0.95, iy + Math.round(q.size * 0.95));
-          } else if (q.t === 'chip') {
-            var col = pc(q.it.praticienne), bgc = mix(col, '#FFFFFF', 0.24);
-            ctx.fillStyle = bgc; rrect(ctx, ix + q.x, iy, q.w, q.h, q.h * 0.3); ctx.fill();
-            ctx.fillStyle = col; rrect(ctx, ix + q.x, iy + q.h - 6, q.w, 6, 3); ctx.fill();
-            var Ts = fitText(ctx, hfr(q.it.debut), function (s) { return bf('600', s); }, q.size, 14, q.w - 8, 1);
-            ctx.font = bf('600', Ts.size); ctx.fillStyle = '#1E2218'; ctx.textAlign = 'center';
-            ctx.fillText(Ts.lines[0], ix + q.x + q.w / 2, iy + q.h / 2 + Ts.size * 0.34); ctx.textAlign = 'left';
-          }
-        });
+      var x0 = SX, y0 = top;
+      ctx.save();
+      ctx.shadowColor = 'rgba(30,34,24,' + (th.dark ? 0.28 : 0.1) + ')'; ctx.shadowBlur = 40; ctx.shadowOffsetY = 12;
+      ctx.fillStyle = th.card; rrect(ctx, x0, y0, CW, L.h, 18); ctx.fill();
+      ctx.restore();
+      if (!th.dark) { ctx.strokeStyle = th.cardLine; ctx.lineWidth = 1.5; rrect(ctx, x0, y0, CW, L.h, 18); ctx.stroke(); }
+      var P = Math.round(pg.f * 0.7), ix = x0 + P;
+      L.ops.forEach(function (o) {
+        if (o.t === 'hday') {
+          var D = fitText(ctx, cap1(dayShort(o.date)), function (s) { return tf(m.F, s); }, o.size, 18, o.w, 1);
+          ctx.font = tf(m.F, D.size); ctx.fillStyle = th.cardInk; ctx.textAlign = 'center';
+          ctx.fillText(D.lines[0], ix + o.x + o.w / 2, y0 + o.y + Math.round(o.size * m.F.k * 0.82)); ctx.textAlign = 'left';
+        } else if (o.t === 'hpid') {
+          var nm = pn(o.pid).toUpperCase(), s0 = fitSpaced(ctx, nm, '500', o.size, 14, o.size * 0.2, o.w - o.size * 1.2);
+          var tw = spacedW(ctx, nm, o.size * 0.2 * s0 / o.size), cx = ix + o.x + o.w / 2, cy = y0 + o.y + o.size;
+          ctx.fillStyle = pc(o.pid); ctx.beginPath(); ctx.arc(cx - tw / 2 - s0 * 0.55, cy - s0 * 0.34, s0 * 0.26, 0, Math.PI * 2); ctx.fill();
+          ctx.font = sf('500', s0); ctx.fillStyle = th.cardSub; spacedText(ctx, nm, cx + s0 * 0.3, cy, o.size * 0.2 * s0 / o.size, 'center');
+        } else if (o.t === 'hline') {
+          ctx.fillStyle = rgba(INK, 0.55); ctx.fillRect(ix, y0 + o.y - 1, CW - 2 * P, 2);
+        } else if (o.t === 'vline') {
+          ctx.fillStyle = o.strong ? rgba(INK, 0.22) : th.cardLine; ctx.fillRect(ix + o.x - 0.75, y0 + o.y, 1.5, o.h);
+        } else if (o.t === 'rline') {
+          if (!o.last) { ctx.fillStyle = th.cardLine; ctx.fillRect(ix, y0 + o.y, CW - 2 * P, 1.5); }
+        } else if (o.t === 'hour') {
+          ctx.font = '600 ' + Math.round(Math.max(o.size * 1.06, 32)) + 'px ' + SERIF; ctx.fillStyle = o.empty ? rgba(INK, 0.35) : th.cardInk;
+          ctx.fillText(o.hour + 'h', ix, y0 + o.y + (o.empty ? o.h / 2 + o.size * 0.32 : Math.round(pg.f * 0.26) + Math.round(pg.f * 1.4) / 2 + o.size * 0.34));
+        } else if (o.t === 'tok') {
+          var col = pc(o.pid);
+          ctx.fillStyle = mix(col, th.card, 0.17); rrect(ctx, ix + o.x, y0 + o.y, o.w, o.h, Math.round(o.h * 0.2)); ctx.fill();
+          ctx.font = sf('500', o.f); ctx.fillStyle = th.cardInk; ctx.textAlign = 'center';
+          ctx.fillText(o.text, ix + o.x + o.w / 2 + 1, y0 + o.y + o.h / 2 + o.f * 0.35); ctx.textAlign = 'left';
+        }
       });
       return;
     }
-    pg.L.ops.forEach(function (o) {
+    L.ops.forEach(function (o) {
+      var y = top + o.y;
       if (o.t === 'day') {
-        var D = fitText(ctx, o.text, function (s) { return tf(m.F, s); }, o.size, 20, CW, 1);
-        ctx.font = tf(m.F, D.size); ctx.fillStyle = th.text; ctx.fillText(D.lines[0], SX, top + o.y + Math.round(o.size * m.F.k * 0.92));
+        var asc = Math.round(o.size * m.F.k * 0.8), kx = SX;
+        if (o.rel) {
+          var rs = Math.round(o.size * 0.36); ctx.font = sf('500', rs); ctx.fillStyle = th.kick;
+          kx = SX + spacedText(ctx, o.rel.toUpperCase(), SX, y + asc, rs * 0.22, 'left') + rs * 1.1;
+          ctx.fillStyle = th.deco; ctx.beginPath(); ctx.arc(kx - rs * 0.55, y + asc - rs * 0.36, 3.5, 0, Math.PI * 2); ctx.fill();
+        }
+        var D = fitText(ctx, o.text, function (s) { return tf(m.F, s); }, o.size, 20, CW - (kx - SX), 1);
+        ctx.font = tf(m.F, D.size); ctx.fillStyle = th.text; ctx.fillText(D.lines[0], kx, y + asc);
         return;
       }
+      if (o.t === 'rule') { ctx.fillStyle = th.faint; ctx.fillRect(SX, y, CW, 1.5); return; }
       if (o.t === 'lab') {
-        var withPh = m.imgs[o.pid] && m.style.photos, cy = top + o.y + o.h / 2, tx;
-        if (withPh) { drawAvatar(ctx, m, o.pid, SX + o.h / 2, cy, o.h / 2 - 3, 3); tx = SX + o.h + o.f * 0.3; }
-        else { ctx.fillStyle = pc(o.pid); ctx.beginPath(); ctx.arc(SX + o.f * 0.28, cy, o.f * 0.28, 0, Math.PI * 2); ctx.fill(); tx = SX + o.f * 0.75; }
-        var Lb = fitText(ctx, pn(o.pid), function (s) { return bf('600', s); }, o.f * 0.85, 14, o.w - (tx - SX) - o.f * 0.3, 1);
-        ctx.font = bf('600', Lb.size); ctx.fillStyle = th.text; ctx.fillText(Lb.lines[0], tx, cy + Lb.size * 0.35);
+        var nm = pn(o.pid).toUpperCase();
+        ctx.fillStyle = pc(o.pid); ctx.beginPath(); ctx.arc(SX + o.size * 0.3, y + o.size * 0.62, o.size * 0.3, 0, Math.PI * 2); ctx.fill();
+        if (th.dark) { ctx.strokeStyle = rgba(CREAM, 0.55); ctx.lineWidth = 1.5; ctx.stroke(); }
+        ctx.font = sf('500', o.size); ctx.fillStyle = th.sub; spacedText(ctx, nm, SX + o.size * 1.0, y + o.size * 0.98, o.size * 0.2, 'left');
         return;
       }
-      var x0 = SX + o.x, y0 = top + o.y, col = pc(o.it.praticienne);
-      ctx.save(); rrect(ctx, x0, y0, o.w, o.h, o.h * 0.3); ctx.fillStyle = th.card; ctx.fill();
-      if (th.cardBorder) { ctx.strokeStyle = th.cardBorder; ctx.lineWidth = 2; ctx.stroke(); }
-      ctx.clip(); ctx.fillStyle = col; ctx.fillRect(x0, y0, o.band, o.h); ctx.restore();
-      ctx.fillStyle = th.cardText; ctx.font = bf('600', o.f);
-      ctx.fillText(hfr(o.it.debut), x0 + o.band + o.padx, y0 + o.h / 2 + o.f * 0.35);
+      var x0 = SX + o.x;
+      ctx.fillStyle = o.more ? 'transparent' : th.chip; rrect(ctx, x0, y, o.w, o.h, Math.round(o.h * 0.18)); ctx.fill();
+      ctx.strokeStyle = th.chipLine; ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.fillStyle = o.more ? th.sub : th.text; ctx.font = sf('500', o.f); ctx.textAlign = 'center';
+      ctx.fillText(o.text, x0 + o.w / 2, y + o.h / 2 + o.f * 0.35); ctx.textAlign = 'left';
     });
   }
 
@@ -1154,7 +1467,7 @@
     }
     var m = {
       S: S, style: S.style, layout: layout, vedette: ved, pids: layout === 'vedette' ? [ved] : pids, imgs: S.imgs || {},
-      F: fontBy(S.style.font), texts: S.textsEff, lien: S.mode === 'lien',
+      F: fontBy(S.style.font), texts: S.textsEff, lien: S.mode === 'lien', kicker: kickerOf(items, S.src && S.src.per), oneDay: itemDays(items).length === 1,
       salon: (c.salon && c.salon.nom) || 'Sorelle Bien-Être', adresse: (c.salon && c.salon.adresse) || ''
     };
     var th = effTheme(S);
@@ -1162,31 +1475,43 @@
     var top = head(meas, m, th, false, 0, 1), bottom = foot(meas, m, th, false);
     var avail = Math.max(200, bottom - top);
     var pages = paginate(meas, m, items, avail);
-    if (pages.length > 1) { top = head(meas, m, th, false, 0, pages.length); avail = Math.max(200, bottom - top); pages = paginate(meas, m, items, avail); }
     return pages.map(function (pg, pi) {
       var cv = document.createElement('canvas'); cv.width = SW; cv.height = SH;
       var ctx = cv.getContext('2d');
       drawBg(ctx, m, th);
       var t = head(ctx, m, th, true, pi, pages.length);
-      // Peu de créneaux : on descend légèrement le bloc pour équilibrer la page
+      // Peu d'heures : bloc centré dans l'espace libre
       var spare = (bottom - t) - pg.L.h;
-      drawContent(ctx, m, th, pg, t + (spare > 0 ? Math.min(Math.round(spare / 3), 140) : 0));
+      drawContent(ctx, m, th, pg, t + (spare > 0 ? Math.min(Math.round(spare / 2), 160) : 0));
       foot(ctx, m, th, true);
-      cv.setAttribute('data-items', String(pg.items.length));
+      cv.setAttribute('data-items', String(pg.items.length - (pg.L.hidden || 0)));
       return cv;
     });
   }
 
   /* --- Textes par défaut --- */
+  function itemDays(items) { var d = []; items.forEach(function (it) { if (d.indexOf(it.date) < 0) d.push(it.date); }); return d.sort(); }
+  function kickerOf(items, per) {
+    var days = itemDays(items);
+    if (!days.length) return '';
+    if (days.length === 1) return dayLong(days[0]);
+    var a = dp(days[0]), b = dp(days[days.length - 1]);
+    if (contiguous(days) || per === 'semaine') return a.m === b.m ? 'Du ' + a.j + ' au ' + b.j + ' ' + MOIS[b.m - 1] : 'Du ' + a.j + ' ' + MOIS_C[a.m - 1] + ' au ' + b.j + ' ' + MOIS_C[b.m - 1];
+    if (a.m === b.m && days.length <= 6) return days.map(function (d) { return dp(d).j; }).join(' · ') + ' ' + MOIS[a.m - 1];
+    return plural(days.length, 'jour') + ' de disponibilités';
+  }
   function defTexts(S) {
-    var src = S.src, per = curPer(src), t = G.today(), u = U();
-    var titre = per.id === 'auj' ? 'Dernière minute' : per.id === 'semaine' ? 'Cette semaine' : per.id === 'prochaine' ? 'La semaine prochaine' : 'Nos créneaux libres';
-    if (per.id === 'jour') titre = per.du === per.au ? (per.du <= u.addDays(t, 1) ? 'Dernière minute' : cap1(dayLong(per.du))) : 'Nos créneaux libres';
+    var src = S.src, t = G.today(), u = U(), days = itemDays(S.items);
+    var titre = 'Places disponibles';
+    if (src.per === 'auj' || (days.length === 1 && days[0] === t)) titre = 'Dernière minute';
+    else if (src.per === 'demain' || (days.length === 1 && days[0] === u.addDays(t, 1))) titre = 'Places pour demain';
+    else if (src.per === 'semaine') titre = 'La semaine prochaine';
+    else if (days.length > 1) titre = 'Nos places disponibles';
     var pids = []; S.items.forEach(function (it) { if (pids.indexOf(it.praticienne) < 0) pids.push(it.praticienne); });
     pids.sort(pratOrder);
-    var who = S.style.layout === 'vedette' ? '' : pids.map(pn).join(' et ');
-    var sous = S.style.layout === 'vedette' ? 'Ses prochaines places libres' : 'Il reste de la place avec ' + who;
-    var cta = S.mode === 'lien' ? 'Réserve en 1 minute avec le lien' : 'Réponds à cette story pour réserver';
+    var who = pids.map(pn).join(' et ');
+    var sous = S.style.layout === 'vedette' ? 'Ses prochaines places libres' : (pids.length > 1 ? 'Avec ' + who + ', sur rendez-vous' : 'Avec ' + who + ', sur rendez-vous');
+    var cta = S.mode === 'lien' ? 'Réserve en une minute avec le lien' : 'Réponds à cette story pour réserver';
     return { titre: titre, sous: sous, cta: cta };
   }
   function computeTexts(S) {
@@ -1204,13 +1529,19 @@
   }
   function ensureOffer(S) {
     if (S.mode !== 'lien') return Promise.resolve(null);
+    if (S.items.length > OFFRE_MAX) return Promise.resolve(null);
     if (S.offre && !S.offreStale) return Promise.resolve(S.offre);
     if (S.offreP) return S.offreP;
-    var c = cfg() || {}, items = S.items.slice(0, 40);
+    var c = cfg() || {}, u = U(), step = stepMin(), items = S.items.slice(0, OFFRE_MAX);
     if (!items.length) return Promise.resolve(null);
     computeTexts(S);
     var payload = {
-      creneaux: items.map(function (x) { return { praticienne: x.praticienne, date: x.date, debut: x.debut, fin: x.fin }; }),
+      // Chaque créneau = une heure de début précise (fenêtre d'un pas), revérifiée à la réservation
+      creneaux: items.map(function (x) {
+        var fin = Math.min(u.toMin(x.fin || x.debut) || 0, u.toMin(x.debut) + step);
+        if (!(fin > u.toMin(x.debut))) fin = u.toMin(x.debut) + step;
+        return { praticienne: x.praticienne, date: x.date, debut: x.debut, fin: u.toHHMM(fin) };
+      }),
       heures: (c.story && +c.story.dureeLien) || 24, titre: String(S.textsEff ? S.textsEff.titre : 'Dernières places').slice(0, 60)
     };
     var prev = (S.offre && S.offre.id) ? S.offre : storedOffer();
@@ -1233,13 +1564,12 @@
   /* --- Ouverture du studio --- */
   function openStudio(src) {
     var items = checkedItems(src);
-    if (!items.length) { toast('Cochez au moins un créneau.', 'err'); return; }
+    if (!items.length) { toast('Gardez au moins une heure.', 'err'); return; }
     ensureCss();
     if (STU && !STU.closed) { try { STU.panel.close(); } catch (e) { /* ignore */ } }
     var c = cfg() || {}, so = c.story || {};
     var S = { src: src, items: items, style: normStyle(so.style), texts: {}, mode: so.mode === 'lien' ? 'lien' : 'message', page: 0, pages: [],
-      imgs: {}, bgImg: null, offre: null, offreStale: true, changed: false, closed: false, dirtyStyle: false, adv: !G.isMobile() };
-    if (S.style.fond === 'photo') S.style.fond = 'photo';
+      imgs: {}, bgImg: null, offre: null, offreStale: true, changed: false, closed: false, dirtyStyle: false, adv: false, ready: false };
     STU = S;
     var root = document.createElement('div');
     root.className = 'mod-magie mg-studio';
@@ -1249,9 +1579,8 @@
     computeTexts(S);
     renderStudio(S);
     bindStudio(S);
-    draw(S);
-    // Ressources : police, photos des praticiennes, fond photo mémorisé
-    loadFont(S.style.font).then(function () { if (!S.closed) draw(S); });
+    // Polices de la marque d'abord (repli Georgia après 3,5 s), puis police choisie
+    Promise.all([brandFonts(), loadFont(S.style.font)]).then(function () { if (S.closed) return; S.ready = true; draw(S); });
     Promise.resolve().then(function () { return G.photos(); }).then(function (ph) {
       ph = ph || {};
       return Promise.all(activeIds().map(function (pid) {
@@ -1276,7 +1605,7 @@
 
   var drawT = null;
   function draw(S, delay) {
-    if (S.closed) return;
+    if (S.closed || !S.ready) return;
     clearTimeout(drawT);
     var run = function () {
       if (S.closed) return;
@@ -1296,8 +1625,9 @@
     if (pg) pg.innerHTML = S.pages.length > 1 ? S.pages.map(function (p, i) { return '<button type="button" data-s="page" data-v="' + i + '" class="' + (i === S.page ? 'on' : '') + '" aria-label="Story ' + (i + 1) + '" aria-pressed="' + (i === S.page) + '">' + (i + 1) + '</button>'; }).join('') : '';
     var nt = S.root.querySelector('.mg-note');
     if (nt) {
-      var n = S.style.layout === 'vedette' ? S.pages.reduce(function (a, p) { return a + (+p.getAttribute('data-items') || 0); }, 0) : S.items.length;
-      nt.textContent = plural(n, 'créneau', 'créneaux') + ' · ' + (S.pages.length > 1 ? S.pages.length + ' stories (texte jamais coupé)' : '1 story');
+      var shown = S.pages.reduce(function (a, p) { return a + (+p.getAttribute('data-items') || 0); }, 0);
+      var n = S.style.layout === 'vedette' ? shown : S.items.length;
+      nt.textContent = plural(n, 'heure', 'heures') + ' · ' + (S.pages.length > 1 ? S.pages.length + ' stories, à publier à la suite' : '1 story') + (S.style.layout !== 'vedette' && shown < S.items.length ? ' · ' + (S.items.length - shown) + ' en « +N »' : '');
     }
     setFoot(S);
   }
@@ -1306,7 +1636,7 @@
 
   function footStudio(S) {
     var share = canShare(), n = S.pages.length, h = '';
-    var tooMany = S.mode === 'lien' && S.items.length > 40;
+    var tooMany = S.mode === 'lien' && S.items.length > OFFRE_MAX;
     var dis = (!n || tooMany || (S.mode === 'lien' && !S.offre)) ? ' disabled' : '';
     if (n > 1) {
       h += S.pages.map(function (p, i) { return '<button type="button" class="mg-btn pri" data-s="share" data-v="' + i + '"' + dis + '>' + ic(share ? 'share' : 'image') + (share ? 'Partager ' : 'Télécharger ') + 'la story ' + (i + 1) + '</button>'; }).join('');
@@ -1321,48 +1651,53 @@
 
   function linkHTML(S) {
     if (S.mode !== 'lien') return '';
-    if (S.items.length > 40) return '<div class="mg-warn" role="alert">Le lien éclair accepte 40 créneaux au maximum : décochez-en ' + (S.items.length - 40) + ' dans la liste.</div>';
+    if (S.items.length > OFFRE_MAX) {
+      var nIdeal = S.items.filter(function (x) { return x.ideal; }).length;
+      return '<div class="mg-warn" role="alert">Le lien éclair accepte ' + OFFRE_MAX + ' heures au maximum (' + S.items.length + ' choisies).' +
+        (nIdeal && nIdeal <= OFFRE_MAX ? ' <button type="button" class="mg-link" data-s="keepideal">Garder les ' + nIdeal + ' heures conseillées</button>' : ' Retirez des heures dans la liste.') + '</div>';
+    }
     if (S.offreErr) return '<div class="mg-warn" role="alert">' + esc(S.offreErr) + ' <button type="button" class="mg-link" data-s="offre-retry">Réessayer</button></div>';
     if (!S.offre || S.offreBusy) return '<p class="mg-help"><span class="mg-busy"><span class="mg-spin"></span>Préparation du lien…</span></p>';
     var c = cfg() || {}, h = (c.story && +c.story.dureeLien) || 24;
     return '<div class="mg-linkbox"><input class="mg-inp" readonly data-s="url" aria-label="Lien de réservation" value="' + esc(offerUrl(S.offre.token)) + '"><button type="button" class="mg-btn" data-s="copy">' + ic('copy') + 'Copier</button></div>' +
       '<div class="mg-steps" aria-label="Dans Instagram"><span>Dans Instagram :</span><b>Sticker</b><span>→</span><b>Lien</b><span>→</span><b>Coller</b></div>' +
-      '<p class="mg-help">Valable ' + h + ' h. Le lien reste le même quand vous mettez la story à jour ; un créneau réservé s\'affiche « Réservé ».</p>';
+      '<p class="mg-help">Valable ' + h + ' h. Le lien reste le même quand vous mettez la story à jour ; une heure réservée s\'affiche « Réservé ».</p>';
   }
   function updLink(S) { var b = S.root && S.root.querySelector('[data-box="link"]'); if (b) { var h = linkHTML(S); if (b.getAttribute('data-h') !== h) { b.innerHTML = h; b.setAttribute('data-h', h); } } setFoot(S); }
 
   function renderStudio(S) {
-    S.root.innerHTML = '<div class="mg-pad"><div data-box="banner"></div><div class="mg-st"><div class="mg-prev"><div class="mg-cv"></div><div class="mg-pager"></div><p class="mg-note"></p></div>' +
+    S.root.innerHTML = '<div class="mg-pad"><div data-box="banner"></div><div class="mg-st"><div class="mg-prev"><div class="mg-cv"><div class="mg-load"><span class="mg-spin"></span></div></div><div class="mg-pager"></div><p class="mg-note"></p></div>' +
       '<div class="mg-ctl"></div></div></div><div class="mg-foot"></div>' +
       '<input type="file" accept="image/*" class="mg-file" data-s="file" tabindex="-1" aria-hidden="true">';
     renderCtl(S);
   }
-  function swRow(S, k, label) {
-    var th = themeBy(S.style.theme), cur = S.style[k] || (k === 'bg' ? th.bg : k === 'text' ? th.text : th.accent);
-    return '<div class="mg-colrow" role="group" aria-label="Couleur ' + label + '"><b>' + label + '</b>' + SWATCHES.map(function (c) {
-      var on = c.toLowerCase() === cur.toLowerCase();
+  function swRow(S, k, label, list) {
+    var th = themeBy(S.style.theme), e = effTheme(S);
+    var cur = S.style[k] || (k === 'bg' ? e.bg : k === 'text' ? e.text : k === 'voile' ? S.style.voile : e.accent);
+    return '<div class="mg-colrow" role="group" aria-label="Couleur ' + label + '"><b>' + label + '</b>' + (list || SWATCHES).map(function (c) {
+      var on = String(cur).toLowerCase() === c.toLowerCase();
       return '<button type="button" class="mg-sw' + (on ? ' on' : '') + '" data-s="sw" data-k="' + k + '" data-v="' + c + '" style="--c:' + c + '" aria-label="' + c + '" aria-pressed="' + on + '"><i></i></button>';
-    }).join('') + '<input type="color" class="mg-pick" data-s="pick" data-k="' + k + '" value="' + esc(cur) + '" aria-label="Autre couleur ' + label + '"></div>';
+    }).join('') + '</div>';
   }
   function renderCtl(S) {
     var box = S.root.querySelector('.mg-ctl'); if (!box) return;
     var s = S.style, pids = []; S.items.forEach(function (it) { if (pids.indexOf(it.praticienne) < 0) pids.push(it.praticienne); }); pids.sort(pratOrder);
     var h = '';
     h += '<div class="mg-f"><span class="mg-lab" id="mg-l-th">Thème</span><div class="mg-themes" role="group" aria-labelledby="mg-l-th">' + THEMES.map(function (t) {
-      var on = s.theme === t.id, bg = t.fond === 'photo' ? (S.bgData ? 'url(' + S.bgData + ') center/cover' : 'linear-gradient(160deg,#5A6B4D,#1E2218)') : t.fond === 'degrade' ? 'linear-gradient(160deg,' + t.bg + ',' + t.bg2 + ')' : t.bg;
-      var F = fontBy(t.font);
-      return '<button type="button" class="mg-th' + (on ? ' on' : '') + '" data-s="theme" data-v="' + t.id + '" aria-pressed="' + on + '" style="--tb:' + bg + ';--tt:' + t.text + ';--ta:' + t.accent + '"><i style="font-family:\'' + F.n + '\',' + esc(F.fb) + '">Aa<b></b></i><span>' + esc(t.nom) + '</span></button>';
+      var on = s.theme === t.id, bg = t.fond === 'photo' ? (S.bgData ? 'linear-gradient(' + rgba(t.voile, 0.5) + ',' + rgba(t.voile, 0.5) + '),url(' + S.bgData + ') center/cover' : 'linear-gradient(180deg,' + t.bg + ',' + t.bg2 + ')') : t.fond === 'degrade' ? 'linear-gradient(180deg,' + t.bg + ',' + t.bg2 + ')' : t.bg;
+      return '<button type="button" class="mg-th' + (on ? ' on' : '') + '" data-s="theme" data-v="' + t.id + '" aria-pressed="' + on + '" style="--tb:' + bg + ';--tt:' + t.text + ';--ta:' + TERRA + '"><i>Aa<b></b></i><span>' + esc(t.nom) + '</span></button>';
     }).join('') + '</div></div>';
     h += '<div class="mg-f"><span class="mg-lab" id="mg-l-lay">Mise en page</span><div class="mg-seg" role="group" aria-labelledby="mg-l-lay">' + LAYOUTS.map(function (l) {
       return '<button type="button" data-s="layout" data-v="' + l[0] + '" class="' + (s.layout === l[0] ? 'on' : '') + '" aria-pressed="' + (s.layout === l[0]) + '">' + l[1] + '</button>';
     }).join('') + '</div>';
+    if (s.layout === 'agenda') h += '<p class="mg-help">Grille horaire : une ligne par heure, une colonne par jour et par praticienne.</p>';
     if (s.layout === 'vedette' && pids.length > 1) {
       var ved = pids.indexOf(s.vedette) >= 0 ? s.vedette : pids[0];
       h += '<div class="mg-seg" role="group" aria-label="Praticienne en avant" style="margin-top:8px">' + pids.map(function (pid) {
-        return '<button type="button" data-s="vedette" data-v="' + esc(pid) + '" class="pr' + (ved === pid ? ' on' : '') + '" style="' + pStyle(pid) + '" aria-pressed="' + (ved === pid) + '"><span class="mg-dot"></span>' + esc(pn(pid)) + '</button>';
-      }).join('') + '</div><p class="mg-help">Seuls les créneaux de ' + esc(pn(ved)) + ' apparaissent.</p>';
+        return '<button type="button" data-s="vedette" data-v="' + esc(pid) + '" class="' + (ved === pid ? 'on' : '') + '" style="' + pStyle(pid) + '" aria-pressed="' + (ved === pid) + '"><span class="mg-dot"></span>' + esc(pn(pid)) + '</button>';
+      }).join('') + '</div><p class="mg-help">Seules les heures de ' + esc(pn(ved)) + ' apparaissent.</p>';
     }
-    if (s.layout === 'vedette' && !S.imgs[s.vedette && pids.indexOf(s.vedette) >= 0 ? s.vedette : pids[0]]) h += '<p class="mg-help">Pas encore de photo : ajoutez-la dans Réglages, Praticiennes. Un monogramme s\'affiche en attendant.</p>';
+    if (s.layout === 'vedette' && !S.imgs[s.vedette && pids.indexOf(s.vedette) >= 0 ? s.vedette : pids[0]]) h += '<p class="mg-help">Pas encore de photo : ajoutez-la dans Réglages, Praticiennes. L\'initiale s\'affiche en attendant.</p>';
     h += '</div>';
     h += '<div class="mg-f"><span class="mg-lab" id="mg-l-res">Réservation</span><div class="mg-seg" role="group" aria-labelledby="mg-l-res">' +
       '<button type="button" data-s="mode" data-v="message" class="' + (S.mode === 'message' ? 'on' : '') + '" aria-pressed="' + (S.mode === 'message') + '">Réponse en message</button>' +
@@ -1377,21 +1712,21 @@
     h += '<details class="mg-adv"' + (S.adv ? ' open' : '') + ' data-s="adv"><summary>Personnaliser : police, couleurs, fond' + ic('chevronD') + '</summary><div>';
     h += '<div class="mg-f"><span class="mg-lab" id="mg-l-f">Police des titres</span><div class="mg-chips mg-fonts" role="group" aria-labelledby="mg-l-f">' + FONTS.map(function (F) {
       var on = s.font === F.n;
-      return '<button type="button" class="mg-chip' + (on ? ' on' : '') + '" data-s="font" data-v="' + esc(F.n) + '" aria-pressed="' + on + '" style="font-family:\'' + F.n + '\',' + esc(F.fb) + '">' + esc(F.n) + '</button>';
+      return '<button type="button" class="mg-chip' + (on ? ' on' : '') + '" data-s="font" data-v="' + esc(F.n) + '" aria-pressed="' + on + '" style="font-family:\'' + F.n + '\',' + esc(F.fb) + '">' + esc(F.label) + '</button>';
     }).join('') + '</div></div>';
     h += '<div class="mg-f"><span class="mg-lab" id="mg-l-bg">Fond</span><div class="mg-seg" role="group" aria-labelledby="mg-l-bg">' +
       [['uni', 'Uni'], ['degrade', 'Dégradé'], ['photo', 'Photo']].map(function (x) { return '<button type="button" data-s="fond" data-v="' + x[0] + '" class="' + (s.fond === x[0] ? 'on' : '') + '" aria-pressed="' + (s.fond === x[0]) + '">' + x[1] + '</button>'; }).join('') + '</div>';
     if (s.fond === 'photo') {
       h += '<div class="mg-photo"><button type="button" class="mg-btn" data-s="pickfile">' + ic('image') + (S.bgImg ? 'Changer de photo' : 'Choisir une photo') + '</button>' +
         (S.bgImg ? '<button type="button" class="mg-btn" data-s="rmfile">' + ic('trash') + 'Retirer</button>' : '') + '</div>' +
-        (S.bgImg ? '' : '<p class="mg-help">En attendant la photo, un dégradé est utilisé.</p>') +
-        '<p class="mg-help">La photo reste sur cet appareil.</p>' +
-        '<div style="margin-top:10px">' + swRow(S, 'voile', 'Voile') + '</div>' +
+        (S.bgImg ? '' : '<p class="mg-help">En attendant la photo, le fond du thème est utilisé.</p>') +
+        '<p class="mg-help">La photo reste sur cet appareil. Un voile aux couleurs de la marque garde le texte lisible.</p>' +
+        '<div style="margin-top:10px">' + swRow(S, 'voile', 'Voile', VOILES) + '</div>' +
         '<label class="mg-slider">Voile<input type="range" min="0" max="85" step="5" data-s="voileOp" value="' + Math.round(s.voileOp * 100) + '" aria-label="Opacité du voile"><span data-o="voileOp">' + Math.round(s.voileOp * 100) + ' %</span></label>' +
         '<label class="mg-slider">Flou<input type="range" min="0" max="3" step="1" data-s="flou" value="' + s.flou + '" aria-label="Flou de la photo"><span data-o="flou">' + ['Aucun', 'Léger', 'Moyen', 'Fort'][s.flou] + '</span></label>';
     }
     h += '</div>';
-    h += '<div class="mg-f"><span class="mg-lab">Couleurs</span>' + (s.fond !== 'photo' ? swRow(S, 'bg', 'Fond') : '') + swRow(S, 'text', 'Texte') + swRow(S, 'accent', 'Accent') +
+    h += '<div class="mg-f"><span class="mg-lab">Couleurs de la marque</span>' + (s.fond !== 'photo' ? swRow(S, 'bg', 'Fond') : '') + swRow(S, 'text', 'Texte') + swRow(S, 'accent', 'Bouton') +
       '<button type="button" class="mg-link" data-s="resetcol">Couleurs du thème</button></div>';
     h += '<div class="mg-f"><label class="mg-tog"><input type="checkbox" data-s="photos"' + (s.photos ? ' checked' : '') + '>Afficher les photos des praticiennes</label>' +
       '<label class="mg-tog"><input type="checkbox" data-s="adresse"' + (s.adresse ? ' checked' : '') + '>Afficher l\'adresse</label></div>';
@@ -1449,9 +1784,8 @@
       var a = b.getAttribute('data-s'), v = b.getAttribute('data-v');
       if (a === 'theme') {
         var th = themeBy(v), s = S.style;
-        s.theme = th.id; s.bg = s.text = s.accent = null; s.font = th.font; s.fond = th.fond;
+        s.theme = th.id; s.bg = s.text = s.accent = null; s.fond = th.fond;
         if (th.voile) { s.voile = th.voile; s.voileOp = th.voileOp; }
-        loadFont(s.font).then(function () { if (!S.closed) draw(S); });
         if (th.fond === 'photo' && !S.bgImg) pickFile(S);
         styleChanged(S, true); return;
       }
@@ -1470,6 +1804,12 @@
         if (v === 'lien') ensureOffer(S);
         saveStyle(S); return;
       }
+      if (a === 'keepideal') {
+        S.src.excl = S.src.excl || {};
+        eachSlot(S.src, function (j, pid, c, k) { if (!c.ideal) S.src.excl[k] = true; });
+        if (!S.src.closed) syncChips(S.src);
+        S.items = checkedItems(S.src); S.offreStale = true; renderCtl(S); draw(S); ensureOffer(S); return;
+      }
       if (a === 'copy') { if (S.offre) copyText(offerUrl(S.offre.token), 'Lien copié'); return; }
       if (a === 'offre-retry') { S.offreErr = null; ensureOffer(S); return; }
       if (a === 'share') { shareOrDownload(S, +v || 0); return; }
@@ -1477,7 +1817,7 @@
         S.src.loadP.then(function () {
           if (S.closed) return;
           S.items = checkedItems(S.src); S.changed = false; S.offreStale = true; setBanner(S);
-          if (!S.items.length) { toast('Plus aucun créneau coché.', 'info'); }
+          if (!S.items.length) { toast('Plus aucune heure choisie.', 'info'); }
           renderCtl(S); draw(S);
           if (S.mode === 'lien' && S.items.length) ensureOffer(S).then(function (o) { if (o) toast('Story et lien mis à jour'); });
           else toast('Story mise à jour');
@@ -1487,13 +1827,11 @@
     root.addEventListener('input', function (e) {
       var t = e.target, a = t.getAttribute('data-s'); if (!a) return;
       if (a === 'txt') { S.texts[t.getAttribute('data-k')] = t.value; draw(S, 120); return; }
-      if (a === 'pick') { S.style[t.getAttribute('data-k')] = t.value; S.dirtyStyle = true; draw(S, 40); return; }
       if (a === 'voileOp') { S.style.voileOp = (+t.value || 0) / 100; S.dirtyStyle = true; var o = root.querySelector('[data-o="voileOp"]'); if (o) o.textContent = t.value + ' %'; draw(S, 30); return; }
       if (a === 'flou') { S.style.flou = +t.value || 0; S.dirtyStyle = true; var o2 = root.querySelector('[data-o="flou"]'); if (o2) o2.textContent = ['Aucun', 'Léger', 'Moyen', 'Fort'][S.style.flou]; draw(S, 30); return; }
     });
     root.addEventListener('change', function (e) {
       var t = e.target, a = t.getAttribute('data-s'); if (!a) return;
-      if (a === 'pick') { renderCtl(S); return; }
       if (a === 'photos' || a === 'adresse') { S.style[a] = t.checked; styleChanged(S, false); return; }
       if (a === 'txt' && S.mode === 'lien' && t.getAttribute('data-k') === 'titre') { S.offreStale = true; ensureOffer(S); return; }
       if (a === 'file') {
@@ -1519,7 +1857,8 @@
    * =================================================================== */
   if (typeof G.on === 'function') {
     G.on('change', function () {
-      if (M && !M.closed) { M.changed = true; load(M); }
+      MCACHE = {};
+      if (M && !M.closed) { M.changed = true; M.month = null; load(M); }
       if (STU && !STU.closed) { STU.changed = true; setBanner(STU); }
     });
     G.on('theme', function () { if (M && !M.closed) renderMain(M); if (STU && !STU.closed) renderCtl(STU); });
