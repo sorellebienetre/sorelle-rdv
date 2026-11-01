@@ -12,7 +12,7 @@
 var SorelleCore = (function () {
   'use strict';
 
-  var VERSION = '1.2.3';
+  var VERSION = '1.3.0';
 
   /* ------------------------------------------------------------------------
    * CONFIGURATION PAR DÉFAUT (modifiable depuis l'écran Réglages)
@@ -1087,7 +1087,7 @@ var SorelleCore = (function () {
         requireAdmin(token);
         var cfg = config();
         if (!Array.isArray(p.creneaux) || !p.creneaux.length) throw err('offre_vide', 'Sélectionnez au moins un créneau.');
-        if (p.creneaux.length > 40) throw err('offre_trop_grande', 'Maximum 40 créneaux par story.');
+        if (p.creneaux.length > 200) throw err('offre_trop_grande', 'Maximum 200 créneaux par story.');
         var creneaux = p.creneaux.map(function (c, i) {
           if (!pratById(cfg, c.praticienne) || !isDate(c.date) || !isTime(c.debut) || !isTime(c.fin)) throw err('offre_invalide', 'Créneau invalide.');
           return { id: c.id || ('c' + i + env.code().toLowerCase()), praticienne: c.praticienne, date: c.date, debut: c.debut, fin: c.fin };
@@ -1289,6 +1289,13 @@ var SorelleCore = (function () {
         var du = isDate(p.du) && p.du >= today ? p.du : today;
         var au = isDate(p.au) ? p.au : addDays(du, (mg.horizonJours || 7) - 1);
         if (diffDays(du, au) > 31) au = addDays(du, 31);
+        // Jours choisis un par un (non contigus) : 31 jours au plus, passés ignorés
+        var choix = null;
+        if (Array.isArray(p.jours)) {
+          choix = p.jours.filter(function (x, i, a) { return isDate(x) && x >= today && a.indexOf(x) === i; }).sort().slice(0, 31);
+          if (!choix.length) throw err('date_invalide', 'Choisissez au moins un jour à venir.');
+          du = choix[0]; au = choix[choix.length - 1];
+        }
         var seuil = typeof mg.seuilRemplissage === 'number' ? mg.seuilRemplissage : 50;
         var rdvs = store.listRdv({ du: du, au: au }), bls = store.listBlocages();
         var nm = nowMin();
@@ -1296,9 +1303,11 @@ var SorelleCore = (function () {
         var label = list.map(function (s) { return s.nom; }).join(' + ');
         var jours = [], resume = {};
         prats.forEach(function (pid) { resume[pid] = { places: 0, capacite: 0, clientes: 0, max: 0 }; });
-        for (var d = du; d <= au; d = addDays(d, 1)) {
+        var dates = choix || [];
+        if (!choix) for (var d0 = du; d0 <= au; d0 = addDays(d0, 1)) dates.push(d0);
+        dates.forEach(function (d) {
           var day = buildDay(cfg, d, rdvs, bls);
-          if (!day.rules) continue;
+          if (!day.rules) return;
           var from = d === today ? nm + 30 : 0;
           var demain = d === addDays(today, 1);
           var entry = { date: d, praticiennes: {} };
@@ -1330,16 +1339,22 @@ var SorelleCore = (function () {
               else if (P.count === 0) alertes.push({ niveau: 'critique', texte: 'Journée vide : ' + nb });
               else if (taux < seuil) alertes.push({ niveau: 'attention', texte: 'Remplie à ' + taux + ' % : ' + nb });
             }
+            // Toutes les heures de début valides (grille du moteur), qui peuvent se chevaucher :
+            // à proposer aux clientes (la réservation revérifie). ideal = heure retenue par la simulation.
+            var idealH = {}; cap.creneaux.forEach(function (c) { idealH[c.debut] = true; });
+            var toutes = places ? computeSlots(cfg, day, pid, list, 'all').filter(function (c) { return toMin(c.debut) >= from; }).map(function (c) {
+              return { debut: c.debut, fin: c.fin, classe: c.classe, trou: c.trou, ordre: c.ordre, ideal: !!idealH[c.debut] };
+            }) : [];
             entry.praticiennes[pid] = {
               clientes: P.count, max: max, placesRestantes: places, capacite: cap.n, heuresPossibles: cap.heures,
-              creneaux: cap.creneaux, alternatives: alternatives,
+              creneaux: cap.creneaux, toutes: toutes, alternatives: alternatives,
               fenetres: places ? freeWindows(cfg, day, pid, from) : [], alertes: alertes,
               trousPerdus: places ? deadGaps(cfg, day, pid, from) : []
             };
             resume[pid].places += places; resume[pid].capacite += cap.n; resume[pid].clientes += P.count; resume[pid].max += max;
           });
           jours.push(entry);
-        }
+        });
         // Clientes à relancer : soin prévu bientôt (ou en retard), aucun RDV à venir
         var all = store.listRdv({ du: addDays(today, -730), au: addDays(today, 400) });
         var relances = clientProfiles(cfg, all, today).filter(function (c) {
