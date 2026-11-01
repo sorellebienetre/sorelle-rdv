@@ -72,7 +72,7 @@
     .top__back { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; color: var(--ink); flex: none; margin-left: -10px; }
     .top__back:hover { background: var(--cream); }
     .top__back svg { width: 18px; height: 18px; }
-    .brand { color: var(--ink); display: inline-flex; align-items: center; gap: 10px; min-height: 44px; flex: 1; min-width: 0; white-space: nowrap; }
+    .brand { color: var(--ink); text-align: left; cursor: pointer; display: inline-flex; align-items: center; gap: 10px; min-height: 44px; flex: 1; min-width: 0; white-space: nowrap; }
     .brand__ic { width: 32px; height: 32px; border-radius: 9px; flex: none; box-shadow: 0 1px 2px rgba(30,34,24,.1), 0 4px 10px -4px rgba(79,96,70,.45); }
     .brand__w { display: flex; flex-direction: column; line-height: 1; }
     .brand__n { font-family: var(--serif); font-size: 21px; font-weight: 600; color: var(--brand); letter-spacing: .01em; }
@@ -532,8 +532,8 @@
 
   <header class="top">
     <div class="top__in">
-      <a class="top__back" href="https://sorellebienetre.fr/" aria-label="Retour au site Sorelle Bien-Être"><svg aria-hidden="true"><use href="#i-prev"/></svg></a>
-      <a class="brand" href="https://sorellebienetre.fr/" aria-label="Sorelle Bien-Être"><img class="brand__ic" src="../assets/icon-96.png" alt="" width="32" height="32"><span class="brand__w"><span class="brand__n">Sorelle</span><span class="brand__s">Bien-être</span></span></a>
+      <button type="button" class="top__back" id="topBack" aria-label="Retour à l'accueil" hidden><svg aria-hidden="true"><use href="#i-prev"/></svg></button>
+      <button type="button" class="brand" id="topHome" aria-label="Sorelle Bien-Être, retour à l'accueil"><img class="brand__ic" src="../assets/icon-96.png" alt="" width="32" height="32"><span class="brand__w"><span class="brand__n">Sorelle</span><span class="brand__s">Bien-être</span></span></button>
       <button type="button" class="top__track" data-open-track aria-haspopup="dialog">
         <svg aria-hidden="true"><use href="#i-search"/></svg><span class="short">Suivi</span><span class="long">Suivre ma réservation</span>
       </button>
@@ -719,7 +719,6 @@
     <span id="footAddr">Sorelle Bien-Être</span>
     <span style="display:flex;gap:18px;flex-wrap:wrap">
       <button type="button" data-open-track>Suivre ma réservation</button>
-      <a href="https://sorellebienetre.fr/">Retour au site</a>
     </span>
   </footer>
 
@@ -877,9 +876,15 @@
       go(n, { fromHistory: true });
     });
 
+    // En-tête : la flèche et le logo ramènent à l'accueil de la page (même lien, lien éclair compris)
+    function goHome() { if (!S.cfg || S.step === 0) return; go(0); try { window.scrollTo(0, 0); } catch (e) { /* ignore */ } }
+    $('#topBack').addEventListener('click', goHome);
+    $('#topHome').addEventListener('click', goHome);
+
     /* ---------------- Rendu global ---------------- */
     function render(animate) {
       var n = S.step;
+      $('#topBack').hidden = n === 0;
       $$('.step').forEach(function (sec) {
         var on = +sec.getAttribute('data-step') === n;
         if (on && sec.hidden) {
