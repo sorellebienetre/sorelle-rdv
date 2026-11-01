@@ -330,6 +330,7 @@ body.has-demo .tb{padding-top:8px}
 .wk-day.is-today{box-shadow:0 0 0 2px var(--ink)}
 .wk-date .d1{font-size:13px;font-weight:500;color:var(--text-sub)}
 .wk-date .d2{font-size:28px;font-weight:600;line-height:1.05;color:var(--ink)}
+.wk-date .d2 small{font-size:.5em;font-weight:500;color:var(--text-sub);margin-left:3px;white-space:nowrap}
 .wk-date .d3{font-size:12px;color:var(--muted);margin-top:4px}
 .wk-cols{display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));gap:10px;min-width:0}
 .wk-col{min-width:0}
@@ -758,8 +759,8 @@ body.has-demo #gsearch{padding-top:8px}
 <div id="toasts" role="status" aria-live="polite"></div>
 
 <script src="../app/config.js"></script>
-<script src="../app/core.js?v=1.3.0"></script>
-<script src="../app/api.js?v=1.3.0"></script>
+<script src="../app/core.js?v=1.3.1"></script>
+<script src="../app/api.js?v=1.3.1"></script>
 <script>
 (function () {
 'use strict';
@@ -843,6 +844,8 @@ function hfr(t) { if (!t) return ''; var p = t.split(':'); return (+p[0]) + 'h' 
 function hfr2(t) { if (!t) return ''; var p = t.split(':'); return (+p[0]) + 'h' + p[1]; }
 /** Heure d'un RDV : début seul (« 9h30 ») par défaut, plage « 9h – 11h » si Réglages → Apparence l'active. */
 function showFin() { return !!(S.cfg && S.cfg.affichage && S.cfg.affichage.heureFin === true); }
+/** Vue semaine : mois abrégé à côté du numéro du jour (« 4 nov. »), si Réglages → Apparence l'active. */
+function showMois() { return !!(S.cfg && S.cfg.affichage && S.cfg.affichage.moisJour === true); }
 function hplage(debut, fin) { return fin && showFin() ? hfr(debut) + ' – ' + hfr(fin) : hfr(debut); }
 function nowMin() { return U.toMin(new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date())); }
 function monday(d) { return U.addDays(d, -((U.weekday(d) + 6) % 7)); }
@@ -958,7 +961,7 @@ function normCfg(c) {
     afficherRelances: mg.afficherRelances === true
   });
   var af = c.affichage && typeof c.affichage === 'object' ? c.affichage : {};
-  c.affichage = Object.assign({}, af, { heureFin: af.heureFin === true });
+  c.affichage = Object.assign({}, af, { heureFin: af.heureFin === true, moisJour: af.moisJour === true });
   if (typeof c.retentionMois !== 'number') c.retentionMois = 24;
   return c;
 }
@@ -1488,7 +1491,7 @@ function headTitle() {
   if (S.view === 'semaine') {
     var mon = monday(d), sun = U.addDays(mon, 6), t;
     if (narrow()) t = (+mon.slice(8)) + ' ' + monShort(mon) + ' – ' + (+sun.slice(8)) + ' ' + monShort(sun);
-    else t = 'Semaine du ' + (+mon.slice(8)) + (mon.slice(5, 7) !== sun.slice(5, 7) ? ' ' + monShort(mon) : '') + ' au ' + F_DM.format(dObj(sun));
+    else t = 'Semaine du ' + (+mon.slice(8)) + (mon.slice(5, 7) !== sun.slice(5, 7) ? ' ' + monShort(mon) + ' au ' + (+sun.slice(8)) + ' ' + monShort(sun) : ' au ' + F_DM.format(dObj(sun)));
     return { t: t, e: mon <= today() && today() <= sun ? 'Cette semaine' : relDay(mon).replace("Aujourd'hui", 'Cette semaine') };
   }
   var jr = S.data && S.data.jours[d];
@@ -1774,7 +1777,7 @@ function renderWeek(mon) {
       }).join('') + '</div>';
     }
     out += '<button class="wk-day' + (closed ? ' closed' : '') + (d === today() ? ' is-today' : '') + '" data-act="goday" data-date="' + d + '">' +
-      '<div class="wk-date"><div class="d1">' + esc(cap(wdShort(d))) + '</div><div class="d2">' + (+d.slice(8)) + '</div><div class="d3">' + (rules ? hfr(U.toHHMM(rules.debut)) + '–' + hfr(U.toHHMM(rules.fin)) + (jr.exception ? ' · except.' : '') : 'Fermé') + '</div></div>' + inner + '</button>';
+      '<div class="wk-date"><div class="d1">' + esc(cap(wdShort(d))) + '</div><div class="d2">' + (+d.slice(8)) + (showMois() ? '<small>' + esc(F_MON.format(dObj(d))) + '</small>' : '') + '</div><div class="d3">' + (rules ? hfr(U.toHHMM(rules.debut)) + '–' + hfr(U.toHHMM(rules.fin)) + (jr.exception ? ' · except.' : '') : 'Fermé') + '</div></div>' + inner + '</button>';
   }
   return '<div class="week" style="--wcols:' + colsT.join(' ') + '">' + out + '</div><div style="height:30px"></div>';
 }
@@ -2823,7 +2826,9 @@ function section(t) {
       '<label class="switch"><input type="checkbox" data-pref="legend"' + (S.legend ? ' checked' : '') + '><i></i>Afficher la légende sous la date</label></div>';
     h += '<div class="card-s"><h3>Heures des rendez-vous</h3><p class="lead">Par défaut, seule l\'heure de début est affichée.</p>' +
       '<label class="switch"><input type="checkbox" data-hfin="1"' + (showFin() ? ' checked' : '') + '><i></i>Afficher l\'heure de fin des rendez-vous</label>' +
-      '<p class="help sw-help">Exemple : « ' + esc(showFin() ? '9h30 – 11h30' : '9h30') + ' ». Réglage partagé entre les appareils du salon.</p></div>';
+      '<p class="help sw-help">Exemple : « ' + esc(showFin() ? '9h30 – 11h30' : '9h30') + ' ». Réglage partagé entre les appareils du salon.</p>' +
+      '<label class="switch"><input type="checkbox" data-mjour="1"' + (showMois() ? ' checked' : '') + '><i></i>Afficher le mois à côté du jour (vue semaine)</label>' +
+      '<p class="help sw-help">Exemple : « ' + (showMois() ? '4 nov.' : '4') + ' ». Utile quand une semaine est à cheval sur deux mois.</p></div>';
     h += '<div class="card-s"><h3>Navigation</h3><label class="switch"><input type="checkbox" data-pref="skipClosed"' + (S.skipClosed ? ' checked' : '') + '><i></i>Sauter les jours fermés avec les flèches</label></div>';
   } else if (t === 'securite') {
     h += '<div class="card-s"><h3>Changer le code PIN</h3><p class="lead">4 à 8 chiffres. Le même code sert à Laurie et Léa.</p><div class="row2">' +
@@ -2985,6 +2990,13 @@ function settingsInput(el, ev) {
     renderSettings();
     if (focusPath && !el.dataset.repaint) { var f = document.querySelector('[data-path="' + focusPath + '"]'); if (f) { f.focus(); try { var L = f.value.length; f.setSelectionRange(L, L); } catch (x) { /* champs heure */ } } }
   }
+}
+function setMoisJour(on, el) {
+  if (el) el.disabled = true;
+  G.saveConfig(function (c) { c.affichage = Object.assign({}, c.affichage, { moisJour: !!on }); }).then(function () {
+    if (S.tab === 'reglages') renderSettings();
+    toast(on ? 'Mois affiché à côté du jour' : 'Numéro du jour seul', 'ok');
+  }, function (e) { if (el) { el.disabled = false; el.checked = !on; } fail(e); });
 }
 function setHeureFin(on, el) {
   if (el) el.disabled = true;
@@ -3168,6 +3180,7 @@ function onField(ev) {
   if (el.id === 'gs-q') { if (ev.type === 'input') gsInput(el.value); return; }
   if (el.dataset && el.dataset.pref) { if (ev.type === 'change') setPref(el.dataset.pref, el.checked); return; }
   if (el.dataset && el.dataset.hfin) { if (ev.type === 'change') setHeureFin(el.checked, el); return; }
+  if (el.dataset && el.dataset.mjour) { if (ev.type === 'change') setMoisJour(el.checked, el); return; }
   var layer = el.closest('.layer'), v = layer && layer._view;
   if (v) { if (!v.raw && v.onInput) v.onInput(el, ev); return; }
   if (el.closest('#v-reglages')) {
@@ -3229,8 +3242,8 @@ function boot() { if (API.isLoggedIn()) startApp(); else showLogin(); }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else setTimeout(boot, 0);
 })();
 </script>
-<script src="stats.js?v=1.3.0"></script>
-<script src="clientes.js?v=1.3.0"></script>
-<script src="magie.js?v=1.3.0"></script>
+<script src="stats.js?v=1.3.1"></script>
+<script src="clientes.js?v=1.3.1"></script>
+<script src="magie.js?v=1.3.1"></script>
 </body>
 </html>

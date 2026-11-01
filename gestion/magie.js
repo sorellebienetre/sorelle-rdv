@@ -674,7 +674,7 @@
       return h + '<div class="mg-empty" style="margin-top:10px">' + (days.length === 1 ? 'Le salon est fermé ce jour-là : choisissez un autre jour.' : 'Le salon est fermé sur ces jours : choisissez-en d\'autres.') + '</div></section>';
     }
     if (total) {
-      h += '<p class="mg-aide">Toutes les heures où une cliente peut encore commencer. Touchez une heure pour la retirer de la story ; la réservation par lien revérifie chaque heure.</p>';
+      h += '<p class="mg-aide">Le plus de choix possible, sans jamais laisser de trou inutilisable avant ou après le rendez-vous. Touchez une heure pour la retirer de la story ; la réservation par lien revérifie chaque heure.</p>';
       h += '<div class="mg-tools"><button type="button" class="mg-link" data-a="all" data-v="1">Tout</button><button type="button" class="mg-link" data-a="all" data-v="0">Aucune</button>' +
         '<button type="button" class="mg-link" data-a="all" data-v="ideal">Conseillées seulement</button><span class="mg-sp"></span><span class="mg-legend"><i></i>Heure conseillée</span></div>';
     }
@@ -942,6 +942,7 @@
       voileOp: typeof s.voileOp === 'number' ? Math.max(0, Math.min(0.85, s.voileOp)) : (th.voileOp != null ? th.voileOp : 0.55),
       flou: typeof s.flou === 'number' ? Math.max(0, Math.min(3, Math.round(s.flou))) : 1,
       photos: s.photos !== false, adresse: s.adresse !== false,
+      logo: s.logo === 'dessus' ? 'dessus' : 'cote', mois: s.mois !== false,
       vedette: typeof s.vedette === 'string' ? s.vedette : null
     };
   }
@@ -1147,6 +1148,19 @@
     }
     return top + mh;
   }
+  // Logo empilé : symbole centré au-dessus du mot-symbole ; renvoie le bas (ligne de base de BIEN-ÊTRE)
+  function drawLockupStack(ctx, cx, top, th, draw) {
+    var mh = 56, ws = 52, ss = 16, sp = 6.2, markW = mh * 0.56 * 0.86 + mh * 0.8 * 0.6;
+    var yS = top + mh + 12 + Math.round(ws * 0.72), yB = yS + Math.round(ss * 1.9);
+    if (draw) {
+      drawMark(ctx, cx - markW / 2, top, mh, th);
+      ctx.fillStyle = th.logoWord; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+      ctx.font = '600 ' + ws + 'px ' + SERIF; ctx.fillText('Sorelle', cx, yS);
+      ctx.font = sf('400', ss); spacedText(ctx, 'BIEN-ÊTRE', cx, yB, sp, 'center');
+      ctx.textAlign = 'left';
+    }
+    return yB;
+  }
 
   /* --- Contenu de la story --- */
   function storyDays(items) {
@@ -1160,7 +1174,9 @@
       });
     return byDay;
   }
-  function storyDayLabel(d) { return cap1(dayLong(d)); }
+  // « Afficher le mois » (réglage du studio) : « Mardi 4 novembre » ou « Mardi 4 »
+  function storyDayLabel(d, mois) { return mois === false ? dayNum(d) : cap1(dayLong(d)); }
+  function storyDayShort(d, mois) { return mois === false ? cap1(JOURS_C[wd(d)]) + ' ' + dp(d).j : cap1(dayShort(d)); }
   function flatDays(days) { var out = []; days.forEach(function (d) { d.groups.forEach(function (g) { out = out.concat(g.items); }); }); return out; }
 
   // Mise en page LISTE : jour (titre + filet), praticienne (capitales espacées), heures en grille régulière
@@ -1176,7 +1192,7 @@
       if (di) y += Math.round(f * 1.0);
       // Un seul jour dans la story : la date est déjà dans le surtitre
       if (!m.oneDay) {
-        ops.push({ t: 'day', y: y, text: storyDayLabel(d.date), rel: rel(d.date), size: hs });
+        ops.push({ t: 'day', y: y, text: storyDayLabel(d.date, m.style.mois), rel: rel(d.date), size: hs });
         y += Math.round(hs * m.F.k * 0.95) + Math.round(f * 0.34);
         ops.push({ t: 'rule', y: y });
         y += Math.round(f * 0.5);
@@ -1300,10 +1316,12 @@
 
   // En-tête : logo, surtitre, titre, filet, sous-titre, légende ; renvoie le haut de la zone de contenu
   function head(ctx, m, th, draw, pi, np) {
-    var y = drawLockup(ctx, SW / 2, 214, th, draw);
+    // Logo empilé : même encombrement vertical que le logo à côté (même mise en page en dessous)
+    var stack = m.style.logo === 'dessus';
+    var y = stack ? drawLockupStack(ctx, SW / 2, 172, th, draw) : drawLockup(ctx, SW / 2, 214, th, draw);
     ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
     if (draw && np > 1) { ctx.fillStyle = th.sub; ctx.font = sf('500', 24); spacedText(ctx, (pi + 1) + ' / ' + np, SW - SX, 262, 2, 'right'); }
-    y += 74;
+    y += stack ? 290 + 74 - y : 74;
     var kick = String(m.kicker || '').toUpperCase();
     if (kick) {
       var ks = fitSpaced(ctx, kick, '500', 25, 17, 6, CW);
@@ -1400,7 +1418,7 @@
       var P = Math.round(pg.f * 0.7), ix = x0 + P;
       L.ops.forEach(function (o) {
         if (o.t === 'hday') {
-          var D = fitText(ctx, cap1(dayShort(o.date)), function (s) { return tf(m.F, s); }, o.size, 18, o.w, 1);
+          var D = fitText(ctx, storyDayShort(o.date, m.style.mois), function (s) { return tf(m.F, s); }, o.size, 18, o.w, 1);
           ctx.font = tf(m.F, D.size); ctx.fillStyle = th.cardInk; ctx.textAlign = 'center';
           ctx.fillText(D.lines[0], ix + o.x + o.w / 2, y0 + o.y + Math.round(o.size * m.F.k * 0.82)); ctx.textAlign = 'left';
         } else if (o.t === 'hpid') {
@@ -1728,8 +1746,11 @@
     h += '</div>';
     h += '<div class="mg-f"><span class="mg-lab">Couleurs de la marque</span>' + (s.fond !== 'photo' ? swRow(S, 'bg', 'Fond') : '') + swRow(S, 'text', 'Texte') + swRow(S, 'accent', 'Bouton') +
       '<button type="button" class="mg-link" data-s="resetcol">Couleurs du thème</button></div>';
+    h += '<div class="mg-f"><span class="mg-lab" id="mg-l-logo">Logo</span><div class="mg-seg" role="group" aria-labelledby="mg-l-logo">' +
+      [['cote', 'À côté'], ['dessus', 'Au-dessus']].map(function (x) { return '<button type="button" data-s="logo" data-v="' + x[0] + '" class="' + (s.logo === x[0] ? 'on' : '') + '" aria-pressed="' + (s.logo === x[0]) + '">' + x[1] + '</button>'; }).join('') + '</div></div>';
     h += '<div class="mg-f"><label class="mg-tog"><input type="checkbox" data-s="photos"' + (s.photos ? ' checked' : '') + '>Afficher les photos des praticiennes</label>' +
-      '<label class="mg-tog"><input type="checkbox" data-s="adresse"' + (s.adresse ? ' checked' : '') + '>Afficher l\'adresse</label></div>';
+      '<label class="mg-tog"><input type="checkbox" data-s="adresse"' + (s.adresse ? ' checked' : '') + '>Afficher l\'adresse</label>' +
+      '<label class="mg-tog"><input type="checkbox" data-s="mois"' + (s.mois ? ' checked' : '') + '>Afficher le mois à côté du jour</label></div>';
     h += '</div></details>';
     box.innerHTML = h;
     setFoot(S);
@@ -1790,6 +1811,7 @@
         styleChanged(S, true); return;
       }
       if (a === 'layout') { S.style.layout = v; styleChanged(S, true); return; }
+      if (a === 'logo') { S.style.logo = v === 'dessus' ? 'dessus' : 'cote'; styleChanged(S, true); return; }
       if (a === 'vedette') { S.style.vedette = v; styleChanged(S, true); return; }
       if (a === 'font') { S.style.font = v; loadFont(v).then(function () { if (!S.closed) draw(S); }); styleChanged(S, true); return; }
       if (a === 'fond') { S.style.fond = v; if (v === 'photo' && !S.bgImg) pickFile(S); styleChanged(S, true); return; }
@@ -1832,7 +1854,7 @@
     });
     root.addEventListener('change', function (e) {
       var t = e.target, a = t.getAttribute('data-s'); if (!a) return;
-      if (a === 'photos' || a === 'adresse') { S.style[a] = t.checked; styleChanged(S, false); return; }
+      if (a === 'photos' || a === 'adresse' || a === 'mois') { S.style[a] = t.checked; styleChanged(S, false); return; }
       if (a === 'txt' && S.mode === 'lien' && t.getAttribute('data-k') === 'titre') { S.offreStale = true; ensureOffer(S); return; }
       if (a === 'file') {
         var f = t.files && t.files[0]; t.value = '';
