@@ -25,7 +25,8 @@
   var st = {
     period: lsGet('period', 'mois'), du: lsGet('du', ''), au: lsGet('au', ''), cle: null, cleNom: '',
     stat: 'actifs', svc: '', grp: 'auto', stack: lsGet('stack', 'prat'), bk: null, lq: '', ln: 30,
-    hm: 'occ', hstep: 0, risk: !!lsGet('risk', false)
+    hm: 'occ', hstep: 0, risk: !!lsGet('risk', false),
+    fiable: lsGet('fiable', true) !== false // « Données fiables uniquement » (clé partagée avec la fiche cliente)
   };
   if (!PERIODES.some(function (p) { return p[0] === st.period; })) st.period = 'mois';
   if (['prat', 'presta', 'statut'].indexOf(st.stack) < 0) st.stack = 'prat';
@@ -70,6 +71,9 @@
   function filtrePrat() { var p = G.filtre && G.filtre.prat; return p === 'laurie' || p === 'lea' ? p : 'tous'; }
   function allPrats() { try { return G.prats() || []; } catch (e) { return []; } }
   function prats() { var f = filtrePrat(), all = allPrats(); return f === 'tous' ? all : all.filter(function (p) { return p.id === f; }); }
+  /** Avant cette date, les prestations des RDV importés ont été estimées d'après leur durée. */
+  function cutoff() { var c = G.cfg && G.cfg(), d = c && c.statsFiablesDepuis; return typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : '2026-11-01'; }
+  function cutLong(C) { return dayNum(C) + ' ' + MOIS_L[+C.slice(5, 7) - 1]; }
   function svcList() { try { return G.svcs ? G.svcs() : []; } catch (e) { return []; } }
   function niceMax(v) {
     if (!(v > 0)) return 4;
@@ -142,6 +146,7 @@
   /** Indicateurs d'une période. base = RDV clients déjà filtrés (praticienne, cliente). */
   function kpis(base, du, au, ctx) {
     var t = ctx.today, cfg = ctx.cfg, max = cfg.maxClientesJour || 6;
+    if (ctx.cut && du < ctx.cut) du = ctx.cut; // données fiables uniquement : capacité comptée à partir de la date
     var list = base.filter(function (r) { return r.date >= du && r.date <= au; });
     var k = { total: list.length, done: 0, upcoming: 0, h: 0, annul: 0, abs: 0, uniq: 0, nouv: 0, freq: null, freqN: 0, fill: null, fillAll: null, perPrat: {} };
     var uniq = {}, gaps = [];
@@ -220,12 +225,18 @@
   function buildModel() {
     var cfg = (G.cfg && G.cfg()) || (window.SorelleCore && SorelleCore.DEFAULT_CONFIG);
     var t = today(), P = prats(), pids = {}; P.forEach(function (p) { pids[p.id] = 1; });
-    var all = (data.hist || []).filter(function (r) { return r && r.type !== 'massage' && r.date; });
-    var massages = (data.hist || []).filter(function (r) { return r && r.type === 'massage' && r.statut === 'confirme' && r.date < t && (filtrePrat() === 'tous' || r.praticienne === filtrePrat()); });
-    var h = history(all);
+    var C = cutoff(), F = st.fiable;
+    var allRaw = (data.hist || []).filter(function (r) { return r && r.type !== 'massage' && r.date; });
+    var massages = (data.hist || []).filter(function (r) { return r && r.type === 'massage' && r.statut === 'confirme' && r.date < t && (!F || r.date >= C) && (filtrePrat() === 'tous' || r.praticienne === filtrePrat()); });
+    // 1re visite et rythme : sur tout l'historique (les dates sont exactes, seules les prestations étaient estimées)
+    var h = history(allRaw);
+    var all = F ? allRaw.filter(function (r) { return r.date >= C; }) : allRaw;
     var base = all.filter(function (r) { return pids[r.praticienne] && (!st.cle || key(r) === st.cle); });
-    var R = range(st.period);
-    var ctx = { today: t, cfg: cfg, prats: P, first: h.first, prevGap: h.prevGap };
+    var R0 = range(st.period), R = R0;
+    var avant = allRaw.some(function (r) { return r.date < C; });
+    // Données fiables uniquement : la période commence au plus tôt à la date de fiabilité
+    if (F && R0.du < C && R0.au >= C) { R = {}; Object.keys(R0).forEach(function (k) { R[k] = R0[k]; }); R.du = C; R.len = diff(C, R.au) + 1; R.clamped = true; }
+    var ctx = { today: t, cfg: cfg, prats: P, first: h.first, prevGap: h.prevGap, cut: F ? C : null };
     var dataStart = all.reduce(function (mn, r) { return r.date < mn ? r.date : mn; }, '9999');
     var cur = kpis(base, R.du, R.au, ctx);
     // Période en cours : on compare ce qui est comparable (jours déjà écoulés) à la même durée de la période précédente
@@ -234,8 +245,10 @@
     var prev = null;
     if (R.du < t && R.pau >= dataStart) prev = partial ? kpis(base, R.pdu, add(R.pdu, elapsed - 1), ctx) : kpis(base, R.pdu, R.pau, ctx);
     if (partial && !(cmpCur.open && cmpCur.open.past)) prev = null;
+    if (F && R.pdu < C) prev = null; // pas de comparaison avec une période incomplète
     var inP = base.filter(function (r) { return r.date >= R.du && r.date <= R.au; });
     var m = { cfg: cfg, t: t, P: P, all: all, base: base, R: R, cur: cur, prev: prev, cc: cmpCur, partial: partial, inP: inP, ctx: ctx, dataStart: dataStart,
+      C: C, F: F, avant: avant, horsFiable: F && R0.au < C, estime: !F && R.du < C && avant,
       modelages: massages.filter(function (r) { return r.date >= R.du && r.date <= R.au; }).length };
     m.spark = sparkSeries(m);
     return m;
@@ -421,6 +434,18 @@
     '.mod-stats .sw-btn .st-sw::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:var(--surface);box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .2s}',
     '.mod-stats .sw-btn[aria-checked="true"] .st-sw{background:var(--accent);box-shadow:none}',
     '.mod-stats .sw-btn[aria-checked="true"] .st-sw::after{transform:translateX(14px)}',
+    /* données fiables */
+    '.mod-stats .st-fiab{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:2px 12px;margin:-6px 0 8px}',
+    '.mod-stats .st-fiab .sw-btn{min-height:36px;font-size:12.5px;gap:8px}',
+    '.mod-stats .st-fiab .sw-btn .st-sw{width:30px;height:18px}',
+    '.mod-stats .st-fiab .sw-btn .st-sw::after{top:2px;left:2px;width:14px;height:14px}',
+    '.mod-stats .st-fiab .sw-btn[aria-checked="true"] .st-sw::after{transform:translateX(12px)}',
+    '.mod-stats .st-fiab .sw-btn small{color:var(--muted);font-size:12px}',
+    '.mod-stats .st-est{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;line-height:1.4;color:var(--text-sub);background:var(--sage-bg,var(--surface-2));border:1px solid var(--line);border-radius:12px;padding:8px 12px;margin:0 0 12px}',
+    '.mod-stats .st-est .ico{flex:0 0 auto;color:var(--accent);margin-top:1px}',
+    '.mod-stats .st-est .ico svg{width:16px;height:16px}',
+    '.mod-stats .legend i.est{background:repeating-linear-gradient(135deg,var(--text-sub) 0 1.5px,transparent 1.5px 4px);opacity:.5}',
+    '.mod-stats svg .estz{fill:url(#st-est)}',
     /* états */
     '.mod-stats .st-empty{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);padding:40px 20px;text-align:center;color:var(--text-sub)}',
     '.mod-stats .st-empty .big{width:48px;height:48px;border-radius:50%;background:var(--surface-2);display:grid;place-items:center;margin:0 auto 12px;color:var(--muted)}',
@@ -449,7 +474,7 @@
   function render() {
     if (!root) return;
     hideTip();
-    root.innerHTML = '<div class="st-head" data-r="head"></div><div class="st-tools" data-r="tools"></div><div data-r="dates"></div><div data-r="body"></div><div class="st-tip" role="tooltip" aria-hidden="true"></div>';
+    root.innerHTML = '<div class="st-head" data-r="head"></div><div class="st-tools" data-r="tools"></div><div data-r="dates"></div><div data-r="fiab"></div><div data-r="body"></div><div class="st-tip" role="tooltip" aria-hidden="true"></div>';
     tipEl = root.querySelector('.st-tip');
     renderTools();
     renderBody();
@@ -458,7 +483,8 @@
   function renderHead() {
     var el = root && root.querySelector('[data-r="head"]'); if (!el) return;
     var R = model ? model.R : range(st.period), f = filtrePrat();
-    var sub = (f !== 'tous' ? pname(f) + ' · ' : '') + (model && model.prev ? 'Comparé ' + R.plabel + (model.partial ? ', à nombre de jours égal' : '') : (model && model.partial ? 'Période en cours' : ''));
+    var sub = (f !== 'tous' ? pname(f) + ' · ' : '') + (model && model.R.clamped ? 'Depuis le ' + fDM(model.R.du) + ' · ' : '') + (model && model.prev ? 'Comparé ' + R.plabel + (model.partial ? ', à nombre de jours égal' : '') : (model && model.partial ? 'Période en cours' : ''));
+    sub = sub.replace(/ · $/, '');
     el.innerHTML = '<h2 class="st-title">' + esc(R.label) + '</h2>' + (sub ? '<p class="st-sub">' + esc(sub) + '</p>' : '');
   }
 
@@ -569,9 +595,13 @@
       el.innerHTML = '<div class="st-empty"><div class="big">' + icon('alert') + '</div><h3>Impossible de charger les statistiques</h3><p>' + esc(err) + '</p><button class="btn" data-act="retry">Réessayer</button></div>';
       return;
     }
-    if (!data) { renderHead(); el.innerHTML = skeleton(); return; }
-    model = buildModel(); renderHead();
+    if (!data) { renderHead(); renderFiab(); el.innerHTML = skeleton(); return; }
+    model = buildModel(); renderHead(); renderFiab();
     var m = model;
+    if (m.horsFiable) {
+      el.innerHTML = '<div class="st-empty"><div class="big">' + icon('chart') + '</div><h3>Période avant le ' + esc(cutLong(m.C)) + '</h3><p>Les prestations de cette période ont été estimées d’après la durée des rendez-vous.<br>Seules les données à partir du ' + esc(cutLong(m.C)) + ' sont affichées.</p><button class="btn" data-act="fiable">Voir les chiffres indicatifs</button></div>';
+      return;
+    }
     if (!m.all.length) {
       el.innerHTML = '<div class="st-empty"><div class="big">' + icon('chart') + '</div><h3>Pas encore de statistiques</h3><p>Les chiffres apparaîtront ici dès les premiers rendez-vous enregistrés.</p></div>';
       return;
@@ -597,6 +627,21 @@
     renderRdv();
     renderHeat();
     drawCharts();
+  }
+
+  /** Interrupteur « Données fiables uniquement » + avertissement quand les chiffres incluent des prestations estimées. */
+  function renderFiab() {
+    var el = root && root.querySelector('[data-r="fiab"]'); if (!el) return;
+    var m = model, C = cutoff();
+    if (!m || !m.avant) { el.innerHTML = ''; return; }
+    var h = '<div class="st-fiab"><button class="sw-btn" role="switch" data-act="fiable" aria-checked="' + st.fiable + '" title="Avant le ' + esc(cutLong(C)) + ', les prestations ont été estimées d’après la durée des rendez-vous"><span class="st-sw" aria-hidden="true"></span>Données fiables uniquement <small>(depuis le ' + esc(fDM(C)) + ')</small></button></div>';
+    if (m.estime) h += '<p class="st-est" role="note"><span class="ico">' + icon('info') + '</span><span>Avant le ' + esc(cutLong(C)) + ', les prestations ont été estimées d’après la durée des rendez-vous : chiffres indicatifs.</span></p>';
+    el.innerHTML = h;
+  }
+  function setFiable(v) {
+    st.fiable = !!v; lsSet('fiable', st.fiable); st.bk = null; st.ln = 30;
+    if (G.emit) try { G.emit('fiable', st.fiable); } catch (e) { /* ignore */ }
+    renderBody();
   }
 
   function legendHTML(items, extra) {
@@ -682,6 +727,7 @@
     var C = S.C, items = C.list.filter(function (c) { return !c.fut; }).map(function (c) { return [c.col, c.label, c.op < 1 ? c.op : 0]; });
     var extra = C.list.some(function (c) { return c.fut; }) ? '<span><i style="background:var(--text-sub);opacity:.35"></i>Teinte claire : à venir</span>' : '';
     extra += '<span><i class="dash"></i>Moyenne</span>';
+    if (model && model.estime && S.bs.length && S.bs[0].du < model.C) extra += '<span><i class="est"></i>Prestations estimées</span>';
     var tot = S.list.length, bs = S.bs, peak = null;
     bs.forEach(function (b) { if (!peak || b.tot > peak.tot) peak = b; });
     var unit = S.g === 'jour' ? 'jour ouvert' : S.g === 'semaine' ? 'semaine' : 'mois';
@@ -764,7 +810,7 @@
     var months = Object.keys(by).sort().reverse();
     if (!months.length) return '';
     var rows = months.map(function (k) {
-      var o = by[k], d0 = k + '-01', od = openDays(cfg, d0, monthEnd(d0), t);
+      var o = by[k], d0 = k + '-01', od = openDays(cfg, m.F && d0 < m.C ? m.C : d0, monthEnd(d0), t);
       var capa = od.all * max * Math.max(1, m.P.length), f = capa ? (o.done + o.booked) / capa : null;
       var cls = k === t.slice(0, 7) ? 'cur' : k > t.slice(0, 7) ? 'fut' : '';
       return '<tr class="' + cls + '"><td>' + cap(fMonth(d0)) + (cls === 'fut' ? ' <span class="tag">prévu</span>' : '') + '</td><td>' + nf(o.rdv) + '</td><td>' + nf(Math.round(o.h)) + ' h</td><td>' + nf(o.an) + (o.ab ? ' <small style="color:var(--muted)">+' + o.ab + ' abs.</small>' : '') + '</td><td>' + (st.cle ? '—' : pct(f) + '<span class="fbar"><i style="width:' + Math.min(100, Math.round((f || 0) * 100)) + '%"></i></span>') + '</td></tr>';
@@ -827,6 +873,13 @@
     // zone « à venir »
     var fi = -1; for (var i = 0; i < n; i++) if (bs[i].au >= t) { fi = i; break; }
     if (fi > 0) { var fx = slot * fi; s += '<rect class="fut" x="' + fx.toFixed(1) + '" y="' + T + '" width="' + (pw - fx).toFixed(1) + '" height="' + ph + '"/><text class="ax" x="' + (fx + 6).toFixed(1) + '" y="' + (T + 11) + '">à venir</text>'; }
+    // zone « prestations estimées » (avant la date de fiabilité, interrupteur désactivé)
+    var ei = 0; if (m.estime) { while (ei < n && bs[ei].du < m.C) ei++; }
+    if (ei > 0) {
+      s = '<defs><pattern id="st-est" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" style="stroke:var(--line)" stroke-width="2"/></pattern></defs>' + s;
+      s += '<rect class="estz" x="0" y="' + T + '" width="' + (slot * ei).toFixed(1) + '" height="' + ph + '"/>';
+      if (slot * ei > 64) s += '<text class="ax" x="6" y="' + (T + 11) + '">estimé</text>';
+    }
     var k = step(slot, g === 'jour' ? 22 : g === 'semaine' ? 46 : 36), sel = st.bk;
     bs.forEach(function (b, j) {
       var x = slot * j + (slot - bw) / 2, y = T + ph, segs = C.list.filter(function (c) { return b.v[c.id]; });
@@ -834,11 +887,11 @@
       s += '<g class="bk' + (isSel ? ' sel' : '') + '" data-ti="' + id + ':' + j + '" data-bk="' + j + '">';
       s += '<rect class="hit" x="' + (slot * j).toFixed(1) + '" y="' + T + '" width="' + slot.toFixed(1) + '" height="' + (ph + B) + '"/>';
       segs.forEach(function (c, si) {
-        var v = b.v[c.id], hh = v / maxV * ph, top = si === segs.length - 1;
+        var v = b.v[c.id], hh = v / maxV * ph, top = si === segs.length - 1, op = j < ei ? c.op * 0.6 : c.op;
         y -= hh;
         var h2 = Math.max(1, hh - (si ? 0 : 0) - (top ? 0 : 2));
-        if (top) s += '<path d="' + topRound(x, y, bw, h2, 4) + '" style="fill:' + c.col + '" fill-opacity="' + c.op + '"/>';
-        else s += '<rect x="' + x.toFixed(1) + '" y="' + (y + 2).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + Math.max(1, hh - 2).toFixed(1) + '" style="fill:' + c.col + '" fill-opacity="' + c.op + '"/>';
+        if (top) s += '<path d="' + topRound(x, y, bw, h2, 4) + '" style="fill:' + c.col + '" fill-opacity="' + op + '"/>';
+        else s += '<rect x="' + x.toFixed(1) + '" y="' + (y + 2).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + Math.max(1, hh - 2).toFixed(1) + '" style="fill:' + c.col + '" fill-opacity="' + op + '"/>';
       });
       if (b.tot && (bw >= 16 || isSel)) s += '<text class="vl" x="' + (x + bw / 2).toFixed(1) + '" y="' + (y - 5).toFixed(1) + '" text-anchor="middle">' + b.tot + '</text>';
       // libellés d'axe
@@ -853,7 +906,7 @@
       }
       s += '</g>';
       var rows = C.list.filter(function (c) { return b.v[c.id]; }).slice().reverse().map(function (c) { return [c.col, c.full || c.label, nf(b.v[c.id]), c.op < 1 ? c.op : 0]; });
-      tips.push(tipRows(bucketLabel(b, g, true), rows, ['Total', nf(b.tot) + ' RDV'], isSel ? verb() + ' à nouveau pour tout afficher' : verb() + ' pour voir le détail'));
+      tips.push(tipRows(bucketLabel(b, g, true), rows, ['Total', nf(b.tot) + ' RDV'], (j < ei ? 'Prestations estimées d’après la durée · ' : '') + (isSel ? verb() + ' à nouveau pour tout afficher' : verb() + ' pour voir le détail')));
     });
     // moyenne
     if (n > 1) {
@@ -908,7 +961,7 @@
   function chartFill(m, W) {
     var ww = weeksWin(m), max = m.cfg.maxClientesJour || 6, cfg = m.cfg, P = m.P, t = m.t;
     var vals = ww.map(function (w) {
-      var end = add(w, 6), o = {}, od = openDays(cfg, w, end, '0000').all;
+      var end = add(w, 6), o = {}, od = openDays(cfg, m.F && w < m.C ? m.C : w, end, '0000').all;
       P.forEach(function (p) { o[p.id] = 0; });
       m.base.forEach(function (r) {
         if (r.date < w || r.date > end || o[r.praticienne] == null) return;
@@ -923,22 +976,27 @@
   }
 
   function chartSvc(m, W) {
-    var cnt = {}, t = m.t;
-    m.inP.forEach(function (r) { if ((r.statut === 'confirme' && r.date < t) || (ACTIVE[r.statut] && r.date >= t)) (r.services || []).forEach(function (id) { cnt[id] = (cnt[id] || 0) + 1; }); });
+    var cnt = {}, est = {}, t = m.t;
+    m.inP.forEach(function (r) { if ((r.statut === 'confirme' && r.date < t) || (ACTIVE[r.statut] && r.date >= t)) (r.services || []).forEach(function (id) { cnt[id] = (cnt[id] || 0) + 1; if (m.estime && r.date < m.C) est[id] = (est[id] || 0) + 1; }); });
     var rows = Object.keys(cnt).map(function (id) { return { id: id, n: cnt[id] }; }).sort(function (a, b) { return b.n - a.n; });
     if (!rows.length) return '<p class="empty-c">Aucune prestation sur la période</p>';
     var tot = rows.reduce(function (a, b) { return a + b.n; }, 0);
     var rowH = 32, H = rows.length * rowH + 2, lw = Math.min(150, Math.max(96, W * 0.34)), vw = 70, bw = W - lw - vw, maxV = rows[0].n, s = '', tips = TIPS.presta = [];
     rows.forEach(function (r, i) {
       var y = i * rowH + 2, col = scol(r.id), w = Math.max(4, r.n / maxV * bw);
-      tips.push(tipRows(sname(r.id), [[col, 'Prestations', nf(r.n)]], ['Part', Math.round(r.n / tot * 100) + ' %']));
+      var ne = est[r.id] || 0, wf = (r.n - ne) / maxV * bw;
+      tips.push(tipRows(sname(r.id), [[col, 'Prestations', nf(r.n)]].concat(ne ? [[col, 'dont estimées', nf(ne), 0.4]] : []), ['Part', Math.round(r.n / tot * 100) + ' %'], ne ? 'Avant le ' + cutLong(m.C) + ' : estimées d’après la durée' : ''));
       s += '<g class="pr" data-ti="presta:' + i + '"><rect class="hit" x="0" y="' + y + '" width="' + W + '" height="' + rowH + '"/>';
       s += '<text class="axs" x="0" y="' + (y + 19) + '">' + esc(sname(r.id, true)) + '</text>';
       s += '<rect class="bgc" x="' + lw + '" y="' + (y + 8) + '" width="' + bw.toFixed(1) + '" height="14" rx="4"/>';
-      s += '<rect x="' + lw + '" y="' + (y + 8) + '" width="' + w.toFixed(1) + '" height="14" rx="4" fill="' + col + '"/>';
+      if (ne) {
+        s += '<rect x="' + lw + '" y="' + (y + 8) + '" width="' + w.toFixed(1) + '" height="14" rx="4" fill="' + col + '" fill-opacity=".4"/>';
+        if (wf > 0) s += '<rect x="' + lw + '" y="' + (y + 8) + '" width="' + Math.max(4, wf).toFixed(1) + '" height="14" rx="4" fill="' + col + '"/>';
+      } else s += '<rect x="' + lw + '" y="' + (y + 8) + '" width="' + w.toFixed(1) + '" height="14" rx="4" fill="' + col + '"/>';
       s += '<text class="vl" x="' + (lw + bw + 8) + '" y="' + (y + 19) + '">' + r.n + ' <tspan class="ax">· ' + Math.round(r.n / tot * 100) + ' %</tspan></text></g>';
     });
-    return svg(W, H, s, 'Prestations');
+    var anyEst = Object.keys(est).length;
+    return svg(W, H, s, 'Prestations') + (anyEst ? '<div class="legend"><span><i style="background:var(--text-sub)"></i>Depuis le ' + esc(fDM(m.C)) + '</span><span><i style="background:var(--text-sub);opacity:.4"></i>Estimées d’après la durée</span></div>' : '');
   }
 
   /* ----- Jour et heure ----- */
@@ -1130,6 +1188,7 @@
       else if (a === 'clear-cli') { st.cle = null; st.cleNom = ''; st.bk = null; render(); }
       else if (a === 'fiche') openCli(st.cle);
       else if (a === 'retry') load();
+      else if (a === 'fiable') setFiable(!st.fiable);
       else if (a === 'risk') {
         st.risk = !st.risk; lsSet('risk', st.risk);
         b.setAttribute('aria-checked', String(st.risk));
@@ -1199,6 +1258,7 @@
     G.on('filtre', function () { if (mounted) { st.ln = 30; st.bk = null; render(); } });
     G.on('theme', function () { if (mounted) renderBody(); });
     G.on('config', function () { if (mounted) renderBody(); });
+    G.on('fiable', function (v) { var nv = !!v; if (st.fiable === nv) return; st.fiable = nv; if (mounted) renderBody(); });
     G.on('login', function () { if (mounted) { data = null; load(); } });
   }
 
@@ -1209,7 +1269,7 @@
       if (root && root.parentNode) root.parentNode.removeChild(root);
       root = document.createElement('div'); root.className = 'mod-stats';
       container.innerHTML = ''; container.appendChild(root);
-      mounted = true; bind(root);
+      mounted = true; bind(root); st.fiable = lsGet('fiable', true) !== false;
       document.addEventListener('pointerdown', docDown, true);
       data = null; render(); load();
       if (window.ResizeObserver) {

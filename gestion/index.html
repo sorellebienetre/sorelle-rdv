@@ -101,11 +101,10 @@ svg{display:block}
 .btn-ghost:hover{border-color:var(--ink)}
 .btn-danger{border-color:color-mix(in srgb,var(--danger) 40%,transparent);color:var(--danger);background:var(--surface)}
 .btn-danger:hover{background:var(--danger);color:var(--surface)}
-.btn-fill{background:linear-gradient(180deg,#6A7D5D,#55684A);color:#fff;border-color:transparent;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 1px 2px rgba(30,34,24,.18),0 6px 16px -8px rgba(79,96,70,.7)}
+:root{--fill-bg:#5E7052;--fill-bg2:#4F6046;--fill-fg:#FFFFFF;--fill-ic:#F3E3B5;--fill-glow:rgba(79,96,70,.7)}
+.btn-fill{background:linear-gradient(180deg,var(--fill-bg),var(--fill-bg2));color:var(--fill-fg);border-color:transparent;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 1px 2px rgba(30,34,24,.18),0 6px 16px -8px var(--fill-glow)}
 .btn-fill:hover{filter:brightness(1.05)}
-.btn-fill svg{color:#F3E3B5}
-:root[data-theme="dark"] .btn-fill{background:linear-gradient(180deg,#7F946E,#68805A);color:#10130C}
-:root[data-theme="dark"] .btn-fill svg{color:#3A2A10}
+.btn-fill svg{color:var(--fill-ic)}
 .btn-block{width:100%}
 .btn[disabled]{opacity:.45;pointer-events:none}
 .btn-sm{min-height:38px;padding:0 14px;font-size:14px}
@@ -170,8 +169,8 @@ body.has-demo #login{min-height:calc(100dvh - 22px)}
 #fab{position:fixed;z-index:41;right:16px;bottom:calc(var(--tab-h) + 16px);width:58px;height:58px;border-radius:50%;background:var(--inv-bg);color:var(--inv-fg);display:grid;place-items:center;box-shadow:0 8px 24px rgba(0,0,0,.25)}
 #fab svg{width:26px;height:26px}
 #fab:active{transform:scale(.95)}
-#fill-fab{position:fixed;z-index:41;left:16px;bottom:calc(var(--tab-h) + 20px);min-height:50px;padding:0 18px 0 14px;border-radius:999px;background:linear-gradient(180deg,#6A7D5D,#55684A);color:#fff;font-size:15px;font-weight:600;display:inline-flex;align-items:center;gap:8px;box-shadow:0 8px 24px rgba(0,0,0,.22)}
-#fill-fab svg{width:20px;height:20px;color:#F3E3B5}
+#fill-fab{position:fixed;z-index:41;left:16px;bottom:calc(var(--tab-h) + 20px);min-height:50px;padding:0 18px 0 14px;border-radius:999px;background:linear-gradient(180deg,var(--fill-bg),var(--fill-bg2));color:var(--fill-fg);font-size:15px;font-weight:600;display:inline-flex;align-items:center;gap:8px;box-shadow:0 8px 24px rgba(0,0,0,.22)}
+#fill-fab svg{width:20px;height:20px;color:var(--fill-ic)}
 #fill-fab:active{transform:scale(.97)}
 @media (min-width:700px){#fill-fab{display:none}}
 @media (max-width:999px){
@@ -231,8 +230,9 @@ body.has-demo .tb{padding-top:8px}
 .ds-i b{font-weight:600;color:var(--ink)}
 .ds-sep{color:var(--muted)}
 .ds-wait{color:var(--wait-fg);font-weight:500}
-.ds-fill{margin-left:auto;display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 12px;border-radius:999px;font-size:13px;font-weight:600;color:var(--sage-fg);background:var(--sage-bg);border:1px solid var(--sage-line)}
-.ds-fill svg{width:15px;height:15px;color:var(--clay)}
+.ds-fill{margin-left:auto;display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 13px;border-radius:999px;font-size:13px;font-weight:600;color:var(--fill-fg);background:linear-gradient(180deg,var(--fill-bg),var(--fill-bg2));box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 4px 10px -6px var(--fill-glow)}
+.ds-fill:hover{filter:brightness(1.05)}
+.ds-fill svg{width:15px;height:15px;color:var(--fill-ic)}
 .ds-fill+.ds-leg{margin-left:0}
 .ds-leg{margin-left:auto;display:inline-flex;align-items:center;gap:4px;min-height:32px;padding:0 10px;border-radius:999px;font-size:13px;color:var(--text-sub);border:1px solid var(--line-3);background:var(--surface)}
 .ds-leg svg{width:14px;height:14px;transition:transform .2s}
@@ -701,6 +701,7 @@ body.has-demo #gsearch{padding-top:8px}
 .col-row{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:12px 0;border-top:1px solid var(--line-2)}
 .col-row:first-of-type{border-top:0}
 .col-row .cn{flex:1 1 140px;min-width:0;font-weight:500;color:var(--ink)}
+.fill-prev{margin-top:12px;padding:14px;border-radius:12px;background:var(--surface-2);display:flex;justify-content:center}
 .cpick{width:48px;height:38px;border:1px solid var(--line-3);border-radius:10px;padding:3px;background:var(--surface);cursor:pointer;flex:none}
 .cpick::-webkit-color-swatch-wrapper{padding:0}
 .cpick::-webkit-color-swatch{border:0;border-radius:7px}
@@ -759,8 +760,8 @@ body.has-demo #gsearch{padding-top:8px}
 <div id="toasts" role="status" aria-live="polite"></div>
 
 <script src="../app/config.js"></script>
-<script src="../app/core.js?v=1.3.1"></script>
-<script src="../app/api.js?v=1.3.1"></script>
+<script src="../app/core.js?v=1.3.2"></script>
+<script src="../app/api.js?v=1.3.2"></script>
 <script>
 (function () {
 'use strict';
@@ -898,6 +899,19 @@ function hex(a) { return '#' + a.map(function (x) { x = Math.round(Math.max(0, M
 function mix(h, w, t) { var a = rgb(h), b = rgb(w); return hex(a.map(function (x, i) { return x * t + b[i] * (1 - t); })); }
 function lum(h) { var a = rgb(h).map(function (v) { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 0.2126 * a[0] + 0.7152 * a[1] + 0.0722 * a[2]; }
 function contrast(a, b) { var x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); }
+/** Couleur du bouton « Remplir l'agenda » (Réglages > Couleurs) ; l'icône s'adapte au fond. */
+var FILL_DEF = '#5E7052';
+function fillColor(c) { c = c || S.cfg || {}; return vHex(c.couleurs && c.couleurs.remplir) || FILL_DEF; }
+function applyFillColor(col) {
+  var c = vHex(col) || fillColor(), st = document.documentElement.style;
+  var light = textOn(c) !== '#FFFFFF';
+  st.setProperty('--fill-bg', mix(c, '#FFFFFF', 0.94));
+  st.setProperty('--fill-bg2', mix(c, '#000000', 0.86));
+  st.setProperty('--fill-fg', light ? INK : '#FFFFFF');
+  // icône : ton clair doré sur fond foncé, ton profond de la même teinte sur fond clair
+  st.setProperty('--fill-ic', light ? mix(c, '#000000', 0.42) : mix(c, '#F6E7BF', 0.12));
+  st.setProperty('--fill-glow', 'rgba(' + rgb(c).join(',') + ',.6)');
+}
 function textOn(bg) { bg = vHex(bg) || '#8E9583'; return contrast(bg, INK) >= contrast(bg, '#FFFFFF') ? INK : '#FFFFFF'; }
 function tone(bg) { var fg = textOn(bg); if (fg === '#FFFFFF' && isDark()) fg = '#F4EFE3'; return { bg: bg, fg: fg, sub: fg === INK ? 'rgba(30,34,24,.72)' : 'rgba(244,239,227,.74)' }; }
 function isDark() { return document.documentElement.getAttribute('data-theme') === 'dark'; }
@@ -1097,7 +1111,7 @@ G.on('config', function () {
   if ($('#gs-res')) renderGS();
 });
 function applyServerCfg(c) {
-  S.cfg = normCfg(c);
+  S.cfg = normCfg(c); applyFillColor();
   if (S.draft && !S.dirty) S.draft = clone(S.cfg);
   else if (S.draft) { S.draft.story = Object.assign({}, S.draft.story, { style: S.cfg.story.style }); S.draft.affichage = clone(S.cfg.affichage); }
   S.holeCache = null;
@@ -1423,7 +1437,7 @@ function loadPlanning(force, silent) {
     S.skipSig = false; S.sig = sig;
     S.data = d; S.range = { du: fr.du, au: fr.au }; S.enAttente = d.enAttente; S.holeCache = null;
     var cfgChanged = !S.cfg || JSON.stringify(S.cfg) !== JSON.stringify(normCfg(clone(d.config)));
-    S.cfg = normCfg(d.config);
+    S.cfg = normCfg(d.config); applyFillColor();
     if (S.draft && !S.dirty && cfgChanged) S.draft = clone(S.cfg);
     cacheRdvs(d.rdvs);
     renderNav(); renderPlanning();
@@ -2893,6 +2907,8 @@ function colorsTab(D) {
     h += '<div class="card-s"><h3>' + g[1] + '</h3>' + (g[0] === 'massage' ? '<p class="lead">Couleur pleine sur toute la largeur du planning : choisissez une teinte bien distincte.</p>' : '') +
       list.map(function (x) { return colRow('s:' + x.id, x.nom, K.prestations[x.id]); }).join('') + '</div>';
   });
+  h += '<div class="card-s"><h3>Bouton « Remplir l\'agenda »</h3><p class="lead">L\'icône ✨ et le texte s\'adaptent automatiquement à la couleur choisie.</p>' + colRow('b:remplir', 'Couleur du bouton', fillColor(D)) +
+    '<div class="fill-prev"><span class="btn btn-fill btn-sm" style="pointer-events:none">' + I.sparkle + 'Remplir l\'agenda</span></div></div>';
   h += '<div class="card-s"><h3>Couleurs d\'origine</h3><p class="lead">Remet les couleurs de départ pour les praticiennes et les prestations.</p><button class="btn btn-ghost" data-act="col-reset">Couleurs d\'origine</button></div>';
   return h;
 }
@@ -2924,7 +2940,8 @@ function colPreview(D) {
 function setColor(key, val, full) {
   var D = S.draft, k = key.split(':'), id = key.slice(2);
   if (!vHex(val)) return;
-  if (k[0] === 'p') D.couleurs.praticiennes[id] = val; else D.couleurs.prestations[id] = val;
+  if (k[0] === 'b') { D.couleurs.remplir = val; applyFillColor(val); }
+  else if (k[0] === 'p') D.couleurs.praticiennes[id] = val; else D.couleurs.prestations[id] = val;
   S.dirty = true;
   if (full) { renderSettings(); return; }
   var pv = $('#col-prev'); if (pv) pv.innerHTML = colPreview(D);
@@ -3084,7 +3101,7 @@ var ACT = {
   'col-mode': function (el) { S.draft.couleurs.mode = el.dataset.v; S.dirty = true; renderSettings(); },
   'col-sw': function (el) { setColor(el.dataset.col, el.dataset.v, true); },
   'col-reset': function () {
-    var K = S.draft.couleurs; K.praticiennes = {}; K.prestations = {};
+    var K = S.draft.couleurs; K.praticiennes = {}; K.prestations = {}; K.remplir = FILL_DEF; applyFillColor(FILL_DEF);
     var tmp = { praticiennes: S.draft.praticiennes, services: S.draft.services };
     S.draft.praticiennes.forEach(function (p) { K.praticiennes[p.id] = pColor(p.id, tmp); });
     S.draft.services.forEach(function (x) { K.prestations[x.id] = sColor(x.id, tmp); });
@@ -3242,8 +3259,8 @@ function boot() { if (API.isLoggedIn()) startApp(); else showLogin(); }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else setTimeout(boot, 0);
 })();
 </script>
-<script src="stats.js?v=1.3.1"></script>
-<script src="clientes.js?v=1.3.1"></script>
-<script src="magie.js?v=1.3.1"></script>
+<script src="stats.js?v=1.3.2"></script>
+<script src="clientes.js?v=1.3.2"></script>
+<script src="magie.js?v=1.3.2"></script>
 </body>
 </html>

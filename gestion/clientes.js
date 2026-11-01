@@ -17,6 +17,11 @@
   var VUE_KEY = 'sorelle.gestion.clientesVue';
   function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* appareil sans stockage */ } }
+  // « Données fiables uniquement » : même réglage (même clé) que la vue Statistiques
+  var FIABLE_KEY = 'sorelle.stats.fiable';
+  function fiable() { return lsGet(FIABLE_KEY) !== 'false'; }
+  function cutoff() { var c = G.cfg && G.cfg(), d = c && c.statsFiablesDepuis; return typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : '2026-11-01'; }
+  var EST_RE = / \(prestation estimée d'après la durée\)$/, VERIF_RE = / \(prestation à vérifier\)$/;
   var st = { q: '', prat: null, sit: 'tous', tri: 'derniere', n: 60, incOpen: false, vue: lsGet(VUE_KEY) === 'cartes' ? 'cartes' : 'liste' };
   var fp = null; // panneau des filtres ouvert {panel, el}
   var SVG = {
@@ -224,6 +229,17 @@
     '.mod-clientes .f-act .btn{width:100%;padding:0 10px}',
     '.mod-clientes .f-act .full{grid-column:1/-1}',
     '.mod-clientes .f-sec{margin:0 0 18px}',
+    '.mod-clientes .f-fiab{display:flex;flex-direction:column;align-items:flex-start;gap:6px;margin:-2px 0 10px}',
+    '.mod-clientes .f-fiab .fsw{display:inline-flex;align-items:center;gap:8px;min-height:36px;font-size:12.5px;color:var(--text-sub);text-align:left;max-width:100%}',
+    '.mod-clientes .f-fiab .fsw span{min-width:0}',
+    '.mod-clientes .f-fiab .fsw small{color:var(--muted);font-size:12px}',
+    '.mod-clientes .f-fiab .fsw i{width:30px;height:18px;border-radius:99px;background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line-3,var(--line));position:relative;flex:0 0 auto;transition:background .2s}',
+    '.mod-clientes .f-fiab .fsw i::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--surface);box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .2s}',
+    '.mod-clientes .f-fiab .fsw[aria-checked="true"] i{background:var(--accent);box-shadow:none}',
+    '.mod-clientes .f-fiab .fsw[aria-checked="true"] i::after{transform:translateX(12px)}',
+    '.mod-clientes .f-fiab p{margin:0;font-size:12.5px;line-height:1.4;color:var(--text-sub);background:var(--sage-bg,var(--surface-2));border:1px solid var(--line);border-radius:12px;padding:8px 12px}',
+    '.mod-clientes .rl .est{font-style:normal;font-size:11.5px;color:var(--muted);border:1px solid var(--line);border-radius:99px;padding:0 6px;margin-left:4px;white-space:nowrap}',
+    '@media (prefers-reduced-motion:reduce){.mod-clientes .f-fiab .fsw i,.mod-clientes .f-fiab .fsw i::after{transition:none}}',
     '.mod-clientes .f-sec>h4{font-size:15px;font-weight:600;margin:0 0 8px;color:var(--text);display:flex;align-items:center;justify-content:space-between;gap:8px}',
     '.mod-clientes .f-sec>h4 small{font-weight:400;color:var(--muted);font-size:12.5px}',
     '.mod-clientes .nums{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}',
@@ -602,9 +618,25 @@
       '<button class="btn sub full" data-act="f-mg">' + icon('users') + 'Fusionner avec une autre fiche</button>' +
       '</div>';
 
+    // Données fiables uniquement : chiffres et habitudes recalculés sur les RDV depuis la date de fiabilité
+    // (la liste des rendez-vous, elle, reste complète). La 1re visite reste la vraie (les dates sont exactes).
+    var C = cutoff(), avant = rd.some(function (r) { return r.date < C; }), F = fiable(), dAll = d;
+    var Uc = U();
+    if (F && avant && Uc && Uc.buildProfile) {
+      try {
+        var cfgF = (G.cfg && G.cfg()) || (window.SorelleCore && SorelleCore.DEFAULT_CONFIG);
+        var dv = Uc.buildProfile(cfgF, { cle: d.cle, prenom: d.prenom, nom: d.nom, rdvs: rd.filter(function (r) { return r.date >= C; }) }, t);
+        dv.premiere = d.premiere; dv.prochain = d.prochain; dv.rdvs = rd;
+        d = dv; h = d.habitude || {};
+      } catch (e) { d = dAll; h = d.habitude || {}; }
+    }
+    var cl = dayNum(C) + ' ' + MOIS[+C.slice(5, 7) - 1];
+    var fiab = avant ? '<div class="f-fiab"><button class="fsw" role="switch" data-act="f-fiable" aria-checked="' + F + '"><i aria-hidden="true"></i><span>Données fiables uniquement <small>(depuis le ' + esc(cl) + ')</small></span></button>' +
+      (F ? '' : '<p>Avant le ' + esc(dayNum(C) + ' ' + MOIS_L[+C.slice(5, 7) - 1]) + ', les prestations ont été estimées d’après la durée des rendez-vous : chiffres indicatifs.</p>') + '</div>' : '';
+
     // Chiffres clés
     var freq = h.frequenceJours;
-    H += '<div class="f-sec"><h4>En chiffres</h4><div class="nums">' +
+    H += '<div class="f-sec"><h4>En chiffres</h4>' + fiab + '<div class="nums">' +
       num(nf(d.realises || 0), (d.realises || 0) > 1 ? 'visites réalisées' : 'visite réalisée') +
       num(nf(d.heures || 0, 1) + ' h', 'de soins') +
       num(freq ? freq + ' j' : '—', 'fréquence') +
@@ -622,10 +654,10 @@
     }
 
     // Habitudes
-    H += '<div class="f-sec"><h4>Ses habitudes <small>' + ((d.realises || 0) ? 'd’après ' + pl(d.realises, 'visite') : 'd’après ses RDV') + '</small></h4><div class="hab">' + habits(d) + '</div></div>';
+    H += '<div class="f-sec"><h4>Ses habitudes <small>' + ((d.realises || 0) ? 'd’après ' + pl(d.realises, 'visite') : 'd’après ses RDV') + (F && avant ? ' depuis le ' + esc(cl) : '') + '</small></h4><div class="hab">' + habits(d) + '</div></div>';
 
     // Créneaux recommandés
-    H += '<div class="f-sec" data-r="recos"><h4>Créneaux recommandés <small>' + esc(recoSub(d)) + '</small></h4><div data-r="recos-body">' + recosHtml(f) + '</div></div>';
+    H += '<div class="f-sec" data-r="recos"><h4>Créneaux recommandés <small>' + esc(recoSub(dAll)) + '</small></h4><div data-r="recos-body">' + recosHtml(f) + '</div></div>';
 
     H += rdvSecs(false);
     f.el.innerHTML = H;
@@ -699,12 +731,13 @@
     });
   }
 
-  var TITRE_RE = /^Importé de Google Agenda : (.*?)( \(prestation à vérifier\))?$/;
+  var TITRE_RE = /^Importé de Google Agenda : (.*?)( \(prestation (?:à vérifier|estimée d'après la durée)\))?$/;
   function rdvRow(r, t, titre) {
     var stt = STATUT[r.statut] || [r.statut, ''], off = !ACTIVE[r.statut];
     var done = r.statut === 'confirme' && r.date < t;
     var svc = r.type === 'massage' ? (r.services || []).map(function (x) { return sname(x); }).join(' + ') : (r.services || []).map(function (x) { return sname(x, true); }).join(' + ');
-    return '<li><button data-rdv="' + esc(r.id) + '" class="' + (off ? 'off' : '') + '" style="--pc:' + pcol(r.praticienne) + '"><span class="mcl-stripe"></span><span style="min-width:0"><b>' + esc(cap(fDate(r.date))) + (r.date.slice(0, 4) !== t.slice(0, 4) ? ' ' + r.date.slice(0, 4) : '') + ' · ' + esc(fHR(r.debut, r.fin)) + '</b><small>' + esc(pname(r.praticienne)) + ' · ' + esc(svc) + '</small>' +
+    return '<li><button data-rdv="' + esc(r.id) + '" class="' + (off ? 'off' : '') + '" style="--pc:' + pcol(r.praticienne) + '"><span class="mcl-stripe"></span><span style="min-width:0"><b>' + esc(cap(fDate(r.date))) + (r.date.slice(0, 4) !== t.slice(0, 4) ? ' ' + r.date.slice(0, 4) : '') + ' · ' + esc(fHR(r.debut, r.fin)) + '</b><small>' + esc(pname(r.praticienne)) + ' · ' + esc(svc) +
+      (r.type !== 'massage' && EST_RE.test(r.note || '') ? '<em class="est" title="Prestation estimée d’après la durée du rendez-vous">estimé</em>' : r.type !== 'massage' && VERIF_RE.test(r.note || '') ? '<em class="est" title="Prestation non précisée dans Google Agenda">à vérifier</em>' : '') + '</small>' +
       (titre && TITRE_RE.test(r.note || '') ? '<span class="ttl">Google Agenda : « ' + esc(TITRE_RE.exec(r.note)[1]) + ' »</span>' : '') + '</span>' +
       '<span class="tag ' + (done ? '' : stt[1]) + '">' + (done ? 'Réalisé' : stt[0]) + '</span></button></li>';
   }
@@ -911,6 +944,13 @@
       if (a === 'mg-cancel') { f.mg = null; renderFiche(f); var mb = f.el.querySelector('[data-act="f-mg"]'); if (mb) mb.focus(); return; }
       if (a === 'mg-go') { goMerge(f); return; }
       if (a === 'f-full') { f.completer = false; renderFiche(f); return; }
+      if (a === 'f-fiable') {
+        var nv = !fiable(), sent = false; lsSet(FIABLE_KEY, JSON.stringify(nv));
+        if (hooked && G.emit) try { G.emit('fiable', nv); sent = true; } catch (x2) { /* ignore */ }
+        if (!sent) fiches.forEach(function (x) { if (x.data) renderFiche(x); }); // sinon : rendu par l'écouteur « fiable »
+        var sw = f.el.querySelector('[data-act="f-fiable"]'); if (sw) sw.focus();
+        return;
+      }
       if (a === 'f-rn') { f.mg = null; startRename(f); return; }
       if (a === 'f-rn-cancel') { stopRename(f); return; }
       if (a === 'f-rn-save') { e.preventDefault(); saveRename(f, false); return; }
@@ -932,6 +972,7 @@
     G.on('theme', function () { if (mounted) renderList(); fiches.forEach(function (f) { if (f.data) renderFiche(f); }); });
     G.on('config', function () { if (mounted) renderList(); fiches.forEach(function (f) { if (f.data) renderFiche(f); }); });
     G.on('login', function () { profils = null; if (mounted) load(); });
+    G.on('fiable', function () { fiches.forEach(function (f) { if (f.data && !f.completer) renderFiche(f); }); });
   }
 
   G.register('clientes', {
