@@ -12,7 +12,7 @@
 var SorelleCore = (function () {
   'use strict';
 
-  var VERSION = '1.0.0';
+  var VERSION = '1.2.0';
 
   /* ------------------------------------------------------------------------
    * CONFIGURATION PAR DÉFAUT (modifiable depuis l'écran Réglages)
@@ -51,7 +51,8 @@ var SorelleCore = (function () {
     minCreneauxParfaits: 2,      // sous ce nombre, on élargit (mode souple)
     trouMax: 30,                 // trou "maîtrisé" toléré en dernier recours (min)
     maxRdvParCliente: 2,         // RDV futurs actifs max par nom (en ligne)
-    retentionMois: 6,            // purge des RDV passés au-delà
+    retentionMois: 24,           // purge des RDV passés au-delà (24 mois : statistiques)
+    magie: { horizonJours: 7, services: ['remplissage'], seuilRemplissage: 50 }, // « Remplir l'agenda »
     services: [
       { id: 'remplissage',      nom: 'Remplissage gel',                     categorie: 'main',    duree: 120, famille: 'gel',  enLigne: true, info: 'Vous avez déjà du gel posé chez nous.' },
       { id: 'extension',        nom: 'Extension gel',                       categorie: 'main',    duree: 135, famille: 'gel',  enLigne: true, info: 'Ongles naturels, sans rien dessus.' },
@@ -450,6 +451,199 @@ var SorelleCore = (function () {
         segments: c.pl.segments
       };
     });
+  }
+
+  /**
+   * TROUS À COMBLER : fenêtres libres d'une praticienne sur une journée, avec
+   * pour chaque prestation l'heure de début possible la plus tôt dans la fenêtre.
+   * fromMin : ne rien proposer avant cette minute (aujourd'hui = maintenant).
+   */
+  function freeWindows(cfg, day, praticienne, fromMin) {
+    var rules = day.rules, P = day.prat[praticienne];
+    if (!rules || !P) return [];
+    if (P.count >= cfg.maxClientesJour) return [];
+    var step = cfg.pasMinutes || 15;
+    var start = Math.max(rules.debut, Math.ceil((fromMin || 0) / step) * step);
+    var maxLast = Math.max(rules.dernierGel, rules.dernierSemi);
+    var busy = P.busy.slice().sort(function (a, b) { return a.s - b.s; });
+    var gaps = [], cur = start;
+    busy.forEach(function (iv) {
+      if (iv.e <= cur) return;
+      if (iv.s > cur) gaps.push({ s: cur, e: Math.min(iv.s, 24 * 60) });
+      cur = Math.max(cur, iv.e);
+    });
+    if (cur <= maxLast) gaps.push({ s: cur, e: Math.max(rules.fin, maxLast) });
+    var svcs = cfg.services.filter(function (s) { return s.categorie !== 'massage'; });
+    var slotsBySvc = {};
+    svcs.forEach(function (s) { slotsBySvc[s.id] = computeSlots(cfg, day, praticienne, [s], 'all'); });
+    var out = [];
+    gaps.forEach(function (g) {
+      if (g.e - g.s <= 0 || g.s > maxLast) return;
+      var fits = [];
+      svcs.forEach(function (s) {
+        var first = slotsBySvc[s.id].filter(function (c) { var m = toMin(c.debut); return m >= g.s && m < g.e; })[0];
+        if (first) fits.push({ service: s.id, debut: first.debut, fin: first.fin });
+      });
+      if (!fits.length) return;
+      var premier = fits.reduce(function (m, f) { return f.debut < m ? f.debut : m; }, '99:99');
+      out.push({ debut: premier, fin: toHHMM(g.e), libreMin: g.e - toMin(premier), prestations: fits });
+    });
+    return out;
+  }
+
+  /* ------------------------------------------------------------------------
+   * CLIENTES & HABITUDES
+   * ---------------------------------------------------------------------- */
+  var JOURS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+  function clientKey(prenom, nom) { return normKey(prenom) + '|' + normKey(nom); }
+  function median(arr) {
+    if (!arr.length) return null;
+    var a = arr.slice().sort(function (x, y) { return x - y; }), m = Math.floor(a.length / 2);
+    return a.length % 2 ? a[m] : Math.round((a[m - 1] + a[m]) / 2);
+  }
+  function momentOf(min) { return min < 12 * 60 ? 'matin' : min < 14 * 60 ? 'midi' : min < 17 * 60 ? 'après-midi' : 'soir'; }
+
+  /** Construit le profil de chaque cliente à partir de ses rendez-vous (toutes périodes). */
+  function clientProfiles(cfg, rdvs, today) {
+    var map = {};
+    rdvs.forEach(function (r) {
+      if (!cleanName(r.prenom) && !cleanName(r.nom)) return;
+      var k = clientKey(r.prenom, r.nom);
+      if (k === 'cliente|agenda') return; // nom introuvable à l'import
+      (map[k] = map[k] || { cle: k, prenom: cleanName(r.prenom), nom: cleanName(r.nom), rdvs: [] }).rdvs.push(r);
+    });
+    return Object.keys(map).map(function (k) { return buildProfile(cfg, map[k], today); });
+  }
+
+  function buildProfile(cfg, c, today) {
+    var list = c.rdvs.slice().sort(function (a, b) { return (a.date + a.debut).localeCompare(b.date + b.debut); });
+    var realises = list.filter(function (r) { return r.statut === 'confirme' && r.date < today; });
+    var aVenir = list.filter(function (r) { return ACTIVE[r.statut] && r.date >= today; });
+    var actifs = realises.concat(aVenir);
+    var count = function (arr, f) { var m = {}; arr.forEach(function (x) { var k = f(x); if (k != null) m[k] = (m[k] || 0) + 1; }); return m; };
+    var top = function (m) { var best = null, n = -1; Object.keys(m).forEach(function (k) { if (m[k] > n) { n = m[k]; best = k; } }); return best; };
+    var pratCounts = count(actifs, function (r) { return r.type === 'massage' ? null : r.praticienne; });
+    var svcCounts = {};
+    actifs.forEach(function (r) { (r.services || []).forEach(function (id) { svcCounts[id] = (svcCounts[id] || 0) + 1; }); });
+    var comboCounts = count(actifs.filter(function (r) { return r.type !== 'massage'; }), function (r) {
+      return (r.services || []).slice().sort().join('+') || null;
+    });
+    var base = realises.length ? realises : actifs;
+    var jourCounts = count(base, function (r) { return weekday(r.date); });
+    var jours = Object.keys(jourCounts).map(function (wd) { return { jour: +wd, nom: JOURS[+wd], n: jourCounts[wd] }; })
+      .sort(function (a, b) { return b.n - a.n; });
+    var hMed = median(base.map(function (r) { return toMin(r.debut); }));
+    var heure = hMed == null ? null : toHHMM(Math.round(hMed / 15) * 15);
+    var dates = []; realises.forEach(function (r) { if (dates.indexOf(r.date) < 0) dates.push(r.date); });
+    var gaps = []; for (var i = 1; i < dates.length; i++) gaps.push(diffDays(dates[i - 1], dates[i]));
+    var freq = median(gaps.filter(function (g) { return g >= 7 && g <= 120; }));
+    var derniere = realises.length ? realises[realises.length - 1].date : null;
+    var habituel = top(comboCounts);
+    var svcHab = habituel ? habituel.split('+') : [];
+    // Ordre mains puis pieds
+    var smap = serviceMap(cfg);
+    svcHab.sort(function (a, b) { return ((smap[a] || {}).categorie === 'pied') - ((smap[b] || {}).categorie === 'pied'); });
+    var prevue = derniere ? addDays(derniere, freq || (svcHab.indexOf('remplissage') >= 0 ? 28 : 35)) : null;
+    var heures = 0;
+    realises.forEach(function (r) { heures += Math.max(0, toMin(r.fin) - toMin(r.debut)) / 60; });
+    var prochain = aVenir[0] || null;
+    return {
+      cle: c.cle, prenom: c.prenom, nom: c.nom,
+      praticienne: top(pratCounts) || (list[list.length - 1] || {}).praticienne || null,
+      praticiennes: pratCounts,
+      total: list.length, realises: realises.length, aVenir: aVenir.length,
+      annules: list.filter(function (r) { return r.statut === 'annule' || r.statut === 'refuse'; }).length,
+      absentes: list.filter(function (r) { return r.statut === 'absente'; }).length,
+      premiere: list.length ? list[0].date : null, derniere: derniere,
+      prochain: prochain ? { date: prochain.date, debut: prochain.debut, praticienne: prochain.praticienne, services: prochain.services, id: prochain.id } : null,
+      services: Object.keys(svcCounts).map(function (id) { return { id: id, n: svcCounts[id] }; }).sort(function (a, b) { return b.n - a.n; }),
+      heures: Math.round(heures * 10) / 10,
+      habitude: {
+        services: svcHab, praticienne: top(pratCounts), jours: jours, heure: heure,
+        moment: hMed == null ? null : momentOf(hMed), frequenceJours: freq, prochaineVisitePrevue: prevue
+      }
+    };
+  }
+
+  /**
+   * Recommandations de créneaux, classées par score (plus bas = meilleur).
+   * Combine : compression du planning (classe A/B/C), habitudes de la cliente
+   * (jour, heure, praticienne, date de son prochain soin) et proximité dans le temps.
+   */
+  function recommendSlots(cfg, rdvs, bls, o) {
+    var list = resolveServices(cfg, o.services);
+    var prof = o.profil || null, h = prof && prof.habitude;
+    var out = [];
+    for (var d = o.du; d <= o.au; d = addDays(d, 1)) {
+      var day = buildDay(cfg, d, rdvs, bls, o.excludeId);
+      if (!day.rules) continue;
+      o.praticiennes.forEach(function (pid) {
+        computeSlots(cfg, day, pid, list, 'all').forEach(function (c) {
+          var m = toMin(c.debut);
+          if (d === o.today && m < o.fromMin) return;
+          var score = c.classe === 'A' ? 0 : c.classe === 'B' ? 8 : 18 + c.trou / 5;
+          var raisons = [];
+          if (c.classe === 'A') raisons.push('Sans trou dans le planning');
+          if (h) {
+            var wd = weekday(d), rank = -1;
+            h.jours.forEach(function (j, i) { if (j.jour === wd && rank < 0) rank = i; });
+            if (h.jours.length) {
+              if (rank === 0) raisons.push('Son jour habituel (' + JOURS[wd] + ')');
+              score += rank === 0 ? 0 : rank > 0 ? 4 : 9;
+            }
+            if (h.heure) {
+              var diff = Math.abs(m - toMin(h.heure));
+              score += Math.min(diff / 30 * 2.5, 15);
+              if (diff <= 45) raisons.push('Proche de son heure habituelle (' + h.heure.replace(':', 'h') + ')');
+            }
+            if (h.prochaineVisitePrevue) {
+              var dd = Math.abs(diffDays(h.prochaineVisitePrevue, d));
+              score += Math.min(dd * 1.2, 15);
+              if (dd <= 3) raisons.push('Au bon moment pour son prochain soin');
+            }
+            if (h.praticienne && pid !== h.praticienne) score += 6;
+          }
+          score += diffDays(o.today, d) * 0.3;
+          out.push({ date: d, praticienne: pid, debut: c.debut, fin: c.fin, classe: c.classe, ordre: c.ordre,
+            score: Math.round(score * 10) / 10, raisons: raisons });
+        });
+      });
+    }
+    out.sort(function (a, b) { return a.score - b.score || (a.date + a.debut).localeCompare(b.date + b.debut); });
+    var perDay = {}, res = [];
+    for (var i = 0; i < out.length && res.length < (o.limit || 8); i++) {
+      var k = out[i].date + out[i].praticienne;
+      if ((perDay[k] = (perDay[k] || 0) + 1) > 2) continue; // 2 propositions max par jour et praticienne
+      res.push(out[i]);
+    }
+    return res;
+  }
+
+  /** Combien de clientes (pour ces soins) peuvent encore rentrer dans la journée : simulation gloutonne. */
+  function capacityFor(cfg, day, pid, list, fromMin) {
+    var d = JSON.parse(JSON.stringify(day)), n = 0, times = [], b = cfg.battement;
+    for (var guard = 0; guard < 12; guard++) {
+      var c = computeSlots(cfg, d, pid, list, 'all').filter(function (x) { return toMin(x.debut) >= fromMin; })[0];
+      if (!c) break;
+      n++; times.push(c.debut);
+      var s = toMin(c.debut), e = toMin(c.fin);
+      d.prat[pid].busy.push({ s: s, e: e + b, kind: 'rdv' });
+      d.prat[pid].lunchBusy.push({ s: s, e: e + b });
+      d.prat[pid].count++;
+      c.segments.forEach(function (sg) { if (sg.lieu === 'cabine') d.cabine.push({ s: toMin(sg.debut), e: toMin(sg.fin) + b }); });
+    }
+    return { n: n, heures: times };
+  }
+
+  /** Trous inutilisables (trop courts pour la plus petite prestation) entre deux rendez-vous. */
+  function deadGaps(cfg, day, pid, fromMin) {
+    var P = day.prat[pid], rules = day.rules, minUseful = minUsefulGap(cfg), out = [];
+    var busy = P.busy.filter(function (x) { return x.kind === 'rdv' || x.kind === 'massage'; }).sort(function (a, b) { return a.s - b.s; });
+    for (var i = 1; i < busy.length; i++) {
+      var g = effectiveGap(cfg, busy[i - 1].e, busy[i].s);
+      if (g > 0 && g < minUseful && busy[i - 1].e >= Math.max(fromMin, rules.debut)) out.push({ debut: toHHMM(busy[i - 1].e), minutes: g });
+    }
+    return out;
   }
 
   /* ------------------------------------------------------------------------
@@ -851,6 +1045,307 @@ var SorelleCore = (function () {
         return env.withLock(function () { store.deleteBlocage(p.id); return { id: p.id }; });
       },
 
+      /* ===== TROUS À COMBLER & OFFRES "LIEN ÉCLAIR" ===== */
+
+      // Fenêtres libres à venir, par jour et par praticienne (aujourd'hui compris, à partir de maintenant)
+      'admin.trous': function (p, token) {
+        requireAdmin(token);
+        var cfg = config();
+        var today = env.today();
+        var du = isDate(p.du) && p.du > today ? p.du : today;
+        var au = isDate(p.au) ? p.au : addDays(du, 6);
+        if (diffDays(du, au) > 31) au = addDays(du, 31);
+        var prats = p.praticienne && p.praticienne !== 'tous' ? [p.praticienne] : pratIds(cfg);
+        var rdvs = store.listRdv({ du: du, au: au });
+        var bls = store.listBlocages();
+        var jours = [];
+        for (var d = du; d <= au; d = addDays(d, 1)) {
+          var day = buildDay(cfg, d, rdvs, bls);
+          if (!day.rules) continue;
+          var entry = { date: d, praticiennes: {} };
+          prats.forEach(function (pid) {
+            if (!day.prat[pid]) return;
+            entry.praticiennes[pid] = {
+              clientes: day.prat[pid].count,
+              max: cfg.maxClientesJour,
+              fenetres: freeWindows(cfg, day, pid, d === today ? nowMin() + 30 : 0)
+            };
+          });
+          jours.push(entry);
+        }
+        return { du: du, au: au, aujourdhui: today, jours: jours };
+      },
+
+      // Crée (ou met à jour si id fourni) une offre : liste de créneaux publiés en story
+      'admin.creerOffre': function (p, token) {
+        requireAdmin(token);
+        var cfg = config();
+        if (!Array.isArray(p.creneaux) || !p.creneaux.length) throw err('offre_vide', 'Sélectionnez au moins un créneau.');
+        if (p.creneaux.length > 40) throw err('offre_trop_grande', 'Maximum 40 créneaux par story.');
+        var creneaux = p.creneaux.map(function (c, i) {
+          if (!pratById(cfg, c.praticienne) || !isDate(c.date) || !isTime(c.debut) || !isTime(c.fin)) throw err('offre_invalide', 'Créneau invalide.');
+          return { id: c.id || ('c' + i + env.code().toLowerCase()), praticienne: c.praticienne, date: c.date, debut: c.debut, fin: c.fin };
+        });
+        var heures = Math.min(Math.max(parseInt(p.heures, 10) || 24, 1), 168);
+        return env.withLock(function () {
+          var list = loadOffres();
+          var o = p.id ? list.filter(function (x) { return x.id === p.id; })[0] : null;
+          if (!o) {
+            o = { id: env.uuid(), token: (env.code() + env.code()).toLowerCase(), creeLe: env.nowIso() };
+            list.push(o);
+          }
+          o.creneaux = creneaux;
+          o.titre = String(p.titre || '').slice(0, 60);
+          o.expire = env.nowMs() + heures * 3600000;
+          o.majLe = env.nowIso();
+          saveOffres(list);
+          return o;
+        });
+      },
+
+      'admin.offres': function (p, token) {
+        requireAdmin(token);
+        return loadOffres();
+      },
+
+      'admin.fermerOffre': function (p, token) {
+        requireAdmin(token);
+        return env.withLock(function () {
+          saveOffres(loadOffres().filter(function (x) { return x.id !== p.id; }));
+          return { id: p.id };
+        });
+      },
+
+      // Page cliente : contenu d'un lien éclair, avec l'état en direct de chaque créneau
+      'public.offre': function (p) {
+        if (!env.rateLimit('offre', 120, 600)) throw err('trop_de_demandes', 'Trop de demandes, réessayez plus tard.');
+        var cfg = config();
+        var o = findOffre(p.token);
+        var today = env.today();
+        var dates = o.creneaux.map(function (c) { return c.date; }).sort();
+        var rdvs = dates.length ? store.listRdv({ du: dates[0], au: dates[dates.length - 1] }) : [];
+        var bls = store.listBlocages();
+        var enLigne = {};
+        cfg.services.forEach(function (s) { if (s.enLigne && s.categorie !== 'massage') enLigne[s.id] = true; });
+        var creneaux = o.creneaux.filter(function (c) { return c.date >= today; }).map(function (c) {
+          var fits = offerFits(cfg, c, rdvs, bls, today).filter(function (f) { return enLigne[f.service]; });
+          return { id: c.id, praticienne: c.praticienne, date: c.date, debut: c.debut, fin: c.fin, libre: fits.length > 0, prestations: fits };
+        });
+        return {
+          titre: o.titre, expire: o.expire, creneaux: creneaux,
+          praticiennes: publicPraticiennes(cfg).map(function (pr) {
+            var col = cfg.couleurs && cfg.couleurs.praticiennes && cfg.couleurs.praticiennes[pr.id];
+            if (typeof col === 'string' && /^#[0-9a-fA-F]{6}$/.test(col)) pr.couleur = col;
+            return pr;
+          }),
+          prestations: cfg.services.filter(function (s) { return enLigne[s.id]; })
+            .map(function (s) { return { id: s.id, nom: s.nom, categorie: s.categorie, duree: s.duree }; }),
+          textes: cfg.textes, aujourdhui: today
+        };
+      },
+
+      // Réservation d'un créneau de lien éclair (jour même autorisé)
+      'public.reserverOffre': function (p) {
+        if (p.website) throw err('refuse', 'Demande refusée.');
+        var cfg = config();
+        var o = findOffre(p.token);
+        var c = o.creneaux.filter(function (x) { return x.id === p.creneau; })[0];
+        if (!c) throw err('creneau_inconnu', 'Ce créneau ne fait pas partie de l\'offre.');
+        var list = resolveServices(cfg, p.services, { public: true });
+        var prenom = cleanName(p.prenom), nom = cleanName(p.nom);
+        if (!prenom || !nom) throw err('nom_requis', 'Merci d\'indiquer votre prénom et votre nom.');
+        if (!NAME_RE.test(prenom) || !NAME_RE.test(nom)) throw err('nom_invalide', 'Prénom et nom : lettres uniquement (pas de chiffres, pas d\'email).');
+        if (!env.rateLimit('reserver', 30, 600)) throw err('trop_de_demandes', 'Trop de demandes en ce moment, réessayez dans quelques minutes.');
+        return env.withLock(function () {
+          var today = env.today();
+          if (c.date < today) throw err('creneau_passe', 'Ce créneau est passé.');
+          var key = normKey(prenom) + '|' + normKey(nom);
+          var dejaCeJour = store.listRdv({ du: c.date, au: c.date }).some(function (r) {
+            return ACTIVE[r.statut] && r.type !== 'massage' && (normKey(r.prenom) + '|' + normKey(r.nom)) === key;
+          });
+          if (dejaCeJour) throw err('doublon', 'Vous avez déjà un rendez-vous ce jour-là.');
+          var rdvs = store.listRdv({ du: c.date, au: c.date });
+          var day = buildDay(cfg, c.date, rdvs, store.listBlocages());
+          var from = c.date === today ? nowMin() + 30 : 0;
+          var cand = computeSlots(cfg, day, c.praticienne, list, 'all').filter(function (s) {
+            var m = toMin(s.debut);
+            return m >= toMin(c.debut) && m < toMin(c.fin) && m >= from;
+          })[0];
+          if (!cand) throw err('creneau_pris', 'Ce créneau vient d\'être pris ou ne convient pas à ces soins. Choisissez-en un autre.');
+          var statut = cfg.validation === 'toutes' ? 'en_attente' : 'confirme';
+          var now = env.nowIso();
+          var r = {
+            id: env.uuid(), code: env.code(), type: 'client', date: c.date,
+            debut: cand.debut, fin: cand.fin, praticienne: c.praticienne,
+            services: cand.ordre, segments: cand.segments,
+            prenom: prenom, nom: nom, nouvelle: false, ongles: '',
+            statut: statut, source: 'story', note: 'Réservé via le lien story', creeLe: now, majLe: now
+          };
+          store.insertRdv(r);
+          return publicRdvView(cfg, r);
+        });
+      },
+
+      /* ===== v1.2 : HISTORIQUE, CLIENTES, RECOMMANDATIONS, MAGIE, PHOTOS ===== */
+
+      // Tous les rendez-vous d'une période (statistiques), sans le détail des segments
+      'admin.historique': function (p, token) {
+        requireAdmin(token);
+        var today = env.today();
+        var du = isDate(p.du) ? p.du : addDays(today, -365);
+        var au = isDate(p.au) ? p.au : addDays(today, 90);
+        if (au < du) throw err('date_invalide', 'Période invalide.');
+        if (diffDays(du, au) > 800) throw err('periode_trop_longue', 'Période trop longue (max 2 ans).');
+        return {
+          du: du, au: au, aujourdhui: today,
+          rdvs: store.listRdv({ du: du, au: au }).map(function (r) {
+            return { id: r.id, code: r.code, type: r.type, date: r.date, debut: r.debut, fin: r.fin, praticienne: r.praticienne,
+              services: r.services, prenom: r.prenom, nom: r.nom, statut: r.statut, source: r.source, note: r.note, creeLe: r.creeLe };
+          })
+        };
+      },
+
+      // Base clientes (profils et habitudes), sans la liste des rendez-vous
+      'admin.clientes': function (p, token) {
+        requireAdmin(token);
+        var cfg = config(), today = env.today();
+        return clientProfiles(cfg, store.listRdv({ du: addDays(today, -730), au: addDays(today, 400) }), today)
+          .sort(function (a, b) { return (b.derniere || b.premiere || '').localeCompare(a.derniere || a.premiere || ''); });
+      },
+
+      // Fiche d'une cliente : profil + tous ses rendez-vous
+      'admin.client': function (p, token) {
+        requireAdmin(token);
+        var cfg = config(), today = env.today();
+        var all = store.listRdv({ du: addDays(today, -730), au: addDays(today, 400) });
+        var mine = all.filter(function (r) { return clientKey(r.prenom, r.nom) === p.cle; });
+        if (!mine.length) throw err('introuvable', 'Cliente introuvable.');
+        var prof = buildProfile(cfg, { cle: p.cle, prenom: cleanName(mine[0].prenom), nom: cleanName(mine[0].nom), rdvs: mine }, today);
+        prof.rdvs = mine.sort(function (a, b) { return (b.date + b.debut).localeCompare(a.date + a.debut); });
+        return prof;
+      },
+
+      // Créneaux recommandés : pour une cliente (habitudes) ou pour des soins donnés
+      'admin.recommander': function (p, token) {
+        requireAdmin(token);
+        var cfg = config(), today = env.today();
+        var prof = null;
+        if (p.cle) {
+          var mine = store.listRdv({ du: addDays(today, -730), au: addDays(today, 400) })
+            .filter(function (r) { return clientKey(r.prenom, r.nom) === p.cle; });
+          if (mine.length) prof = buildProfile(cfg, { cle: p.cle, prenom: cleanName(mine[0].prenom), nom: cleanName(mine[0].nom), rdvs: mine }, today);
+        }
+        var services = (Array.isArray(p.services) && p.services.length) ? p.services
+          : (prof && prof.habitude.services.length ? prof.habitude.services : (cfg.magie && cfg.magie.services) || ['remplissage']);
+        var prats = p.praticienne && p.praticienne !== 'tous' ? [p.praticienne]
+          : (prof && prof.habitude.praticienne && !p.praticienne ? [prof.habitude.praticienne] : pratIds(cfg));
+        var du = isDate(p.du) && p.du >= today ? p.du : today;
+        var au = isDate(p.au) ? p.au : addDays(du, 21);
+        if (diffDays(du, au) > 62) au = addDays(du, 62);
+        var res = recommendSlots(cfg, store.listRdv({ du: du, au: au }), store.listBlocages(), {
+          services: services, praticiennes: prats, du: du, au: au, today: today, fromMin: nowMin() + 15,
+          profil: prof, limit: Math.min(parseInt(p.limit, 10) || 8, 30), excludeId: p.excludeId
+        });
+        return { profil: prof, services: services, praticiennes: prats, creneaux: res };
+      },
+
+      // « Remplir l'agenda » : analyse de remplissage, créneaux à proposer, alertes et clientes à relancer
+      'admin.remplir': function (p, token) {
+        requireAdmin(token);
+        var cfg = config(), today = env.today();
+        var mg = cfg.magie || {};
+        var services = (Array.isArray(p.services) && p.services.length) ? p.services : (mg.services && mg.services.length ? mg.services : ['remplissage']);
+        var list = resolveServices(cfg, services);
+        var prats = p.praticienne && p.praticienne !== 'tous' ? [p.praticienne] : pratIds(cfg);
+        var du = isDate(p.du) && p.du >= today ? p.du : today;
+        var au = isDate(p.au) ? p.au : addDays(du, (mg.horizonJours || 7) - 1);
+        if (diffDays(du, au) > 31) au = addDays(du, 31);
+        var seuil = typeof mg.seuilRemplissage === 'number' ? mg.seuilRemplissage : 50;
+        var rdvs = store.listRdv({ du: du, au: au }), bls = store.listBlocages();
+        var nm = nowMin();
+        var smap = serviceMap(cfg);
+        var label = list.map(function (s) { return s.nom; }).join(' + ');
+        var jours = [], resume = {};
+        prats.forEach(function (pid) { resume[pid] = { places: 0, capacite: 0, clientes: 0, max: 0 }; });
+        for (var d = du; d <= au; d = addDays(d, 1)) {
+          var day = buildDay(cfg, d, rdvs, bls);
+          if (!day.rules) continue;
+          var from = d === today ? nm + 30 : 0;
+          var demain = d === addDays(today, 1);
+          var entry = { date: d, praticiennes: {} };
+          prats.forEach(function (pid) {
+            var P = day.prat[pid];
+            if (!P) return;
+            var blocked = P.busy.some(function (x) { return (x.kind === 'blocage' || x.kind === 'inactive') && x.s <= day.rules.debut && x.e >= day.rules.fin; });
+            var max = cfg.maxClientesJour, places = blocked ? 0 : Math.max(0, max - P.count);
+            var cap = places ? capacityFor(cfg, day, pid, list, from) : { n: 0, heures: [] };
+            var creneaux = places ? computeSlots(cfg, day, pid, list, 'public').filter(function (c) { return toMin(c.debut) >= from; })
+              .map(function (c) { return { debut: c.debut, fin: c.fin, classe: c.classe, ordre: c.ordre }; }) : [];
+            var alertes = [];
+            if (blocked) alertes.push({ niveau: 'info', texte: 'Indisponible ce jour-là' });
+            else if (P.count >= max) alertes.push({ niveau: 'ok', texte: 'Complet (' + P.count + '/' + max + ')' });
+            else {
+              var taux = Math.round(P.count / max * 100);
+              if ((d === today || demain) && cap.n > 0) alertes.push({ niveau: 'critique', texte: (d === today ? "Aujourd'hui" : 'Demain') + ' : ' + cap.n + ' place' + (cap.n > 1 ? 's' : '') + ' à remplir' });
+              else if (P.count === 0) alertes.push({ niveau: 'critique', texte: 'Journée vide' });
+              else if (taux < seuil) alertes.push({ niveau: 'attention', texte: 'Remplie à ' + taux + ' %' });
+              if (cap.n === 0 && places > 0) alertes.push({ niveau: 'attention', texte: 'Plus de place pour ' + label + ' (il reste des trous trop courts)' });
+              deadGaps(cfg, day, pid, from).forEach(function (g) {
+                alertes.push({ niveau: 'attention', texte: 'Trou de ' + g.minutes + ' min inutilisable à ' + g.debut.replace(':', 'h') });
+              });
+            }
+            entry.praticiennes[pid] = {
+              clientes: P.count, max: max, placesRestantes: places, capacite: cap.n, heuresPossibles: cap.heures,
+              creneaux: creneaux, fenetres: places ? freeWindows(cfg, day, pid, from) : [], alertes: alertes
+            };
+            resume[pid].places += places; resume[pid].capacite += cap.n; resume[pid].clientes += P.count; resume[pid].max += max;
+          });
+          jours.push(entry);
+        }
+        // Clientes à relancer : soin prévu bientôt (ou en retard), aucun RDV à venir
+        var all = store.listRdv({ du: addDays(today, -730), au: addDays(today, 400) });
+        var relances = clientProfiles(cfg, all, today).filter(function (c) {
+          var h = c.habitude;
+          return !c.prochain && c.derniere && h.prochaineVisitePrevue && h.prochaineVisitePrevue <= addDays(au, 3)
+            && diffDays(c.derniere, today) <= 180 && prats.indexOf(h.praticienne) >= 0 && h.services.length;
+        }).sort(function (a, b) { return a.habitude.prochaineVisitePrevue.localeCompare(b.habitude.prochaineVisitePrevue); })
+          .slice(0, 25).map(function (c) {
+            var h = c.habitude, sug = null;
+            var svcs = h.services.filter(function (id) { return smap[id] && smap[id].categorie !== 'massage'; });
+            if (svcs.length) {
+              try {
+                var rdu = h.prochaineVisitePrevue > du ? (addDays(h.prochaineVisitePrevue, -3) > du ? addDays(h.prochaineVisitePrevue, -3) : du) : du;
+                sug = recommendSlots(cfg, store.listRdv({ du: rdu, au: addDays(au, 7) }), bls, {
+                  services: svcs, praticiennes: [h.praticienne], du: rdu, au: addDays(au, 7), today: today, fromMin: nm + 30, profil: c, limit: 1
+                })[0] || null;
+              } catch (e) { sug = null; }
+            }
+            return { cle: c.cle, prenom: c.prenom, nom: c.nom, praticienne: h.praticienne, derniere: c.derniere,
+              prevue: h.prochaineVisitePrevue, retardJours: diffDays(h.prochaineVisitePrevue, today), services: svcs,
+              frequenceJours: h.frequenceJours, suggestion: sug };
+          });
+        return { du: du, au: au, aujourdhui: today, services: services, jours: jours, resume: resume, relances: relances };
+      },
+
+      // Photo de profil d'une praticienne (data URL JPEG/PNG/WebP, compressée côté appareil)
+      'admin.setPhoto': function (p, token) {
+        requireAdmin(token);
+        var cfg = config();
+        if (!pratById(cfg, p.praticienne)) throw err('praticienne_inconnue', 'Praticienne inconnue.');
+        if (!store.setMedia) throw err('maj_requise', 'Mettez à jour Code.gs pour enregistrer les photos.');
+        var img = String(p.image || '');
+        if (img && !/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(img)) throw err('image_invalide', 'Format d\'image non pris en charge.');
+        if (img.length > 140000) throw err('image_trop_lourde', 'Image trop lourde : choisissez une photo plus petite.');
+        store.setMedia('photo_' + p.praticienne, img);
+        return { praticienne: p.praticienne, ok: true };
+      },
+
+      'public.photos': function () {
+        var cfg = config(), out = {};
+        cfg.praticiennes.forEach(function (pr) { out[pr.id] = store.getMedia ? (store.getMedia('photo_' + pr.id) || null) : null; });
+        return out;
+      },
+
       'admin.config': function (p, token) {
         requireAdmin(token);
         return config();
@@ -879,6 +1374,41 @@ var SorelleCore = (function () {
         return { token: makeToken() };
       }
     };
+
+    /* ---------------- Offres (lien éclair) ---------------- */
+    // Heure actuelle à Paris, en minutes (env.nowIso renvoie l'heure locale de Paris)
+    function nowMin() {
+      var m = /T(\d{2}):(\d{2})/.exec(env.nowIso() || '');
+      return m ? parseInt(m[1], 10) * 60 + parseInt(m[2], 10) : 0;
+    }
+    function loadOffres() {
+      var raw = store.getSecret('offres');
+      var list = [];
+      try { list = raw ? JSON.parse(raw) : []; } catch (e) { list = []; }
+      var now = env.nowMs();
+      return list.filter(function (o) { return o && o.expire > now; });
+    }
+    function saveOffres(list) { store.setSecret('offres', JSON.stringify(list.slice(-6))); } // 6 offres actives max
+    function findOffre(tok) {
+      var t = String(tok || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      var o = t.length >= 8 ? loadOffres().filter(function (x) { return x.token === t; })[0] : null;
+      if (!o) throw err('offre_expiree', 'Cette offre est terminée. Contactez-nous pour connaître les prochaines disponibilités.');
+      return o;
+    }
+    function offerFits(cfg, c, rdvs, bls, today) {
+      var day = buildDay(cfg, c.date, rdvs, bls);
+      if (!day.rules) return [];
+      var from = c.date === today ? nowMin() + 30 : 0;
+      var a = toMin(c.debut), b = toMin(c.fin), out = [];
+      cfg.services.forEach(function (s) {
+        if (s.categorie === 'massage') return;
+        var first = computeSlots(cfg, day, c.praticienne, [s], 'all').filter(function (x) {
+          var m = toMin(x.debut); return m >= a && m < b && m >= from;
+        })[0];
+        if (first) out.push({ service: s.id, debut: first.debut, fin: first.fin });
+      });
+      return out;
+    }
 
     function checkPlacement(cfg, p, excludeId) {
       var list = resolveServices(cfg, p.services);
@@ -957,7 +1487,9 @@ var SorelleCore = (function () {
     _: {
       toMin: toMin, toHHMM: toHHMM, addDays: addDays, weekday: weekday, dayRules: dayRules,
       buildDay: buildDay, computeSlots: computeSlots, place: place, resolveServices: resolveServices,
-      mergeConfig: mergeConfig, validateConfig: validateConfig, lunchOk: lunchOk, diffDays: diffDays
+      mergeConfig: mergeConfig, validateConfig: validateConfig, lunchOk: lunchOk, diffDays: diffDays,
+      freeWindows: freeWindows, clientKey: clientKey, clientProfiles: clientProfiles, buildProfile: buildProfile,
+      recommendSlots: recommendSlots, capacityFor: capacityFor, JOURS: JOURS
     }
   };
 })();
