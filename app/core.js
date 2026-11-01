@@ -12,7 +12,7 @@
 var SorelleCore = (function () {
   'use strict';
 
-  var VERSION = '1.3.1';
+  var VERSION = '1.3.2';
 
   /* ------------------------------------------------------------------------
    * CONFIGURATION PAR DÉFAUT (modifiable depuis l'écran Réglages)
@@ -52,6 +52,7 @@ var SorelleCore = (function () {
     trouMax: 30,                 // trou "maîtrisé" toléré en dernier recours (min)
     maxRdvParCliente: 2,         // RDV futurs actifs max par nom (en ligne)
     retentionMois: 24,           // purge des RDV passés au-delà (24 mois : statistiques)
+    statsFiablesDepuis: '2026-11-01', // statistiques : avant cette date, prestations estimées d'après la durée (import Google Agenda)
     magie: { horizonJours: 7, services: ['remplissage'], seuilRemplissage: 50, retardMaxRelance: 30, afficherPriorites: true, afficherRelances: false },
     affichage: { heureFin: false, moisJour: false }, // planning : seulement l'heure de début (la plage complète en option) // « Remplir l'agenda »
     services: [
