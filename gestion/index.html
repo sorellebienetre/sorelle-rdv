@@ -8,13 +8,17 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Sorelle Planning">
-<meta name="theme-color" content="#FBF7EE">
+<meta name="theme-color" content="#F5EFE3" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14160F" media="(prefers-color-scheme: dark)">
 <meta name="format-detection" content="telephone=no">
 <title>Sorelle · Planning</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Ccircle cx=%2216%22 cy=%2216%22 r=%2216%22 fill=%22%235A6B4D%22/%3E%3C/svg%3E">
+<link rel="icon" href="../assets/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="../assets/favicon-32.png">
+<link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet">
 <script>
 /* Thème appliqué avant le premier affichage (évite un flash clair en mode sombre) */
 (function () {
@@ -32,7 +36,7 @@
   color-scheme:light;
   --bg:#F5EFE3; --surface:#FBF7EE; --surface-2:#F0E8D8;
   --text:#2A2F23; --text-sub:#5A6453; --muted:#8E9583;
-  --line:rgba(30,34,24,.11); --accent:#A85F3F; --accent-text:#FFFFFF;
+  --line:rgba(30,34,24,.11); --accent:#5E7052; --accent-text:#FFFFFF; --clay:#C97B5A;
   --sage:#6F8161; --ok:#4F7A43; --warn:#A86A12; --danger:#A8432F; --focus:#1E2218;
   --shadow:0 1px 2px rgba(30,34,24,.06),0 8px 24px rgba(30,34,24,.08);
   --radius:12px; --radius-lg:18px;
@@ -47,7 +51,8 @@
   --off:#EFE7D7; --lunch:rgba(138,157,122,.08); --buffer:rgba(30,34,24,.04);
   --blk:#ECEBE6; --blk-stripe:rgba(60,66,51,.07);
   --backdrop:rgba(30,34,24,.38); --backdrop-side:rgba(30,34,24,.2);
-  --brand:#5A6B4D; --brand-fg:#FFFFFF;
+  --brand:#5E7052; --brand-fg:#FFFFFF; --brand-2:#4F6046;
+  --serif:'Cormorant Garamond',Georgia,'Times New Roman',serif;
   --sans:'Outfit',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
   --ease:cubic-bezier(.16,1,.3,1);
   --nav-w:0px; --tab-h:0px;
@@ -57,7 +62,7 @@
   color-scheme:dark;
   --bg:#14160F; --surface:#1D2018; --surface-2:#262A20;
   --text:#E9E4D6; --text-sub:#B4B09F; --muted:#858876;
-  --line:rgba(233,228,214,.12); --accent:#D2896A; --accent-text:#1F120B;
+  --line:rgba(233,228,214,.12); --accent:#A9BC97; --accent-text:#151A10; --clay:#D99476;
   --sage:#9DB08C; --ok:#8FBF7F; --warn:#E2AE58; --danger:#EC8670; --focus:#E9E4D6;
   --shadow:0 1px 2px rgba(0,0,0,.35),0 10px 30px rgba(0,0,0,.35);
   --ink:#F4EFE3; --line-2:rgba(233,228,214,.06); --line-3:rgba(233,228,214,.2);
@@ -96,8 +101,11 @@ svg{display:block}
 .btn-ghost:hover{border-color:var(--ink)}
 .btn-danger{border-color:color-mix(in srgb,var(--danger) 40%,transparent);color:var(--danger);background:var(--surface)}
 .btn-danger:hover{background:var(--danger);color:var(--surface)}
-.btn-fill{background:var(--clay-bg);color:var(--clay-fg);border-color:var(--clay-line)}
-.btn-fill:hover{border-color:var(--accent)}
+.btn-fill{background:linear-gradient(180deg,#6A7D5D,#55684A);color:#fff;border-color:transparent;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 1px 2px rgba(30,34,24,.18),0 6px 16px -8px rgba(79,96,70,.7)}
+.btn-fill:hover{filter:brightness(1.05)}
+.btn-fill svg{color:#F3E3B5}
+:root[data-theme="dark"] .btn-fill{background:linear-gradient(180deg,#7F946E,#68805A);color:#10130C}
+:root[data-theme="dark"] .btn-fill svg{color:#3A2A10}
 .btn-block{width:100%}
 .btn[disabled]{opacity:.45;pointer-events:none}
 .btn-sm{min-height:38px;padding:0 14px;font-size:14px}
@@ -133,8 +141,9 @@ body.has-demo #login{min-height:calc(100dvh - 22px)}
 /* ---------- Connexion ---------- */
 #login{min-height:100dvh;display:grid;place-items:center;padding:32px 16px calc(32px + var(--safe-b));background:var(--surface)}
 .login-box{width:100%;max-width:340px;text-align:center}
-.login-logo{width:56px;height:56px;border-radius:50%;background:var(--brand);color:var(--brand-fg);font-size:24px;font-weight:600;display:grid;place-items:center;margin:0 auto 14px}
-.login-box h1{font-size:30px;line-height:1.1;margin:0 0 6px}
+.login-logo{display:block;width:176px;height:176px;border-radius:36px;margin:0 auto 18px;object-fit:cover;box-shadow:0 1px 2px rgba(30,34,24,.08),0 18px 40px -12px rgba(79,96,70,.35)}
+.login-box h1{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.brand-serif{font-family:var(--serif);font-weight:600;letter-spacing:.01em}
 .login-box p.pbar{color:var(--text-sub);margin:0 0 26px}
 .pin-dots{display:flex;justify-content:center;gap:14px;height:22px;align-items:center;margin-bottom:10px}
 .pin-dots i{width:14px;height:14px;border-radius:50%;border:1.5px solid var(--ink);display:block}
@@ -161,8 +170,8 @@ body.has-demo #login{min-height:calc(100dvh - 22px)}
 #fab{position:fixed;z-index:41;right:16px;bottom:calc(var(--tab-h) + 16px);width:58px;height:58px;border-radius:50%;background:var(--inv-bg);color:var(--inv-fg);display:grid;place-items:center;box-shadow:0 8px 24px rgba(0,0,0,.25)}
 #fab svg{width:26px;height:26px}
 #fab:active{transform:scale(.95)}
-#fill-fab{position:fixed;z-index:41;left:16px;bottom:calc(var(--tab-h) + 20px);min-height:50px;padding:0 18px 0 14px;border-radius:999px;background:var(--accent);color:var(--accent-text);font-size:15px;font-weight:600;display:inline-flex;align-items:center;gap:8px;box-shadow:0 8px 24px rgba(0,0,0,.22)}
-#fill-fab svg{width:20px;height:20px}
+#fill-fab{position:fixed;z-index:41;left:16px;bottom:calc(var(--tab-h) + 20px);min-height:50px;padding:0 18px 0 14px;border-radius:999px;background:linear-gradient(180deg,#6A7D5D,#55684A);color:#fff;font-size:15px;font-weight:600;display:inline-flex;align-items:center;gap:8px;box-shadow:0 8px 24px rgba(0,0,0,.22)}
+#fill-fab svg{width:20px;height:20px;color:#F3E3B5}
 #fill-fab:active{transform:scale(.97)}
 @media (min-width:700px){#fill-fab{display:none}}
 @media (max-width:999px){
@@ -172,7 +181,8 @@ body.has-demo #login{min-height:calc(100dvh - 22px)}
 @media (min-width:1000px){
   :root{--nav-w:96px}
   #nav{top:0;bottom:0;left:0;width:var(--nav-w);flex-direction:column;align-items:stretch;border-right:1px solid var(--line);padding:16px 8px;gap:6px}
-  .nav-brand{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:var(--brand);color:var(--brand-fg);font-size:19px;font-weight:600;margin:4px auto 16px}
+  .nav-brand{display:block;width:46px;height:46px;border-radius:13px;margin:4px auto 16px;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.12),0 6px 16px -6px rgba(79,96,70,.45)}
+  .nav-brand img{display:block;width:100%;height:100%}
   .nav-tab{flex:none;min-height:68px;border-radius:14px;font-size:11.5px;text-align:center;line-height:1.15;padding:0 2px}
   .nav-tab.on{background:var(--bg)}
   .nav-badge{left:calc(50% + 4px);top:8px}
@@ -221,6 +231,9 @@ body.has-demo .tb{padding-top:8px}
 .ds-i b{font-weight:600;color:var(--ink)}
 .ds-sep{color:var(--muted)}
 .ds-wait{color:var(--wait-fg);font-weight:500}
+.ds-fill{margin-left:auto;display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 12px;border-radius:999px;font-size:13px;font-weight:600;color:var(--sage-fg);background:var(--sage-bg);border:1px solid var(--sage-line)}
+.ds-fill svg{width:15px;height:15px;color:var(--clay)}
+.ds-fill+.ds-leg{margin-left:0}
 .ds-leg{margin-left:auto;display:inline-flex;align-items:center;gap:4px;min-height:32px;padding:0 10px;border-radius:999px;font-size:13px;color:var(--text-sub);border:1px solid var(--line-3);background:var(--surface)}
 .ds-leg svg{width:14px;height:14px;transition:transform .2s}
 .ds-leg[aria-expanded="true"] svg{transform:rotate(180deg)}
@@ -524,6 +537,10 @@ input[type=date].inp::-webkit-date-and-time-value,input[type=time].inp::-webkit-
 .cli-link svg{width:18px;height:18px;color:var(--muted)}
 
 /* Menu ajouter */
+.nr-alt{margin-top:22px;padding-top:14px;border-top:1px dashed var(--line-3)}
+.nr-alt-t{display:block;font-size:12.5px;color:var(--muted);margin-bottom:8px}
+.nr-alt .chip{font-size:13px;color:var(--text-sub)}
+.nr-alt .chip svg{width:15px;height:15px;opacity:.75}
 .add-choice{display:flex;gap:14px;align-items:center;width:100%;text-align:left;padding:16px;border-radius:16px;background:var(--surface-2);margin-bottom:10px;min-height:76px}
 .add-choice:hover{filter:brightness(.98)}
 .add-choice .ic{width:48px;height:48px;border-radius:50%;background:var(--surface);display:grid;place-items:center;flex:none;color:var(--sage)}
@@ -787,6 +804,7 @@ var I = {
   sun: ic('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>'),
   eye: ic('<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>'),
   share: ic('<path d="M12 15V3M8 7l4-4 4 4"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/>'),
+  sparkle: '<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M10 3.2c.75 5.2 2.4 6.85 7.6 7.6-5.2.75-6.85 2.4-7.6 7.6-.75-5.2-2.4-6.85-7.6-7.6 5.2-.75 6.85-2.4 7.6-7.6z"/><path d="M18.6 2.4c.32 2 .9 2.6 2.9 2.9-2 .32-2.58.9-2.9 2.9-.32-2-.9-2.58-2.9-2.9 2-.3 2.58-.9 2.9-2.9z" opacity=".85"/></svg>',
   star: P_.replace('fill="none"', 'fill="currentColor"').replace('stroke-width="1.8"', 'stroke-width="1.2"') + '<path d="M12 2.8l2.8 5.7 6.3.9-4.55 4.43 1.07 6.27L12 17.13 6.38 20.1l1.07-6.27L2.9 9.4l6.3-.9z"/></svg>',
   chart: ic('<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>'),
   filter: ic('<path d="M3 5h18l-7 8.5V19l-4 2v-7.5z"/>'),
@@ -1218,7 +1236,7 @@ function renderLogin(shake) {
   ['1', '2', '3', '4', '5', '6', '7', '8', '9'].forEach(function (k) { keys += '<button type="button" data-act="pin" data-k="' + k + '" aria-label="' + k + '">' + k + '</button>'; });
   keys += '<button type="button" class="ghost" data-act="pin" data-k="clear">Effacer</button><button type="button" data-act="pin" data-k="0">0</button>' +
     '<button type="button" class="ghost" data-act="pin" data-k="del" aria-label="Supprimer un chiffre">' + I.back + '</button>';
-  $('#login').innerHTML = '<div class="login-box"><div class="login-logo" aria-hidden="true">S</div><h1>Sorelle Bien-Être</h1>' +
+  $('#login').innerHTML = '<div class="login-box"><img class="login-logo" src="../assets/logo-600.jpg" alt="" width="176" height="176"><h1>Sorelle Bien-Être</h1>' +
     '<p class="pbar">Planning des praticiennes. Entrez votre code.</p>' +
     '<div class="pin-dots' + (shake ? ' shake' : '') + '" aria-label="' + pin.length + ' chiffres saisis">' + dots + '</div>' +
     '<div class="pin-err" role="alert">' + esc(pinErr) + '</div>' +
@@ -1257,12 +1275,12 @@ function renderNav() {
   var tabs = [['planning', 'Planning', I.calendar], ['clientes', 'Nos clientes', I.users]];
   if (showAttenteTab()) tabs.push(['attente', 'À valider', I.inbox]);
   tabs.push(['reglages', 'Réglages', I.settings]);
-  $('#nav').innerHTML = '<div class="nav-brand" aria-hidden="true">S</div>' + tabs.map(function (t) {
+  $('#nav').innerHTML = '<div class="nav-brand" aria-hidden="true"><img src="../assets/icon-96.png" alt="" width="46" height="46"></div>' + tabs.map(function (t) {
     return '<button class="nav-tab' + (S.tab === t[0] ? ' on' : '') + '" data-act="tab" data-tab="' + t[0] + '"' + (S.tab === t[0] ? ' aria-current="page"' : '') + '>' + t[2] + '<span>' + t[1] + '</span>' +
       (t[0] === 'attente' && n ? '<span class="nav-badge">' + n + '</span>' : '') + '</button>';
   }).join('') + '<button class="nav-add" data-act="add" aria-label="Nouveau rendez-vous">' + I.plus + '</button>';
   $('#fab').innerHTML = I.plus;
-  $('#fill-fab').innerHTML = I.star + '<span>Remplir l\'agenda</span>';
+  $('#fill-fab').innerHTML = I.sparkle + '<span>Remplir l\'agenda</span>';
 }
 function switchTab(t) {
   if (t === 'recherche') t = 'planning';
@@ -1331,7 +1349,7 @@ function openMagie(o) {
   if (o.jour == null) o.jour = S.date;
   var M = G.modules.magie;
   if (M && M.open) { try { M.open(o); } catch (e) { console.error(e); fail(e); } return; }
-  openPanel({ title: 'Remplir l\'agenda', size: 'wide', content: soonHTML(I.star, 'Bientôt disponible', 'Repérer les places libres, relancer les clientes et créer la story Instagram : cet outil arrive très prochainement.') });
+  openPanel({ title: 'Remplir l\'agenda', size: 'wide', content: soonHTML(I.sparkle, 'Bientôt disponible', 'Repérer les places libres, relancer les clientes et créer la story Instagram : cet outil arrive très prochainement.') });
 }
 function openClient(cle) {
   if (!cle) return;
@@ -1461,7 +1479,7 @@ function toolsHTML() {
     '<button class="icon-btn" data-act="search" aria-label="Rechercher une cliente ou un rendez-vous">' + I.search + '</button>' +
     (S.mode === 'agenda' ? '<button class="icon-btn" data-act="filters" aria-label="Filtres" aria-haspopup="true">' + I.filter + (filtersActive() ? '<span class="dot"></span>' : '') + '</button>' : '') +
     (nar ? '' : '<button class="icon-btn hide-sm" data-act="refresh" aria-label="Actualiser"><span class="' + (S.loading ? 'spin' : '') + '" style="display:grid">' + I.refresh + '</span></button>' +
-      '<button class="btn btn-fill btn-sm" data-act="magie">' + I.star + '<span class="lbl hide-md">Remplir l\'agenda</span></button>') +
+      '<button class="btn btn-fill btn-sm" data-act="magie">' + I.sparkle + '<span class="lbl hide-md">Remplir l\'agenda</span></button>') +
     '</div>';
 }
 function headTitle() {
@@ -1476,7 +1494,18 @@ function headTitle() {
   var jr = S.data && S.data.jours[d];
   return { t: dateLong(d), e: relDay(d) + (jr && jr.exception ? ' · horaires exceptionnels' : '') + (jr && !jr.ouvert ? ' · fermé' : '') };
 }
+/** Bouton flottant mobile : en vue Jour il remplit la journée affichée, sinon il ouvre l'outil complet. */
+function canFillDay(d) { var wk = S.cfg && S.cfg.semaine && S.cfg.semaine[String(U.weekday(d))]; return !!(d && d >= today() && wk && wk.ouvert); }
+function updateFillFab() {
+  var b = $('#fill-fab'); if (!b) return;
+  var day = S.view === 'jour' && canFillDay(S.date);
+  b.setAttribute('data-act', day ? 'fill-day' : 'magie');
+  if (day) b.setAttribute('data-d', S.date); else b.removeAttribute('data-d');
+  var html = I.sparkle + '<span>' + (day ? 'Remplir cette journée' : 'Remplir l\'agenda') + '</span>';
+  if (b.innerHTML !== html) b.innerHTML = html;
+}
 function renderPlanning() {
+  updateFillFab();
   if (S.tab !== 'planning') return;
   var head = $('#ph'), nar = narrow();
   if (S.mode === 'stats') {
@@ -1557,7 +1586,9 @@ function daySummary(d) {
   var bl = S.data.blocages.filter(function (x) { return x.du <= d && x.au >= d; }).length;
   if (bl && !S.showBlocks) parts.push('<span class="ds-i">' + bl + ' indisponibilité' + (bl > 1 ? 's' : '') + ' masquée' + (bl > 1 ? 's' : '') + '</span>');
   var open = !!S.legend;
+  var canFill = canFillDay(d);
   return '<div class="daysum">' + parts.join('<span class="ds-sep">·</span>') +
+    (canFill ? '<button class="ds-fill" data-act="fill-day" data-d="' + d + '">' + I.sparkle + 'Remplir cette journée</button>' : '') +
     '<button class="ds-leg" data-act="legend" aria-expanded="' + open + '">Couleurs' + I.chevronD + '</button></div>' + (open ? legendHTML(d) : '');
 }
 function legendHTML(d) {
@@ -2142,6 +2173,11 @@ function nrView(pre, resolve) {
     h += '<div class="nr-sec"><div class="nr-h"><h3>Créneaux recommandés</h3></div>' + recoHTML() + otherHTML() + '</div>';
     h += '<div class="field"><label for="nr-note">Note (facultatif)</label><textarea id="nr-note" class="inp" data-k="note" maxlength="300" rows="2" placeholder="Pris par Insta, déco souhaitée…">' + esc(st.note) + '</textarea></div>';
     h += conflictBox(st);
+    if (!st.cle && !st.prenom && !st.q) h += '<div class="nr-alt"><span class="nr-alt-t">Autre chose à ajouter ?</span><div class="chips">' +
+      '<button type="button" class="chip" data-act="nr-bl" data-v="matin">' + I.lock + 'Demi-journée</button>' +
+      '<button type="button" class="chip" data-act="nr-bl" data-v="jour">' + I.lock + 'Journée</button>' +
+      '<button type="button" class="chip" data-act="nr-bl" data-v="periode">' + I.lock + 'Période ou vacances</button>' +
+      '<button type="button" class="chip" data-act="nr-mass">' + I.leaf + 'Modelage</button></div></div>';
     return h;
   };
   v.footer = function () {
@@ -2167,6 +2203,8 @@ function nrView(pre, resolve) {
     }
     if (act === 'nr-change') { st.cle = null; st.prof = null; st.editName = false; st.prenom = ''; st.nom = ''; st.q = ''; repaint(v); setTimeout(function () { var q = bodyOf(v).querySelector('#nr-q'); if (q) q.focus(); }, 30); loadRecos(); return true; }
     if (act === 'nr-fiche') { openClient(st.cle); return true; }
+    if (act === 'nr-bl') { openSheet(blocView({ prat: st.prat, date: st.date && st.date >= today() ? st.date : (S.date >= today() ? S.date : today()), type: el.dataset.v }), true); return true; }
+    if (act === 'nr-mass') { openSheet(massView({ prat: st.prat, date: S.date >= today() ? S.date : today() }), true); return true; }
     if (act === 'set' && el.dataset.k === 'prat') { st.prat = el.dataset.v; st.pratSet = true; st.sel = null; if (st.pick && st.pick.given) st.pick.praticienne = st.prat; loadRecos(); return true; }
     if (act === 'nr-svc') { var cat = el.dataset.cat; st[cat] = st[cat] === el.dataset.id ? null : el.dataset.id; st.svcSet = true; st.sel = null; loadRecos(); return true; }
     if (act === 'nr-reco') {
@@ -2284,7 +2322,7 @@ function massView(pre, existing) {
 
 /* ---- Indisponibilité ---- */
 function blocView(pre) {
-  var st = { qui: pre.prat || 'laurie', type: pre.heure ? 'creneau' : 'jour', du: pre.date || S.date, au: pre.date || S.date, hd: pre.heure || '', hf: pre.heure ? U.toHHMM(Math.min(U.toMin(pre.heure) + 60, 1439)) : '', motif: 'Congé', autre: '', busy: false };
+  var st = { qui: pre.prat || 'laurie', type: pre.type || (pre.heure ? 'creneau' : 'jour'), du: pre.date || S.date, au: pre.date || S.date, hd: pre.heure || '', hf: pre.heure ? U.toHHMM(Math.min(U.toMin(pre.heure) + 60, 1439)) : '', motif: 'Congé', autre: '', busy: false };
   var v = { title: 'Indisponibilité', st: st };
   var TYPES = [['jour', 'Journée'], ['matin', 'Matin'], ['aprem', 'Après-midi'], ['creneau', 'Créneau précis'], ['periode', 'Période']];
   v.render = function () {
@@ -2609,7 +2647,7 @@ var SET_GROUPS = [
   ['Planning', [
     ['planning-regles', 'Règles', 'Pauses, déjeuner, clientes par jour', I.sliders],
     ['planning-optim', 'Optimisation', 'Créneaux idéaux, trou maximum', I.sparkle],
-    ['planning-magie', 'Remplir l\'agenda', 'Période, prestation, seuil d\'alerte', I.star]
+    ['planning-magie', 'Remplir l\'agenda', 'Période, prestation, seuil d\'alerte', I.sparkle]
   ]],
   ['Prestations', [
     ['presta-liste', 'Liste des prestations', 'Noms, durées, réservation en ligne', I.list],
@@ -2909,7 +2947,7 @@ function storySettingsTab(D) {
       '<div class="of-acts"><button class="btn btn-ghost btn-sm" data-act="of-copy" data-url="' + esc(url) + '">' + I.copy + 'Copier le lien</button><button class="btn btn-danger btn-sm" data-act="of-close" data-id="' + esc(o.id) + '">Fermer le lien</button></div></div>';
   }).join('');
   h += '</div>';
-  h += '<div class="card-s"><h3>Créer une story</h3><p class="lead">Choisissez les créneaux et le style de la story depuis l\'outil « Remplir l\'agenda ».</p><button class="btn btn-fill" data-act="magie">' + I.star + 'Remplir l\'agenda</button></div>';
+  h += '<div class="card-s"><h3>Créer une story</h3><p class="lead">Choisissez les créneaux et le style de la story depuis l\'outil « Remplir l\'agenda ».</p><button class="btn btn-fill" data-act="magie">' + I.sparkle + 'Remplir l\'agenda</button></div>';
   return h;
 }
 function copyText(text, okMsg) {
@@ -2985,6 +3023,7 @@ var ACT = {
   'search-close': function () { closeSearch(); },
   'filters': function (el) { openFilters(el); },
   'magie': function () { closeAll(); openMagie({}); },
+  'fill-day': function (el) { closeAll(); openMagie({ jours: [el.dataset.d] }); },
   'gs-cli': function (el) { closeSearch(); openClient(el.dataset.cle); },
   'gs-rdv': function (el) { closeSearch(); openRdv(el.dataset.id); },
   'goday': function (el) { goDate(el.dataset.date, 'jour'); },
