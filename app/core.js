@@ -12,7 +12,7 @@
 var SorelleCore = (function () {
   'use strict';
 
-  var VERSION = '1.2.0';
+  var VERSION = '1.2.2';
 
   /* ------------------------------------------------------------------------
    * CONFIGURATION PAR DÉFAUT (modifiable depuis l'écran Réglages)
@@ -52,7 +52,8 @@ var SorelleCore = (function () {
     trouMax: 30,                 // trou "maîtrisé" toléré en dernier recours (min)
     maxRdvParCliente: 2,         // RDV futurs actifs max par nom (en ligne)
     retentionMois: 24,           // purge des RDV passés au-delà (24 mois : statistiques)
-    magie: { horizonJours: 7, services: ['remplissage'], seuilRemplissage: 50 }, // « Remplir l'agenda »
+    magie: { horizonJours: 7, services: ['remplissage'], seuilRemplissage: 50, retardMaxRelance: 30, afficherPriorites: true, afficherRelances: true },
+    affichage: { heureFin: false }, // planning : seulement l'heure de début (la plage complète en option) // « Remplir l'agenda »
     services: [
       { id: 'remplissage',      nom: 'Remplissage gel',                     categorie: 'main',    duree: 120, famille: 'gel',  enLigne: true, info: 'Vous avez déjà du gel posé chez nous.' },
       { id: 'extension',        nom: 'Extension gel',                       categorie: 'main',    duree: 135, famille: 'gel',  enLigne: true, info: 'Ongles naturels, sans rien dessus.' },
@@ -110,7 +111,7 @@ var SorelleCore = (function () {
   }
   // Prénom / nom : lettres, espaces, tiret, apostrophe. Pas de chiffres ni @ :
   // empêche de glisser un téléphone ou un email dans les champs.
-  var NAME_RE = /^[A-Za-zÀ-ÖØ-öø-ÿŒœ' \-]{1,40}$/;
+  var NAME_RE = /^[A-Za-zÀ-ÖØ-öø-ÿŒœ' .\-]{1,40}$/; // le point autorise les initiales (« Alexia B. »)
   function normKey(s) {
     return cleanName(s).toLowerCase()
       .replace(/[àáâãäå]/g, 'a').replace(/[ç]/g, 'c').replace(/[èéêë]/g, 'e')
@@ -621,18 +622,23 @@ var SorelleCore = (function () {
 
   /** Combien de clientes (pour ces soins) peuvent encore rentrer dans la journée : simulation gloutonne. */
   function capacityFor(cfg, day, pid, list, fromMin) {
-    var d = JSON.parse(JSON.stringify(day)), n = 0, times = [], b = cfg.battement;
+    // Simulation : on place une cliente sur le MEILLEUR créneau (classe A d'abord, puis le plus tôt),
+    // on recalcule, et ainsi de suite. Les heures obtenues sont compatibles entre elles :
+    // un trou qui ne peut accueillir qu'une cliente ne donne qu'une seule heure.
+    var d = JSON.parse(JSON.stringify(day)), picks = [], b = cfg.battement, rank = { A: 0, B: 1, C: 2 };
     for (var guard = 0; guard < 12; guard++) {
-      var c = computeSlots(cfg, d, pid, list, 'all').filter(function (x) { return toMin(x.debut) >= fromMin; })[0];
-      if (!c) break;
-      n++; times.push(c.debut);
+      var all = computeSlots(cfg, d, pid, list, 'all').filter(function (x) { return toMin(x.debut) >= fromMin && x.trou <= (cfg.trouMax || 30); });
+      if (!all.length) break;
+      var c = all.slice().sort(function (x, y) { return rank[x.classe] - rank[y.classe] || x.trou - y.trou || toMin(x.debut) - toMin(y.debut); })[0];
+      picks.push({ debut: c.debut, fin: c.fin, classe: c.classe, ordre: c.ordre });
       var s = toMin(c.debut), e = toMin(c.fin);
       d.prat[pid].busy.push({ s: s, e: e + b, kind: 'rdv' });
       d.prat[pid].lunchBusy.push({ s: s, e: e + b });
       d.prat[pid].count++;
       c.segments.forEach(function (sg) { if (sg.lieu === 'cabine') d.cabine.push({ s: toMin(sg.debut), e: toMin(sg.fin) + b }); });
     }
-    return { n: n, heures: times };
+    picks.sort(function (x, y) { return toMin(x.debut) - toMin(y.debut); });
+    return { n: picks.length, heures: picks.map(function (x) { return x.debut; }), creneaux: picks };
   }
 
   /** Trous inutilisables (trop courts pour la plus petite prestation) entre deux rendez-vous. */
@@ -1225,6 +1231,29 @@ var SorelleCore = (function () {
         return prof;
       },
 
+      // Renommer une cliente sur tous ses rendez-vous (et fusionner deux fiches si le nouveau nom existe déjà)
+      'admin.renommerCliente': function (p, token) {
+        requireAdmin(token);
+        var prenom = cleanName(p.prenom), nom = cleanName(p.nom) || '-';
+        if (!prenom) throw err('nom_requis', 'Le prénom est obligatoire.');
+        if (!NAME_RE.test(prenom) || !NAME_RE.test(nom)) throw err('nom_invalide', 'Prénom / nom : lettres uniquement.');
+        var nouvelle = clientKey(prenom, nom);
+        return env.withLock(function () {
+          var today = env.today();
+          var all = store.listRdv({ du: '0000-00-00', au: '9999-99-99' });
+          var mine = all.filter(function (r) { return clientKey(r.prenom, r.nom) === p.cle; });
+          if (!mine.length) throw err('introuvable', 'Cliente introuvable.');
+          if (nouvelle !== p.cle && !p.fusionner) {
+            var autres = all.filter(function (r) { return clientKey(r.prenom, r.nom) === nouvelle; });
+            if (autres.length) throw err('cliente_existante', 'Une cliente « ' + prenom + ' ' + nom + ' » existe déjà (' + autres.length +
+              ' rendez-vous). Confirmez pour fusionner les deux fiches.', { rdvs: autres.length });
+          }
+          var now = env.nowIso();
+          mine.forEach(function (r) { r.prenom = prenom; r.nom = nom; r.majLe = now; store.updateRdv(r); });
+          return { cle: nouvelle, prenom: prenom, nom: nom, modifies: mine.length, aujourdhui: today };
+        });
+      },
+
       // Créneaux recommandés : pour une cliente (habitudes) ou pour des soins donnés
       'admin.recommander': function (p, token) {
         requireAdmin(token);
@@ -1278,25 +1307,34 @@ var SorelleCore = (function () {
             if (!P) return;
             var blocked = P.busy.some(function (x) { return (x.kind === 'blocage' || x.kind === 'inactive') && x.s <= day.rules.debut && x.e >= day.rules.fin; });
             var max = cfg.maxClientesJour, places = blocked ? 0 : Math.max(0, max - P.count);
-            var cap = places ? capacityFor(cfg, day, pid, list, from) : { n: 0, heures: [] };
-            var creneaux = places ? computeSlots(cfg, day, pid, list, 'public').filter(function (c) { return toMin(c.debut) >= from; })
-              .map(function (c) { return { debut: c.debut, fin: c.fin, classe: c.classe, ordre: c.ordre }; }) : [];
+            var cap = places ? capacityFor(cfg, day, pid, list, from) : { n: 0, heures: [], creneaux: [] };
+            // Soin choisi impossible mais place restante : proposer un soin plus court qui rentre encore
+            var alternatives = [];
+            if (places && !cap.n) {
+              cfg.services.filter(function (x) { return x.categorie !== 'massage' && list.indexOf(x) < 0; })
+                .sort(function (x, y) { return y.duree - x.duree; })
+                .forEach(function (x) {
+                  if (alternatives.length >= 2) return;
+                  var c1 = capacityFor(cfg, day, pid, [x], from);
+                  if (c1.n) alternatives.push({ service: x.id, nom: x.nom, debut: c1.creneaux[0].debut, fin: c1.creneaux[0].fin });
+                });
+            }
             var alertes = [];
             if (blocked) alertes.push({ niveau: 'info', texte: 'Indisponible ce jour-là' });
             else if (P.count >= max) alertes.push({ niveau: 'ok', texte: 'Complet (' + P.count + '/' + max + ')' });
-            else {
+            else if (cap.n > 0) {
+              // Uniquement des alertes sur lesquelles on peut agir : il reste de la place pour une cliente
               var taux = Math.round(P.count / max * 100);
-              if ((d === today || demain) && cap.n > 0) alertes.push({ niveau: 'critique', texte: (d === today ? "Aujourd'hui" : 'Demain') + ' : ' + cap.n + ' place' + (cap.n > 1 ? 's' : '') + ' à remplir' });
-              else if (P.count === 0) alertes.push({ niveau: 'critique', texte: 'Journée vide' });
-              else if (taux < seuil) alertes.push({ niveau: 'attention', texte: 'Remplie à ' + taux + ' %' });
-              if (cap.n === 0 && places > 0) alertes.push({ niveau: 'attention', texte: 'Plus de place pour ' + label + ' (il reste des trous trop courts)' });
-              deadGaps(cfg, day, pid, from).forEach(function (g) {
-                alertes.push({ niveau: 'attention', texte: 'Trou de ' + g.minutes + ' min inutilisable à ' + g.debut.replace(':', 'h') });
-              });
+              var nb = cap.n + ' place' + (cap.n > 1 ? 's' : '');
+              if (d === today || demain) alertes.push({ niveau: 'critique', texte: (d === today ? "Aujourd'hui" : 'Demain') + ' : ' + nb + ' à remplir' });
+              else if (P.count === 0) alertes.push({ niveau: 'critique', texte: 'Journée vide : ' + nb });
+              else if (taux < seuil) alertes.push({ niveau: 'attention', texte: 'Remplie à ' + taux + ' % : ' + nb });
             }
             entry.praticiennes[pid] = {
               clientes: P.count, max: max, placesRestantes: places, capacite: cap.n, heuresPossibles: cap.heures,
-              creneaux: creneaux, fenetres: places ? freeWindows(cfg, day, pid, from) : [], alertes: alertes
+              creneaux: cap.creneaux, alternatives: alternatives,
+              fenetres: places ? freeWindows(cfg, day, pid, from) : [], alertes: alertes,
+              trousPerdus: places ? deadGaps(cfg, day, pid, from) : []
             };
             resume[pid].places += places; resume[pid].capacite += cap.n; resume[pid].clientes += P.count; resume[pid].max += max;
           });
@@ -1306,10 +1344,13 @@ var SorelleCore = (function () {
         var all = store.listRdv({ du: addDays(today, -730), au: addDays(today, 400) });
         var relances = clientProfiles(cfg, all, today).filter(function (c) {
           var h = c.habitude;
+          // Soin dû bientôt, ou en retard de moins de 30 j (au-delà : cliente probablement perdue → « Nos clientes »)
           return !c.prochain && c.derniere && h.prochaineVisitePrevue && h.prochaineVisitePrevue <= addDays(au, 3)
-            && diffDays(c.derniere, today) <= 180 && prats.indexOf(h.praticienne) >= 0 && h.services.length;
-        }).sort(function (a, b) { return a.habitude.prochaineVisitePrevue.localeCompare(b.habitude.prochaineVisitePrevue); })
-          .slice(0, 25).map(function (c) {
+            && diffDays(h.prochaineVisitePrevue, today) <= (mg.retardMaxRelance || 30)
+            && c.realises >= 2 && prats.indexOf(h.praticienne) >= 0 && h.services.length;
+        }).sort(function (a, b) {
+          return Math.abs(diffDays(today, a.habitude.prochaineVisitePrevue)) - Math.abs(diffDays(today, b.habitude.prochaineVisitePrevue));
+        }).slice(0, 15).map(function (c) {
             var h = c.habitude, sug = null;
             var svcs = h.services.filter(function (id) { return smap[id] && smap[id].categorie !== 'massage'; });
             if (svcs.length) {
