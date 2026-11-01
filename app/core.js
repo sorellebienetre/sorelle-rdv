@@ -12,7 +12,7 @@
 var SorelleCore = (function () {
   'use strict';
 
-  var VERSION = '1.3.0';
+  var VERSION = '1.3.1';
 
   /* ------------------------------------------------------------------------
    * CONFIGURATION PAR DÉFAUT (modifiable depuis l'écran Réglages)
@@ -53,7 +53,7 @@ var SorelleCore = (function () {
     maxRdvParCliente: 2,         // RDV futurs actifs max par nom (en ligne)
     retentionMois: 24,           // purge des RDV passés au-delà (24 mois : statistiques)
     magie: { horizonJours: 7, services: ['remplissage'], seuilRemplissage: 50, retardMaxRelance: 30, afficherPriorites: true, afficherRelances: false },
-    affichage: { heureFin: false }, // planning : seulement l'heure de début (la plage complète en option) // « Remplir l'agenda »
+    affichage: { heureFin: false, moisJour: false }, // planning : seulement l'heure de début (la plage complète en option) // « Remplir l'agenda »
     services: [
       { id: 'remplissage',      nom: 'Remplissage gel',                     categorie: 'main',    duree: 120, famille: 'gel',  enLigne: true, info: 'Vous avez déjà du gel posé chez nous.' },
       { id: 'extension',        nom: 'Extension gel',                       categorie: 'main',    duree: 135, famille: 'gel',  enLigne: true, info: 'Ongles naturels, sans rien dessus.' },
@@ -399,6 +399,9 @@ var SorelleCore = (function () {
           if (iv.e <= s && iv.e > prevEnd) prevEnd = iv.e;
           if (iv.s >= endBuf && (nextStart === null || iv.s < nextStart)) nextStart = iv.s;
         });
+        // Limite naturelle : plus aucun RDV ne peut commencer après celui-ci (dernière heure de début
+        // dépassée) → le temps restant avant le blocage suivant n'est pas un trou « perdu ».
+        if (nextStart !== null && endBuf > maxLast) nextStart = null;
         feas.push({
           s: s, oi: oi, ord: ord, pl: pl, endBuf: endBuf,
           gB: effectiveGap(cfg, prevEnd, s),
@@ -639,6 +642,85 @@ var SorelleCore = (function () {
     }
     picks.sort(function (x, y) { return toMin(x.debut) - toMin(y.debut); });
     return { n: picks.length, heures: picks.map(function (x) { return x.debut; }), creneaux: picks };
+  }
+
+  /** Ajoute un créneau (issu de computeSlots) à une copie de journée. */
+  function bookSlot(cfg, d, pid, c) {
+    var s = toMin(c.debut), e = toMin(c.fin), b = cfg.battement;
+    d.prat[pid].busy.push({ s: s, e: e + b, kind: 'rdv' });
+    d.prat[pid].lunchBusy.push({ s: s, e: e + b });
+    d.prat[pid].count++;
+    (c.segments || []).forEach(function (sg) { if (sg.lieu === 'cabine') d.cabine.push({ s: toMin(sg.debut), e: toMin(sg.fin) + b }); });
+  }
+
+  /** Heures de début qui ne laissent AUCUN trou inutilisable (classes A et B, trou = 0). */
+  function noHoleSlots(cfg, day, pid, list, fromMin) {
+    return computeSlots(cfg, day, pid, list, 'all').filter(function (c) { return c.trou === 0 && toMin(c.debut) >= (fromMin || 0); });
+  }
+
+  /**
+   * Remplissage compact de la journée avec la prestation choisie : on place une cliente sur un
+   * créneau sans trou (classe A « collée » d'abord), puis on recommence.
+   *   dir 'tot'  : parmi les meilleurs, le plus tôt (on remplit depuis l'ouverture / le RDV précédent)
+   *   dir 'tard' : parmi les meilleurs, le plus tard (on remplit depuis la fermeture / le RDV suivant)
+   */
+  function packDay(cfg, day, pid, list, fromMin, dir) {
+    var d = JSON.parse(JSON.stringify(day)), picks = [], rank = { A: 0, B: 1 };
+    for (var guard = 0; guard < 12; guard++) {
+      var all = noHoleSlots(cfg, d, pid, list, fromMin);
+      if (!all.length) break;
+      var c = all.sort(function (x, y) {
+        return rank[x.classe] - rank[y.classe] || (dir === 'tard' ? toMin(y.debut) - toMin(x.debut) : toMin(x.debut) - toMin(y.debut));
+      })[0];
+      picks.push(c);
+      bookSlot(cfg, d, pid, c);
+    }
+    return picks;
+  }
+
+  /**
+   * HEURES À PROPOSER (« Remplir l'agenda », story, lien éclair) — le maximum de choix SANS trou.
+   * Règle, pour la prestation choisie (durée d + battement) et une praticienne :
+   *  1. l'heure est faisable par le moteur (horaires, dernière heure de début, RDV + battement,
+   *     blocages, modelages, cabine pieds, déjeuner d'1 h toujours plaçable entre 11h30 et 14h,
+   *     maximum de clientes) ;
+   *  2. aucun trou inutilisable : le temps libre laissé AVANT (depuis l'ouverture ou la fin du RDV
+   *     précédent + battement) et APRÈS (jusqu'au RDV / blocage suivant) vaut 0 ou au moins la plus
+   *     courte prestation + battement (45 min par défaut) ; l'heure de déjeuner est déduite d'un trou
+   *     qui peut l'accueillir ; après la dernière heure de début possible, ou en fin de journée sans
+   *     rien derrière, le temps restant n'est pas un trou (limite naturelle) ;
+   *  3. elle appartient à un remplissage compact de la journée : celui qui part de l'ouverture / des
+   *     RDV existants (le plus tôt), celui qui part de la fermeture (le plus tard), ou c'est une heure
+   *     « collée » (classe A : début de journée, juste après/avant un RDV, reprise 13h30, dernière
+   *     heure) ;
+   *  4. elle ne fait pas perdre de place : une fois réservée, le reste de la journée accueille encore
+   *     autant de clientes de cette prestation (sans trou) qu'avant.
+   * Les heures se chevauchent (la cliente en choisit une) ; chacune, seule, respecte la règle.
+   * ideal = heures du remplissage « le plus tôt » (ou de capacityFor quand fourni).
+   */
+  function proposeStarts(cfg, day, pid, list, fromMin, idealH) {
+    var tot = packDay(cfg, day, pid, list, fromMin, 'tot');
+    if (!tot.length) return [];
+    var tard = packDay(cfg, day, pid, list, fromMin, 'tard');
+    var maxN = Math.max(tot.length, tard.length);
+    var base = noHoleSlots(cfg, day, pid, list, fromMin), byStart = {};
+    base.forEach(function (c) { byStart[c.debut] = c; });
+    var cand = {};
+    function add(c, ok) { if (byStart[c.debut] && (ok || cand[c.debut] === undefined)) cand[c.debut] = cand[c.debut] || !!ok; }
+    tot.forEach(function (c) { add(c, tot.length === maxN); });
+    tard.forEach(function (c) { add(c, tard.length === maxN); });
+    base.forEach(function (c) { if (c.classe === 'A') add(c, false); });
+    var ideal = idealH || {};
+    if (!idealH) tot.forEach(function (c) { ideal[c.debut] = true; });
+    return Object.keys(cand).filter(function (h) {
+      if (cand[h]) return true; // fait partie d'un remplissage maximal
+      var d = JSON.parse(JSON.stringify(day));
+      bookSlot(cfg, d, pid, byStart[h]);
+      return 1 + packDay(cfg, d, pid, list, fromMin, 'tot').length >= maxN;
+    }).sort().map(function (h) {
+      var c = byStart[h];
+      return { debut: c.debut, fin: c.fin, classe: c.classe, trou: 0, ordre: c.ordre, segments: c.segments, ideal: !!ideal[h] };
+    });
   }
 
   /** Trous inutilisables (trop courts pour la plus petite prestation) entre deux rendez-vous. */
@@ -1173,9 +1255,9 @@ var SorelleCore = (function () {
           var rdvs = store.listRdv({ du: c.date, au: c.date });
           var day = buildDay(cfg, c.date, rdvs, store.listBlocages());
           var from = c.date === today ? nowMin() + 30 : 0;
-          var cand = computeSlots(cfg, day, c.praticienne, list, 'all').filter(function (s) {
+          var cand = noHoleSlots(cfg, day, c.praticienne, list, from).filter(function (s) {
             var m = toMin(s.debut);
-            return m >= toMin(c.debut) && m < toMin(c.fin) && m >= from;
+            return m >= toMin(c.debut) && m < toMin(c.fin);
           })[0];
           if (!cand) throw err('creneau_pris', 'Ce créneau vient d\'être pris ou ne convient pas à ces soins. Choisissez-en un autre.');
           var statut = cfg.validation === 'toutes' ? 'en_attente' : 'confirme';
@@ -1339,11 +1421,11 @@ var SorelleCore = (function () {
               else if (P.count === 0) alertes.push({ niveau: 'critique', texte: 'Journée vide : ' + nb });
               else if (taux < seuil) alertes.push({ niveau: 'attention', texte: 'Remplie à ' + taux + ' % : ' + nb });
             }
-            // Toutes les heures de début valides (grille du moteur), qui peuvent se chevaucher :
-            // à proposer aux clientes (la réservation revérifie). ideal = heure retenue par la simulation.
+            // Heures à proposer (voir proposeStarts : maximum de choix sans trou inutilisable), qui
+            // peuvent se chevaucher (la réservation revérifie). ideal = heure retenue par la simulation.
             var idealH = {}; cap.creneaux.forEach(function (c) { idealH[c.debut] = true; });
-            var toutes = places ? computeSlots(cfg, day, pid, list, 'all').filter(function (c) { return toMin(c.debut) >= from; }).map(function (c) {
-              return { debut: c.debut, fin: c.fin, classe: c.classe, trou: c.trou, ordre: c.ordre, ideal: !!idealH[c.debut] };
+            var toutes = places ? proposeStarts(cfg, day, pid, list, from, cap.n ? idealH : null).map(function (c) {
+              return { debut: c.debut, fin: c.fin, classe: c.classe, trou: c.trou, ordre: c.ordre, ideal: c.ideal };
             }) : [];
             entry.praticiennes[pid] = {
               clientes: P.count, max: max, placesRestantes: places, capacite: cap.n, heuresPossibles: cap.heures,
@@ -1458,8 +1540,9 @@ var SorelleCore = (function () {
       var a = toMin(c.debut), b = toMin(c.fin), out = [];
       cfg.services.forEach(function (s) {
         if (s.categorie === 'massage') return;
-        var first = computeSlots(cfg, day, c.praticienne, [s], 'all').filter(function (x) {
-          var m = toMin(x.debut); return m >= a && m < b && m >= from;
+        // Même règle que les propositions : seulement des heures qui ne laissent aucun trou inutilisable
+        var first = noHoleSlots(cfg, day, c.praticienne, [s], from).filter(function (x) {
+          var m = toMin(x.debut); return m >= a && m < b;
         })[0];
         if (first) out.push({ service: s.id, debut: first.debut, fin: first.fin });
       });
@@ -1545,7 +1628,7 @@ var SorelleCore = (function () {
       buildDay: buildDay, computeSlots: computeSlots, place: place, resolveServices: resolveServices,
       mergeConfig: mergeConfig, validateConfig: validateConfig, lunchOk: lunchOk, diffDays: diffDays,
       freeWindows: freeWindows, clientKey: clientKey, clientProfiles: clientProfiles, buildProfile: buildProfile,
-      recommendSlots: recommendSlots, capacityFor: capacityFor, JOURS: JOURS
+      recommendSlots: recommendSlots, capacityFor: capacityFor, proposeStarts: proposeStarts, packDay: packDay, minUsefulGap: minUsefulGap, JOURS: JOURS
     }
   };
 })();
