@@ -153,6 +153,9 @@
     .prat__mono { position: absolute; inset: 0; display: grid; place-items: center; font-size: clamp(40px, 12vw, 60px); font-weight: 500; color: var(--sage-700); }
     .prat[data-i="1"] .prat__img { background: var(--clay-50); }
     .prat[data-i="1"] .prat__mono { color: var(--clay-d); }
+    /* Couleur de la praticienne (Réglages > Couleurs) : la même que dans le planning et le lien éclair */
+    .prat[style] .prat__img { background: var(--pcbg2); }
+    .prat[style] .prat__mono { color: var(--pc); filter: brightness(.82); }
     .prat__body { padding: 12px 14px 14px; }
     .prat__name { display: block; font-size: 17px; font-weight: 600; color: var(--ink); }
     .prat__role { display: block; font-size: 13px; color: var(--text-mute); margin-top: 1px; }
@@ -427,6 +430,53 @@
 
     .loading-page { padding: 20px 0; }
 
+    /* Lien éclair (story Instagram) */
+    .fday + .fday { margin-top: 28px; }
+    .fday__title { font-size: 19px; display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; margin-bottom: 12px; }
+    .fday__title small { font-size: 14px; font-weight: 400; color: var(--text-sub); }
+    .fday__title small::first-letter { text-transform: uppercase; }
+    .fprat { border-radius: var(--r); padding: 12px 12px 12px; background: var(--pcbg, var(--cream)); border: 1px solid var(--line-2); }
+    .fprat + .fprat { margin-top: 12px; }
+    .fprat__head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0 2px 10px; }
+    .fprat__name { display: inline-flex; align-items: center; gap: 9px; font-size: 16.5px; font-weight: 600; color: var(--ink); }
+    .fprat__name i { width: 12px; height: 12px; border-radius: 50%; background: var(--pc, var(--char)); flex: none; }
+    .fprat__count { font-size: 13px; color: var(--text-sub); white-space: nowrap; }
+    .fava { position: relative; width: 40px; height: 40px; border-radius: 50%; overflow: hidden; flex: none; display: grid; place-items: center;
+      background: var(--pc, var(--char)); color: #fff; font-size: 17px; font-weight: 600; box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--pc, var(--char)); }
+    .fava img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+    .fprat__name .fava + span { display: inline; }
+    .fslots { display: flex; flex-direction: column; gap: 8px; }
+    .fslot {
+      position: relative; width: 100%; text-align: left; display: flex; align-items: center; gap: 12px;
+      min-height: 66px; padding: 11px 14px 11px 18px; border-radius: 12px; overflow: hidden;
+      background: var(--paper); border: 1px solid var(--line-3); color: var(--ink);
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .fslot::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--pc, var(--char)); }
+    button.fslot:hover { border-color: var(--pc, var(--ink)); box-shadow: inset 0 0 0 1px var(--pc, var(--ink)); }
+    button.fslot:active { transform: scale(.995); }
+    .fslot__txt { flex: 1; min-width: 0; }
+    .fslot__main { display: block; font-size: 17px; line-height: 1.3; font-variant-numeric: tabular-nums; }
+    .fslot__main b { font-size: 20px; font-weight: 600; }
+    .fslot__end { display: block; font-size: 13.5px; color: var(--text-sub); margin-top: 1px; font-variant-numeric: tabular-nums; }
+    .fslot > svg { width: 18px; height: 18px; color: var(--text-sub); flex: none; }
+    .fslot.is-taken { background: var(--grey-100); border-color: var(--line); color: var(--text-mute); }
+    .fslot.is-taken::before { background: var(--line-3); }
+    .fslot.is-taken .fslot__main b { text-decoration: line-through; text-decoration-thickness: 1.5px; }
+    .fslot.is-taken .fslot__end { color: var(--text-mute); }
+    .fslot__tag { flex: none; font-size: 13px; font-weight: 500; color: var(--char); background: var(--paper); border: 1px solid var(--line-3); border-radius: 999px; padding: 3px 10px; }
+    .fsel { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 12px; background: var(--pcbg, var(--cream)); margin-bottom: 20px; font-size: 15px; color: var(--ink); }
+    .fsel i { width: 12px; height: 12px; border-radius: 50%; background: var(--pc, var(--char)); flex: none; }
+    .fsel .fava { width: 32px; height: 32px; font-size: 14px; }
+    .fsel b { font-weight: 600; }
+    .fsel .cap { display: inline-block; }
+    .fhint { margin-top: 14px; font-size: 13.5px; color: var(--text-sub); line-height: 1.5; }
+    .ffoot { margin-top: 26px; display: flex; flex-direction: column; gap: 2px; font-size: 14px; color: var(--text-sub); }
+    .fend .btn { margin-top: 18px; width: 100%; }
+    @media (min-width: 480px) { .fend .btn { width: auto; } }
+    .fend .note { margin-top: 24px; }
+    .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 7px; vertical-align: 0; }
+
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { animation-duration: .001ms !important; animation-delay: 0s !important; transition-duration: .001ms !important; }
     }
@@ -570,6 +620,36 @@
         </form>
       </section>
 
+      <!-- LIEN ÉCLAIR : créneaux de la story -->
+      <section class="step" data-step="21" tabindex="-1" aria-labelledby="h1-21" hidden>
+        <div class="head">
+          <h1 id="h1-21">Dernières places</h1>
+          <p id="fExpire"></p>
+        </div>
+        <div class="alert" id="fAlert" role="alert" aria-live="assertive"></div>
+        <div id="fList" aria-live="polite" aria-busy="false"></div>
+        <div class="ffoot">
+          <span>Première visite à l'institut ? <button type="button" class="linkish" id="fNew">Comment prendre rendez-vous</button></span>
+          <span>Autre date ? <a class="linkish" id="fAll" style="display:inline-flex;align-items:center" href="./">Voir toutes les disponibilités</a></span>
+        </div>
+      </section>
+
+      <!-- LIEN ÉCLAIR : choix du soin -->
+      <section class="step" data-step="22" tabindex="-1" aria-labelledby="h1-22" hidden>
+        <div class="head">
+          <h1 id="h1-22">Quel soin ?</h1>
+          <p>Seuls les soins qui tiennent sur ce créneau sont proposés.</p>
+        </div>
+        <div id="fSel"></div>
+        <div class="alert" id="fSvcAlert" role="alert" aria-live="assertive"></div>
+        <div id="fSvcs"></div>
+      </section>
+
+      <!-- LIEN ÉCLAIR : offre terminée / erreur -->
+      <section class="step" data-step="23" tabindex="-1" aria-labelledby="h1-23" hidden>
+        <div class="fend" id="fEnd"></div>
+      </section>
+
       <!-- CONFIRMATION -->
       <section class="step" data-step="5" tabindex="-1" aria-labelledby="h1-5" hidden>
         <div class="done" id="done"></div>
@@ -629,6 +709,31 @@
     var API = window.SorelleAPI;
     var NAME_RE = /^[A-Za-zÀ-ÖØ-öø-ÿŒœ' \-]{1,40}$/;
     var PHOTOS = { laurie: '../assets/laurie.JPG', lea: '../assets/lea.jpg' };
+    var PHOTO_DATA = {}; // photos de profil envoyées depuis la gestion (public.photos)
+    // <img> avec repli : photo de la gestion, puis fichier du dépôt, puis disparition (monogramme visible dessous)
+    function photoImg(id) {
+      var a = PHOTO_DATA[id], b = PHOTOS[id], src = a || b, fb = a ? b : '';
+      if (!src) return '';
+      return '<img src="' + esc(src) + '"' + (fb ? ' data-fb="' + esc(fb) + '"' : '') + ' alt="" loading="eager" decoding="async" onerror="if(this.getAttribute(\'data-fb\')){this.src=this.getAttribute(\'data-fb\');this.removeAttribute(\'data-fb\')}else{this.remove()}">';
+    }
+    function loadPhotos() {
+      return API.call('public.photos').then(function (ph) {
+        var changed = false;
+        Object.keys(ph || {}).forEach(function (id) {
+          var v = ph[id];
+          if (typeof v === 'string' && /^data:image\/(jpeg|png|webp);base64,/.test(v) && PHOTO_DATA[id] !== v) { PHOTO_DATA[id] = v; changed = true; }
+        });
+        if (changed) refreshPhotos();
+      }, function () { /* sans photos : repli fichiers / monogramme */ });
+    }
+    function refreshPhotos() {
+      Array.prototype.forEach.call(document.querySelectorAll('[data-photo]'), function (el) {
+        var id = el.getAttribute('data-photo'), old = el.querySelector('img');
+        if (old && PHOTO_DATA[id] && old.getAttribute('src') === PHOTO_DATA[id]) return;
+        if (old) old.remove();
+        el.insertAdjacentHTML('beforeend', photoImg(id));
+      });
+    }
     var STEPS = ['Praticienne', 'Soins', 'Créneau', 'Coordonnées'];
     var CLIENTE_KEY = 'sorelle_deja_cliente';
     var DEFAULT_NEW_TXT = 'Pour une première visite, merci de contacter Laurie directement. Nous vous dirons si nous avons des disponibilités pour les nouvelles clientes : la priorité est donnée aux clientes déjà suivies à l\'institut.';
@@ -696,6 +801,7 @@
     /* ---------------- Navigation ---------------- */
     // Étapes : 0 accueil, 9 première visite, 1-4 réservation, 5 confirmation
     function canNext(n) {
+      if (F) return fCanNext(n);
       if (n === 1) return !!S.prat;
       if (n === 2) return chosenIds().length > 0;
       if (n === 3) return !!(S.day && S.slot);
@@ -716,12 +822,17 @@
 
     window.addEventListener('popstate', function (e) {
       if (!S.cfg) return;
-      var n = e.state && e.state.step != null ? e.state.step : (ssGet(CLIENTE_KEY) === '1' ? 1 : 0);
+      var n = e.state && e.state.step != null ? e.state.step : (ssGet(CLIENTE_KEY) === '1' ? (F ? 21 : 1) : 0);
       if (S.step === 5) { // une réservation terminée ne se « défait » pas
         try { history.pushState({ step: 5 }, ''); } catch (x) { /* ignore */ }
         return;
       }
-      if (n >= 1 && n <= 4 && S.step >= 1 && n > S.step) { for (var i = S.step; i < n; i++) if (!canNext(i)) { n = S.step; break; } }
+      if (F) {
+        if (n >= 1 && n <= 3) n = 21; // pas d'étape du parcours normal dans un lien éclair
+        if (n === 23 && F.offre) n = 21;
+        if ((n === 22 || n === 4) && !fCanNext(21)) n = 21;
+        if (n === 4 && !fCanNext(22)) n = 22;
+      } else if (n >= 1 && n <= 4 && S.step >= 1 && n > S.step) { for (var i = S.step; i < n; i++) if (!canNext(i)) { n = S.step; break; } }
       if (n === 5) n = S.step;
       go(n, { fromHistory: true });
     });
@@ -737,9 +848,19 @@
         } else if (!on) sec.hidden = true;
       });
 
-      var inFlow = n >= 1 && n <= 4;
+      var inFlow = !F && n >= 1 && n <= 4;
+      var inFlash = !!F && !!FLASH_IDX[n];
       $('#layout').classList.toggle('is-solo', !inFlow);
-      $('#progress').hidden = !inFlow;
+      $('#progress').hidden = !inFlow && !inFlash;
+      if (inFlash) {
+        var fi = FLASH_IDX[n];
+        $('#progressLabel').textContent = FLASH_STEPS[n];
+        $('#progressCount').textContent = 'Étape ' + fi + ' sur 3';
+        $('#progressFill').style.width = (fi / 3 * 100) + '%';
+        $('#progressBar').setAttribute('aria-valuemax', '3');
+        $('#progressBar').setAttribute('aria-valuenow', fi);
+        $('#progressBar').setAttribute('aria-valuetext', 'Étape ' + fi + ' sur 3 : ' + FLASH_STEPS[n]);
+      }
       if (inFlow) {
         $('#progressLabel').textContent = STEPS[n - 1];
         $('#progressCount').textContent = 'Étape ' + n + ' sur 4';
@@ -749,6 +870,13 @@
       }
 
       if (n === 9) renderNewInfo();
+      if (n === 21) {
+        renderFlashList();
+        // Liste en direct : rafraîchie à chaque retour si elle date de plus de 20 s
+        if (F.offre && !F.loading && Date.now() - (F.loadedAt || 0) > 20000) loadOffre(true).then(function () { if (S.step === 21) renderFlashList(); }, showFlashError);
+      }
+      if (n === 22) renderFlashSvcs();
+      if (n === 23) renderFlashEnd();
       if (n === 1) renderPrats();
       if (n === 2) renderServices();
       if (n === 3) { renderSameDay(); ensureDispo(); }
@@ -765,7 +893,7 @@
 
     function renderBar() {
       var n = S.step, bar = $('#bar'), next = $('#btnNext');
-      var show = n >= 2 && n <= 4;
+      var show = F ? (n === 22 || n === 4) : (n >= 2 && n <= 4);
       bar.hidden = !show;
       $('#barSpacer').hidden = !show;
       next.disabled = n === 4 ? S.submitting : !canNext(n);
@@ -784,13 +912,23 @@
         meta = '<b>' + esc(shortDate(S.day)) + '</b> · ' + esc(range(S.slot));
         wide = '<b class="cap">' + esc(longDate(S.day)) + '</b> · ' + esc(range(S.slot));
       }
-      if (n === 4 && S.day && S.slot) wide = '<b>' + esc(longDate(S.day)) + '</b> · ' + esc(S.slot.debut);
+      if (n === 4 && !F && S.day && S.slot) wide = '<b>' + esc(longDate(S.day)) + '</b> · ' + esc(S.slot.debut);
+      if (F && (n === 22 || n === 4)) {
+        var fc = fCreneau(), fw = fWhen();
+        meta = ''; wide = '';
+        if (fc && fw) {
+          var nm = fIds().map(function (id) { var s = fSvc(id); return esc(s ? s.nom : id); }).join(' + ');
+          var at = (fw.exact ? '' : 'dès ') + esc(hh(fw.debut));
+          meta = nm + ' · <b>' + at + '</b>';
+          wide = '<b>' + esc(dayLabel(fc.date)) + '</b> · ' + nm + ' · ' + at;
+        } else if (n === 22) { meta = ''; wide = 'Choisissez un soin'; }
+      }
       $('#barMeta').innerHTML = meta;
       $('#barWide').innerHTML = wide;
     }
 
     function renderAside() {
-      if (!S.cfg) return;
+      if (!S.cfg || F) return;
       var p = prat();
       var rows = [
         ['Praticienne', p ? esc(p.nom) : ''],
@@ -806,7 +944,7 @@
     }
 
     /* ---------------- Accueil ---------------- */
-    $('#btnDeja').addEventListener('click', function () { ssSet(CLIENTE_KEY, '1'); go(1); });
+    $('#btnDeja').addEventListener('click', function () { ssSet(CLIENTE_KEY, '1'); go(F ? 21 : 1); });
     $('#btnNouvelle').addEventListener('click', function () { ssSet(CLIENTE_KEY, null); go(9); });
     $('#btnSwitch').addEventListener('click', function () { ssSet(CLIENTE_KEY, null); go(9); });
     $('#btnNewBack').addEventListener('click', function () { go(0); });
@@ -836,11 +974,10 @@
       var box = $('#prats');
       if (!box.childElementCount) {
         box.innerHTML = S.cfg.praticiennes.map(function (p, i) {
-          var src = PHOTOS[p.id];
-          return '<button type="button" class="prat" data-prat="' + esc(p.id) + '" data-i="' + (i % 2) + '" aria-pressed="false">' +
-            '<span class="prat__img">' +
+          return '<button type="button" class="prat" data-prat="' + esc(p.id) + '" data-i="' + (i % 2) + '" style="' + pcStyle(p.id) + ';--pcbg2:' + tint(pratColor(p.id), 0.16) + '" aria-pressed="false">' +
+            '<span class="prat__img" data-photo="' + esc(p.id) + '">' +
               '<span class="prat__mono" aria-hidden="true">' + esc((p.nom || '?').charAt(0)) + '</span>' +
-              (src ? '<img src="' + esc(src) + '" alt="" loading="eager" decoding="async" onerror="this.remove()">' : '') +
+              photoImg(p.id) +
             '</span>' +
             '<span class="prat__body"><span class="prat__name">' + esc(p.nom) + '</span><span class="prat__role">Prothésiste ongulaire</span></span>' +
           '</button>';
@@ -1120,6 +1257,11 @@
     }
     function renderForm() {
       $('#prenom').value = S.prenom; $('#nom').value = S.nom; $('#ack').checked = S.ack;
+      if (F && fCreneau()) {
+        $('#recap').innerHTML = flashRecapHtml();
+        $('#cancelBox').innerHTML = cancelHtml(fPrat(fCreneau().praticienne));
+        return;
+      }
       $('#recap').innerHTML = recapHtml();
       $('#cancelBox').innerHTML = cancelHtml(prat());
     }
@@ -1145,6 +1287,10 @@
       if (!S.ack) { $('#formAlert').textContent = 'Merci de cocher la case pour confirmer que vous avez bien noté les conditions d\'annulation.'; $('#ack').focus(); return; }
 
       S.submitting = true; renderBar();
+      if (F) {
+        flashSubmit({ prenom: cleanName($('#prenom').value), nom: cleanName($('#nom').value), website: $('#website').value });
+        return;
+      }
       var payload = {
         praticienne: S.prat, services: chosenIds(), date: S.day, debut: S.slot.debut,
         prenom: cleanName($('#prenom').value), nom: cleanName($('#nom').value),
@@ -1199,7 +1345,7 @@
         '<div class="cancel-box">' + cancelHtml(p) + '</div>' +
         '<div class="done__actions">' +
           '<button type="button" class="btn btn--clay" id="icsBtn">' + icon('i-cal') + 'Ajouter à mon agenda</button>' +
-          '<button type="button" class="btn btn--ghost" id="againBtn">Nouvelle réservation</button>' +
+          '<button type="button" class="btn btn--ghost" id="againBtn">' + (F ? 'Voir les autres créneaux' : 'Nouvelle réservation') + '</button>' +
         '</div>';
       var box = $('#done');
       box.className = 'done' + (wait ? ' done--wait' : '');
@@ -1259,6 +1405,15 @@
     }
 
     function resetAll() {
+      if (F) {
+        var keep = F.offre, tok = F.token;
+        F = freshFlash(tok); F.offre = keep;
+        S.result = null; S.prenom = ''; S.nom = ''; S.ack = false; S.submitting = false;
+        $('#form').reset(); setFieldErr('prenom', ''); setFieldErr('nom', ''); $('#formAlert').textContent = ''; $('#fAlert').textContent = '';
+        $('#ackWrap').classList.remove('is-err');
+        go(21, { replace: true });
+        return;
+      }
       dispoReq++;
       S = freshState(S.cfg);
       $('#svcGroups').innerHTML = '';
@@ -1272,6 +1427,7 @@
       var n = S.step;
       if (n === 4) { submit(); return; }
       if (!canNext(n)) return;
+      if (F) { if (n === 22) go(4); return; }
       if (n === 3) $('#slotAlert').textContent = '';
       go(n + 1);
     });
@@ -1314,14 +1470,344 @@
       }).then(function () { btn.disabled = false; btn.classList.remove('is-loading'); });
     });
 
+    /* ---------------- Lien éclair (story) : /rdv/?offre=TOKEN ---------------- */
+    // Étapes : 21 liste des créneaux, 22 choix du soin, 4 coordonnées (partagée), 5 confirmation, 23 offre terminée / erreur
+    var F = null; // null = parcours normal
+    (function () {
+      var m = /[?&]offre=([^&#]*)/.exec(location.search || '');
+      if (m) { var t = ''; try { t = decodeURIComponent(m[1]); } catch (e) { t = m[1]; } F = freshFlash(t); }
+    })();
+    function freshFlash(token) {
+      return { token: String(token || '').trim(), offre: null, loading: false, error: null, req: 0,
+        creneau: null, main: null, pied: null };
+    }
+    var FLASH_STEPS = { 21: 'Créneau', 22: 'Soin', 4: 'Coordonnées' };
+    var FLASH_IDX = { 21: 1, 22: 2, 4: 3 };
+    var DEFAULT_COLORS = { laurie: '#C97B5A', lea: '#6F8161' };
+    var FALLBACK_COLORS = ['#C97B5A', '#6F8161', '#7A6A8F', '#5F7F95'];
+
+    function allUrl() { return location.pathname || './'; }
+    function fPrats() { return (F && F.offre && F.offre.praticiennes) || (S.cfg && S.cfg.praticiennes) || []; }
+    function fPrat(id) {
+      var l = fPrats().filter(function (p) { return p.id === id; })[0];
+      return l || (S.cfg ? pratById(id) : null) || { id: id, nom: id, telephone: '' };
+    }
+    function pratColor(id) {
+      var lists = [fPrats(), (S.cfg && S.cfg.praticiennes) || []];
+      for (var i = 0; i < lists.length; i++) {
+        var p = lists[i].filter(function (x) { return x.id === id; })[0];
+        if (p && /^#[0-9a-fA-F]{6}$/.test(p.couleur || '')) return p.couleur;
+      }
+      if (DEFAULT_COLORS[id]) return DEFAULT_COLORS[id];
+      var idx = fPrats().map(function (p) { return p.id; }).indexOf(id);
+      return FALLBACK_COLORS[(idx < 0 ? 0 : idx) % FALLBACK_COLORS.length];
+    }
+    function tint(hex, a) {
+      var n = parseInt(hex.slice(1), 16);
+      return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
+    }
+    function pcStyle(id) { var c = pratColor(id); return '--pc:' + c + ';--pcbg:' + tint(c, 0.09); }
+    function hh(t) { return String(t || '').replace(':', 'h'); }
+    function fToday() { return (F.offre && F.offre.aujourdhui) || today(); }
+    function dayLabel(iso) {
+      var t = fToday();
+      if (iso === t) return 'Aujourd\'hui';
+      if (iso === addDays(t, 1)) return 'Demain';
+      var s = longDate(iso); return s.charAt(0).toUpperCase() + s.slice(1);
+    }
+    function fSvc(id) {
+      var l = (F.offre && F.offre.prestations) || [];
+      return l.filter(function (s) { return s.id === id; })[0] || (S.cfg ? svc(id) : null);
+    }
+    function fCreneau(id) {
+      var l = (F.offre && F.offre.creneaux) || [];
+      return l.filter(function (c) { return c.id === (id || F.creneau); })[0] || null;
+    }
+    function fFit(c, sid) { return (c && c.prestations || []).filter(function (p) { return p.service === sid; })[0] || null; }
+    function fStart(c) {
+      if (!c.libre || !c.prestations || !c.prestations.length) return c.debut;
+      return c.prestations.reduce(function (m, p) { return p.debut < m ? p.debut : m; }, '99:99');
+    }
+    function fIds() { return [F.main, F.pied].filter(Boolean); }
+    function fDur() { return fIds().reduce(function (a, id) { var s = fSvc(id); return a + (s ? s.duree : 0); }, 0); }
+    // Heure de début annoncée pour la sélection : exacte pour un soin, « à partir de » pour deux
+    function fWhen() {
+      var c = fCreneau(); if (!c) return null;
+      var ids = fIds(); if (!ids.length) return null;
+      var fits = ids.map(function (id) { return fFit(c, id); }).filter(Boolean);
+      if (!fits.length) return null;
+      if (ids.length === 1) return { debut: fits[0].debut, fin: fits[0].fin, exact: true };
+      var d = fits.reduce(function (m, f) { return f.debut < m ? f.debut : m; }, '99:99');
+      return { debut: d, fin: null, exact: false };
+    }
+    function fCanNext(n) {
+      if (n === 21) return !!fCreneau();
+      if (n === 22) return !!fCreneau() && fIds().length > 0;
+      return true;
+    }
+    function fmtExpire(ms) {
+      if (!ms) return '';
+      var d = new Date(ms), parts = null;
+      try {
+        parts = {};
+        new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+          .formatToParts(d).forEach(function (p) { parts[p.type] = p.value; });
+      } catch (e) { parts = null; }
+      var iso, h, mi;
+      if (parts && parts.year) { iso = parts.year + '-' + parts.month + '-' + parts.day; h = +parts.hour; mi = parts.minute; }
+      else { iso = d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate()); h = d.getHours(); mi = p2(d.getMinutes()); }
+      var heure = h + 'h' + (mi !== '00' ? mi : '');
+      var t = fToday();
+      if (iso === t) return 'Offre valable aujourd\'hui jusqu\'à ' + heure + '.';
+      if (iso === addDays(t, 1)) return 'Offre valable jusqu\'à demain ' + heure + '.';
+      return 'Offre valable jusqu\'au ' + longDate(iso) + ' à ' + heure + '.';
+    }
+
+    // Charge (ou recharge) l'offre. quiet = pas de squelette si déjà chargée.
+    function loadOffre(quiet) {
+      var my = ++F.req;
+      F.loading = true; F.error = null;
+      if (!quiet || !F.offre) renderFlashList();
+      return API.call('public.offre', { token: F.token }).then(function (o) {
+        if (my !== F.req) return;
+        F.loading = false; F.offre = o; F.error = null; F.loadedAt = Date.now();
+        return o;
+      }, function (err) {
+        if (my !== F.req) return;
+        F.loading = false; F.error = err;
+        if (err.code === 'offre_expiree') F.offre = null;
+        throw err;
+      });
+    }
+    function showFlashError(err) {
+      // Offre terminée : écran dédié ; autre erreur : message + Réessayer
+      if (S.step === 5) return;
+      if (err.code === 'offre_expiree') { go(23, { replace: true }); return; }
+      if (F.offre) { if (S.step !== 21) go(21); $('#fAlert').textContent = err.message; return; }
+      if (S.step === 21) renderFlashList(); else go(21);
+    }
+
+    function renderFlashHead() {
+      var o = F.offre;
+      $('#h1-21').textContent = (o && o.titre) ? o.titre : 'Dernières places';
+      $('#fExpire').textContent = o ? fmtExpire(o.expire) : '';
+    }
+
+    function renderFlashList() {
+      var box = $('#fList'); if (!box) return;
+      renderFlashHead();
+      box.setAttribute('aria-busy', F.loading && !F.offre ? 'true' : 'false');
+      if (F.loading && !F.offre) {
+        box.innerHTML = '<div class="sk" style="height:24px;width:40%;margin-bottom:14px"></div><div class="sk" style="height:66px;margin-bottom:8px"></div><div class="sk" style="height:66px;margin-bottom:8px"></div><div class="sk" style="height:66px"></div><span class="sr-only">Chargement des créneaux…</span>';
+        return;
+      }
+      if (F.error && !F.offre) {
+        box.innerHTML = '<div class="error-box" role="alert"><p>' + esc(F.error.message) + '</p><button type="button" class="btn btn--ink" data-fretry>Réessayer</button></div>';
+        return;
+      }
+      var o = F.offre; if (!o) { box.innerHTML = ''; return; }
+      var order = fPrats().map(function (p) { return p.id; });
+      var list = (o.creneaux || []).slice().sort(function (a, b) {
+        if (a.date !== b.date) return a.date < b.date ? -1 : 1;
+        var pa = order.indexOf(a.praticienne), pb = order.indexOf(b.praticienne);
+        if (pa !== pb) return pa - pb;
+        return fStart(a) < fStart(b) ? -1 : 1;
+      });
+      var libres = list.filter(function (c) { return c.libre; });
+      if (!libres.length) {
+        var withPhone = fPrats().filter(function (p) { return p.telephone; });
+        box.innerHTML = '<div class="callout"><p class="callout__title">' + (list.length ? 'Tous les créneaux de cette offre sont réservés' : 'Plus aucun créneau dans cette offre') + '</p>' +
+          '<p>Appelez ou écrivez à votre praticienne, elle vous dira si une place se libère :</p>' + phoneLinks(withPhone, false) + '</div>';
+        return;
+      }
+      var html = '', curDay = null, curPrat = null;
+      function closePrat() { if (curPrat) html += '</div></div>'; curPrat = null; }
+      function closeDay() { closePrat(); if (curDay) html += '</div>'; curDay = null; }
+      list.forEach(function (c) {
+        if (c.date !== curDay) {
+          closeDay(); curDay = c.date;
+          var lbl = dayLabel(c.date), rel = lbl === 'Aujourd\'hui' || lbl === 'Demain';
+          html += '<div class="fday" role="group" aria-labelledby="fd-' + c.date + '"><h2 class="fday__title" id="fd-' + c.date + '">' + esc(lbl) +
+            (rel ? '<small>' + esc(longDate(c.date)) + '</small>' : '') + '</h2>';
+        }
+        if (c.praticienne !== curPrat) {
+          closePrat(); curPrat = c.praticienne;
+          var p = fPrat(c.praticienne);
+          var n = list.filter(function (x) { return x.date === c.date && x.praticienne === c.praticienne && x.libre; }).length;
+          var gid = 'fp-' + c.date + '-' + esc(c.praticienne);
+          html += '<div class="fprat" style="' + pcStyle(c.praticienne) + '"><div class="fprat__head"><h3 class="fprat__name" id="' + gid + '"><span class="fava" aria-hidden="true" data-photo="' + esc(c.praticienne) + '">' + esc((p.nom || '?').charAt(0).toUpperCase()) + photoImg(c.praticienne) + '</span><span>' + esc(p.nom) + '</span></h3>' +
+            '<span class="fprat__count">' + (n ? n + ' place' + (n > 1 ? 's' : '') : 'Complet') + '</span></div><div class="fslots" role="list" aria-labelledby="' + gid + '">';
+        }
+        var pn = esc(fPrat(c.praticienne).nom), st = fStart(c);
+        var inner = '<span class="fslot__txt"><span class="fslot__main"><b>' + esc(hh(st)) + '</b> · avec ' + pn + '</span><span class="fslot__end">jusqu\'à ' + esc(hh(c.fin)) + '</span></span>';
+        if (c.libre) {
+          html += '<div role="listitem"><button type="button" class="fslot" data-fc="' + esc(c.id) + '" aria-label="' + esc(dayLabel(c.date) + ', ' + hm(st) + ' avec ' + fPrat(c.praticienne).nom + ', jusqu\'à ' + hm(c.fin)) + '">' + inner + icon('i-next') + '</button></div>';
+        } else {
+          html += '<div role="listitem"><div class="fslot is-taken" aria-label="' + esc(dayLabel(c.date) + ', ' + hm(c.debut) + ' avec ' + fPrat(c.praticienne).nom + ' : réservé') + '">' + inner + '<span class="fslot__tag" aria-hidden="true">Réservé</span></div></div>';
+        }
+      });
+      closeDay();
+      box.innerHTML = html;
+    }
+
+    $('#fList').addEventListener('click', function (e) {
+      if (e.target.closest('[data-fretry]')) { loadOffre().then(function () { renderFlashList(); }, showFlashError); return; }
+      var b = e.target.closest('[data-fc]'); if (!b) return;
+      var id = b.getAttribute('data-fc');
+      if (id !== F.creneau) { F.main = null; F.pied = null; }
+      F.creneau = id;
+      $('#fAlert').textContent = ''; $('#fSvcAlert').textContent = '';
+      go(22);
+    });
+    $('#fNew').addEventListener('click', function () { ssSet(CLIENTE_KEY, null); go(9); });
+
+    function renderFlashSvcs() {
+      var c = fCreneau();
+      if (!c) { $('#fSel').innerHTML = ''; $('#fSvcs').innerHTML = ''; return; }
+      var p = fPrat(c.praticienne);
+      $('#fSel').innerHTML = '<div class="fsel" style="' + pcStyle(c.praticienne) + '"><span class="fava" aria-hidden="true" data-photo="' + esc(c.praticienne) + '">' + esc((p.nom || '?').charAt(0).toUpperCase()) + photoImg(c.praticienne) + '</span><span><b>' + esc(dayLabel(c.date)) + '</b> · avec ' + esc(p.nom) + ' · à partir de ' + esc(hh(fStart(c))) + '</span></div>';
+      var fits = c.prestations || [];
+      var groups = [{ cat: 'main', title: 'Mains', hint: 'Un soin au choix' }, { cat: 'pied', title: 'Pieds (YUMI FEET)', hint: 'En plus, si vous le souhaitez' }];
+      var hasMain = fits.some(function (f) { var s = fSvc(f.service); return s && s.categorie === 'main'; });
+      var html = groups.map(function (g) {
+        var items = fits.filter(function (f) { var s = fSvc(f.service); return s && s.categorie === g.cat; });
+        if (!items.length) return '';
+        var hint = g.cat === 'pied' && !hasMain ? 'Un soin au choix' : g.hint;
+        return '<div class="group"><div class="group__title"><h2 id="fg-' + g.cat + '">' + g.title + '</h2><span class="group__hint">' + hint + '</span></div>' +
+          '<div class="svcs" role="group" aria-labelledby="fg-' + g.cat + '">' + items.map(function (f) {
+            var s = fSvc(f.service), on = f.service === F.main || f.service === F.pied;
+            return '<button type="button" class="svc" data-fsvc="' + esc(f.service) + '" data-cat="' + g.cat + '" aria-pressed="' + on + '">' +
+              '<span class="radio" aria-hidden="true"></span>' +
+              '<span class="svc__txt"><span class="svc__name">' + esc(s.nom) + ' · ' + esc(hh(f.debut)) + '</span>' +
+              '<span class="svc__info">' + (s.info ? esc(s.info) + ' · ' : '') + 'fin ' + esc(hh(f.fin)) + '</span></span>' +
+              '<span class="svc__dur">' + fmtDur(s.duree) + '</span></button>';
+          }).join('') + '</div></div>';
+      }).join('');
+      if (F.main && F.pied) html += '<p class="fhint">Mains puis pieds à la suite : l\'heure exacte vous sera confirmée à la réservation. Si les deux ne tiennent pas sur ce créneau, nous vous le dirons.</p>';
+      $('#fSvcs').innerHTML = html;
+    }
+    $('#fSvcs').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-fsvc]'); if (!b) return;
+      var id = b.getAttribute('data-fsvc'), key = b.getAttribute('data-cat') === 'main' ? 'main' : 'pied';
+      F[key] = F[key] === id ? null : id;
+      $('#fSvcAlert').textContent = '';
+      renderFlashSvcs(); renderBar();
+    });
+
+    function renderFlashEnd() {
+      var err = F.error || {};
+      var phones = phoneLinks(((S.cfg && S.cfg.praticiennes) || fPrats()).filter(function (p) { return p.telephone; }), false);
+      var html;
+      if (err.code === 'offre_expiree' || !F.token) {
+        html = '<div class="head"><h1 id="h1-23">Cette offre est terminée</h1><p>Les créneaux de dernière minute de cette story ne sont plus disponibles.</p></div>' +
+          '<a class="btn btn--clay" href="' + esc(allUrl()) + '">Voir toutes les disponibilités</a>' +
+          '<div class="note"><strong>Une question ?</strong> Appelez votre praticienne :' + phones + '</div>';
+      } else {
+        html = '<div class="head"><h1 id="h1-23">Chargement impossible</h1></div>' +
+          '<div class="error-box" role="alert"><p>' + esc(err.message || 'Erreur inattendue.') + '</p><button type="button" class="btn btn--ink" data-fretry>Réessayer</button></div>' +
+          '<div class="note">' + phones + '</div>';
+      }
+      $('#fEnd').innerHTML = html;
+    }
+    $('#fEnd').addEventListener('click', function (e) {
+      if (!e.target.closest('[data-fretry]')) return;
+      loadOffre().then(function () { go(ssGet(CLIENTE_KEY) === '1' ? 21 : 0, { replace: true }); }, function (err) { F.error = err; renderFlashEnd(); });
+    });
+
+    function flashRecapHtml() {
+      var c = fCreneau(), p = fPrat(c.praticienne), w = fWhen();
+      function row(dt, dd) { return '<div class="recap__row"><dt>' + dt + '</dt><dd>' + dd + '</dd></div>'; }
+      var heure = w ? (w.exact ? esc(w.debut + ' – ' + w.fin) : 'À partir de ' + esc(w.debut)) : esc(c.debut);
+      var rows = row('Praticienne', '<i class="dot" style="background:' + pratColor(c.praticienne) + '" aria-hidden="true"></i>' + esc(p.nom)) +
+        row('Soins', fIds().map(function (id) { var s = fSvc(id); return '<span>' + esc(s ? s.nom : id) + '</span>'; }).join('')) +
+        row('Durée', fmtDur(fDur())) +
+        row('Date', '<span class="cap">' + esc(longDate(c.date)) + '</span>') +
+        row('Heure', heure);
+      return '<div class="recap__head"><h2>Récapitulatif</h2><button type="button" class="recap__edit" data-goto="22">Modifier</button></div><dl>' + rows + '</dl>';
+    }
+
+    function flashSubmit(payloadBase) {
+      var c = fCreneau();
+      var payload = { token: F.token, creneau: c.id, services: fIds(), prenom: payloadBase.prenom, nom: payloadBase.nom, website: payloadBase.website };
+      return API.call('public.reserverOffre', payload).then(function (r) {
+        S.submitting = false; S.result = r;
+        renderDone();
+        go(5, { replace: true });
+        loadOffre(true).then(null, function () { /* rien */ });
+      }, function (err) {
+        S.submitting = false;
+        if (err.code === 'offre_expiree') { F.error = err; F.offre = null; go(23, { replace: true }); return; }
+        if (err.code === 'creneau_pris' || err.code === 'creneau_inconnu' || err.code === 'creneau_passe') {
+          var ids = fIds(), cid = c.id;
+          loadOffre(true).then(function () {
+            var c2 = fCreneau(cid);
+            // Combinaison mains + pieds qui ne tient pas, alors que chaque soin seul est encore possible
+            if (ids.length === 2 && c2 && c2.libre && ids.every(function (id) { return fFit(c2, id); })) {
+              go(22);
+              $('#fSvcAlert').textContent = 'Les deux soins ne tiennent pas ensemble sur ce créneau. Gardez un seul soin ou choisissez un autre créneau.';
+              return;
+            }
+            F.creneau = null; F.main = null; F.pied = null;
+            go(21);
+            $('#fAlert').textContent = 'Ce créneau vient d\'être réservé ou ne convient plus à ce soin. Voici les places encore disponibles.';
+          }, showFlashError);
+          return;
+        }
+        if (err.code === 'nom_invalide' || err.code === 'nom_requis') { setFieldErr('prenom', ' '); setFieldErr('nom', ' '); }
+        renderBar();
+        $('#formAlert').textContent = err.message;
+        $('#formAlert').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' });
+      });
+    }
+
+    // L'offre est en direct : on recharge quand la cliente revient sur la page (ex. retour depuis Instagram)
+    document.addEventListener('visibilitychange', function () {
+      if (!F || !S.cfg || document.visibilityState !== 'visible') return;
+      if (S.step === 5 || S.step === 23 || S.submitting) return;
+      loadOffre(true).then(function () {
+        if (S.step === 21) { renderFlashList(); return; }
+        if (S.step === 22 || S.step === 4) {
+          var c = fCreneau();
+          var ok = c && c.libre && fIds().every(function (id) { return fFit(c, id); });
+          if (!ok) {
+            F.creneau = null; F.main = null; F.pied = null;
+            go(21);
+            $('#fAlert').textContent = 'Le créneau choisi vient d\'être réservé. Voici les places encore disponibles.';
+          } else if (S.step === 22) renderFlashSvcs();
+        }
+      }, function (err) { if (err.code === 'offre_expiree') showFlashError(err); });
+    });
+
     /* ---------------- Démarrage ---------------- */
     function boot() {
       if (API.isDemo) $('#demo').hidden = false;
+      loadPhotos();
+      if (F) { bootFlash(); return; }
       API.call('public.config').then(function (cfg) {
         S.cfg = cfg;
         $('#boot').hidden = true;
         $('#footAddr').textContent = cfg.salon.nom + ' · ' + cfg.salon.adresse;
         var start = ssGet(CLIENTE_KEY) === '1' ? 1 : 0;
+        try { history.replaceState({ step: start }, ''); } catch (e) { /* ignore */ }
+        S.step = start; render(false);
+      }, function (err) {
+        $('#boot').innerHTML = '<div class="error-box" role="alert"><p>' + esc(err.message) + '</p><button type="button" class="btn btn--ink" id="bootRetry">Réessayer</button></div>';
+        $('#bootRetry').addEventListener('click', function () { location.reload(); });
+      });
+    }
+    // Lien éclair : configuration et offre chargées en parallèle (moins d'attente sur mobile)
+    function bootFlash() {
+      $('#fAll').setAttribute('href', allUrl());
+      var offreP = F.token ? loadOffre(true).then(function () { return null; }, function (err) { return err; })
+                           : Promise.resolve({ code: 'offre_expiree', message: 'Lien incomplet.' });
+      Promise.all([API.call('public.config'), offreP]).then(function (res) {
+        var cfg = res[0], oErr = res[1];
+        S.cfg = cfg;
+        $('#boot').hidden = true;
+        $('#footAddr').textContent = cfg.salon.nom + ' · ' + cfg.salon.adresse;
+        var start;
+        if (oErr) { F.error = oErr; start = 23; }
+        else start = ssGet(CLIENTE_KEY) === '1' ? 21 : 0;
         try { history.replaceState({ step: start }, ''); } catch (e) { /* ignore */ }
         S.step = start; render(false);
       }, function (err) {
