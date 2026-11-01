@@ -94,78 +94,89 @@
     '.mod-magie .mg-seg button.on{background:var(--accent);color:var(--accent-text);font-weight:600}',
     '.mod-magie .mg-seg button.on.pr{background:var(--pc);color:var(--pt)}',
     '.mod-magie .mg-seg button:disabled{opacity:.5;cursor:default}',
-    '.mod-magie .mg-dot{width:12px;height:12px;border-radius:50%;background:var(--pc);flex:none;display:inline-block;box-shadow:0 0 0 2px var(--surface)}',
+    '.mod-magie .mg-dot{width:10px;height:10px;border-radius:50%;background:var(--pc);flex:none;display:inline-block}',
+    '.mod-magie .mg-seg .mg-dot{width:12px;height:12px;box-shadow:0 0 0 2px var(--surface)}',
     '.mod-magie .mg-chips{display:flex;flex-wrap:wrap;gap:8px}',
     '.mod-magie .mg-chip{min-height:44px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface);display:inline-flex;align-items:center;gap:8px;font-weight:500;color:var(--text)}',
     '.mod-magie .mg-chip.on{background:var(--accent);border-color:var(--accent);color:var(--accent-text)}',
     '.mod-magie .mg-chip i{width:10px;height:10px;border-radius:50%;background:var(--sc);flex:none}',
     '.mod-magie .mg-chip small{font-size:12px;opacity:.8;font-weight:400}',
     '.mod-magie .mg-range{margin-top:8px;font-size:13px;color:var(--text-sub)}',
+    '.mod-magie .mg-range.bad{color:var(--danger);font-weight:500}',
+    '.mod-magie .mg-dates{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;margin-top:10px;max-width:420px}',
+    '.mod-magie .mg-dates label{display:grid;grid-template-columns:minmax(0,1fr);gap:4px;font-size:13px;color:var(--text-sub);min-width:0}',
+    '.mod-magie .mg-dates input{width:100%;min-height:44px;border-radius:var(--radius);border:1px solid var(--line);background:var(--surface);color:var(--text);padding:0 8px;font:inherit;font-size:16px;min-width:0;max-width:100%;color-scheme:light dark}',
+    '.mod-magie .mg-dates input:focus{outline:3px solid var(--focus);outline-offset:1px}',
     '.mod-magie .mg-sep{display:inline-block;width:1px;height:28px;background:var(--line);align-self:center;margin:0 2px}',
-    '.mod-magie .mg-sec{margin-top:22px}',
-    '.mod-magie .mg-sec>h3{font-size:17px;font-weight:600;margin:0 0 10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}',
-    '.mod-magie .mg-sec>h3 .mg-n{font-size:13px;font-weight:500;color:var(--text-sub);background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:1px 9px}',
+    '.mod-magie .mg-sec{margin-top:26px}',
+    '.mod-magie .mg-sec>h3{font-size:17px;font-weight:600;margin:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap}',
     '.mod-magie .mg-sec>h3 .mg-sp{flex:1}',
+    '.mod-magie .mg-sec>h3 .mg-n{font-size:13px;font-weight:500;color:var(--text-sub)}',
+    '.mod-magie .mg-aide{font-size:13px;color:var(--text-sub);margin:2px 0 10px}',
     '.mod-magie .mg-link{border:0;background:transparent;color:var(--accent);font-weight:500;min-height:44px;padding:0 4px;font-size:14px}',
-    '.mod-magie .mg-empty{padding:14px 16px;border-radius:var(--radius);background:var(--surface-2);color:var(--text-sub);font-size:14px;border:1px solid var(--line)}',
-    '.mod-magie .mg-sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}',
-    '.mod-magie .mg-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);padding:16px 14px 14px;box-shadow:inset 0 5px 0 var(--pc);overflow:hidden}',
-    '.mod-magie .mg-card-h{display:flex;align-items:center;gap:8px;font-weight:600}',
-    '.mod-magie .mg-card-h .mg-cnt{margin-left:auto;font-size:13px;font-weight:500;color:var(--text-sub)}',
-    '.mod-magie .mg-big{display:flex;align-items:baseline;gap:8px;margin-top:8px}',
-    '.mod-magie .mg-big b{font-size:34px;font-weight:600;line-height:1;color:var(--text)}',
-    '.mod-magie .mg-big span{font-size:14px;color:var(--text-sub)}',
-    '.mod-magie .mg-card p{margin:6px 0 0;font-size:13px;color:var(--text-sub)}',
-    '.mod-magie .mg-gauge{height:10px;border-radius:99px;background:var(--surface-2);border:1px solid var(--line);margin-top:10px;overflow:hidden}',
+    '.mod-magie .mg-more{display:block;margin-top:4px}',
+    '.mod-magie .mg-empty{padding:12px 14px;border-radius:var(--radius);background:var(--surface-2);color:var(--text-sub);font-size:14px}',
+    /* Résumé */
+    '.mod-magie .mg-sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-top:18px}',
+    '.mod-magie .mg-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);padding:14px}',
+    '.mod-magie .mg-card-h{display:flex;align-items:center;gap:8px;font-weight:600;font-size:15px}',
+    '.mod-magie .mg-big{display:flex;align-items:baseline;gap:8px;margin-top:6px}',
+    '.mod-magie .mg-big b{font-size:32px;font-weight:600;line-height:1.05}',
+    '.mod-magie .mg-big span{font-size:15px;color:var(--text)}',
+    '.mod-magie .mg-gauge{height:8px;border-radius:99px;background:var(--surface-2);margin-top:10px;overflow:hidden}',
     '.mod-magie .mg-gauge i{display:block;height:100%;background:var(--pc);border-radius:99px}',
+    '.mod-magie .mg-card p{margin:6px 0 0;font-size:13px;color:var(--text-sub)}',
+    /* Cartes compactes (priorités, relances) */
     '.mod-magie .mg-list{display:flex;flex-direction:column;gap:8px}',
-    '.mod-magie .mg-row{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:10px 12px;min-width:0}',
-    '.mod-magie .mg-row .mg-body{flex:1;min-width:0}',
-    '.mod-magie .mg-row .mg-t{font-weight:600;display:flex;align-items:center;gap:8px;flex-wrap:wrap}',
-    '.mod-magie .mg-row .mg-s{font-size:13px;color:var(--text-sub);margin-top:2px}',
-    '.mod-magie .mg-row .mg-acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}',
-    '.mod-magie .mg-badge{font-size:12px;font-weight:600;border-radius:999px;padding:2px 9px;border:1px solid transparent;white-space:nowrap}',
-    '.mod-magie .mg-badge.crit{background:var(--danger);color:var(--accent-text)}',
-    '.mod-magie .mg-badge.att{background:transparent;border-color:var(--warn);color:var(--text)}',
-    '.mod-magie .mg-badge.late{background:transparent;border-color:var(--danger);color:var(--danger)}',
-    '.mod-magie .mg-alert{border-left:5px solid var(--warn)}',
-    '.mod-magie .mg-alert.crit{border-left-color:var(--danger)}',
+    '.mod-magie .mg-it{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:10px 12px 12px;min-width:0}',
+    '.mod-magie .mg-ih{display:flex;align-items:center;gap:8px;min-width:0;min-height:30px}',
+    '.mod-magie .mg-ih>b{font-weight:600;white-space:nowrap}',
+    '.mod-magie .mg-ih .mg-sp{flex:1}',
+    '.mod-magie .mg-ih .mg-link{min-height:36px;font-size:14px;white-space:nowrap}',
+    '.mod-magie .mg-who{display:inline-flex;align-items:center;gap:5px;font-size:13px;color:var(--text-sub);white-space:nowrap}',
+    '.mod-magie .mg-is{font-size:14px;color:var(--text-sub);margin:2px 0 0}',
+    '.mod-magie .mg-is.crit{color:var(--text);font-weight:500}',
+    '.mod-magie .mg-is b{color:var(--text);font-weight:600}',
+    '.mod-magie .mg-late{display:inline-block;font-size:12px;font-weight:500;color:var(--danger);border:1px solid var(--danger);border-radius:999px;padding:0 7px;margin-left:4px;white-space:nowrap;line-height:18px}',
+    '.mod-magie .mg-name{border:0;background:transparent;padding:0;font-weight:600;font-size:15px;color:var(--text);text-align:left;min-height:30px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}',
+    '.mod-magie .mg-hrs{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}',
+    '.mod-magie .mg-h{min-height:44px;min-width:64px;padding:0 14px;border-radius:999px;border:1px solid var(--pc);background:var(--pbg);font-weight:600;font-size:16px;color:var(--text);white-space:nowrap}',
+    '.mod-magie .mg-acts{display:flex;gap:8px;margin-top:8px;max-width:460px}',
+    '.mod-magie .mg-acts .mg-btn{flex:1 1 0;min-width:0}',
     '.mod-magie .mg-btn{min-height:44px;padding:0 14px;border-radius:var(--radius);border:1px solid var(--line);background:var(--surface);font-weight:500;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;color:var(--text)}',
     '.mod-magie .mg-btn svg{width:18px;height:18px;flex:none}',
     '.mod-magie .mg-btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-text);font-weight:600}',
     '.mod-magie .mg-btn.blk{width:100%}',
     '.mod-magie .mg-btn:disabled{opacity:.5;cursor:default}',
-    '.mod-magie .mg-btn:focus-visible,.mod-magie .mg-chip:focus-visible,.mod-magie .mg-seg button:focus-visible,.mod-magie .mg-slot-b:focus-visible,.mod-magie .mg-link:focus-visible{outline:3px solid var(--focus);outline-offset:2px}',
-    '.mod-magie .mg-av{width:40px;height:40px;border-radius:50%;flex:none;display:grid;place-items:center;font-weight:600;background:var(--pc);color:var(--pt)}',
-    '.mod-magie .mg-pratname{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--text)}',
+    '.mod-magie .mg-btn:focus-visible,.mod-magie .mg-chip:focus-visible,.mod-magie .mg-seg button:focus-visible,.mod-magie .mg-h:focus-visible,.mod-magie .mg-hb:focus-visible,.mod-magie .mg-link:focus-visible,.mod-magie .mg-name:focus-visible{outline:3px solid var(--focus);outline-offset:2px}',
+    /* Créneaux à proposer */
     '.mod-magie .mg-day{margin-top:16px}',
-    '.mod-magie .mg-day>h4{font-size:15px;font-weight:600;margin:0 0 8px;color:var(--text)}',
-    '.mod-magie .mg-pblk{border-radius:var(--radius-lg);border:1px solid var(--line);border-left:6px solid var(--pc);padding:10px 10px 10px 12px;background:var(--pbg)}',
-    '.mod-magie .mg-pblk+.mg-pblk{margin-top:10px}',
-    '.mod-magie .mg-ph{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}',
-    '.mod-magie .mg-ptag{display:inline-flex;align-items:center;gap:6px;min-height:30px;padding:0 12px;border-radius:999px;background:var(--pc);color:var(--pt);font-weight:600;font-size:14px}',
-    '.mod-magie .mg-pinfo{font-size:13px;color:var(--text-sub)}',
-    '.mod-magie .mg-wins{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px;align-items:center}',
-    '.mod-magie .mg-wins>span{font-size:13px;color:var(--text-sub)}',
-    '.mod-magie .mg-win{min-height:36px;padding:0 10px;border-radius:999px;border:1px dashed var(--pc);background:var(--surface);font-size:13px;color:var(--text)}',
-    '.mod-magie .mg-slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px}',
-    '.mod-magie .mg-slot{display:flex;align-items:stretch;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);min-height:48px;overflow:hidden}',
-    '.mod-magie .mg-slot.off{opacity:.55}',
-    '.mod-magie .mg-chk{display:grid;place-items:center;width:48px;flex:none;cursor:pointer;border-right:1px solid var(--line);position:relative}',
-    '.mod-magie .mg-chk input{position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer}',
-    '.mod-magie .mg-chk span{width:24px;height:24px;border-radius:7px;border:2px solid var(--muted);display:grid;place-items:center;color:var(--accent-text)}',
-    '.mod-magie .mg-chk span svg{width:16px;height:16px;opacity:0}',
-    '.mod-magie .mg-chk input:checked+span{background:var(--accent);border-color:var(--accent)}',
-    '.mod-magie .mg-chk input:checked+span svg{opacity:1}',
-    '.mod-magie .mg-chk input:focus-visible+span{outline:3px solid var(--focus);outline-offset:2px}',
-    '.mod-magie .mg-slot-b{flex:1;min-width:0;border:0;background:transparent;display:flex;align-items:center;gap:8px;padding:0 10px;text-align:left;white-space:nowrap}',
-    '.mod-magie .mg-slot-b b{font-size:17px;font-weight:600}',
-    '.mod-magie .mg-slot-b small{font-size:12px;color:var(--text-sub)}',
-    '.mod-magie .mg-slot-b em{font-style:normal;margin-left:auto;font-size:13px;font-weight:500;color:var(--accent);display:inline-flex;align-items:center;gap:2px}',
-    '.mod-magie .mg-slot-b em svg{width:16px;height:16px}',
-    '.mod-magie .mg-none{font-size:13px;color:var(--text-sub);padding:2px 2px 4px}',
+    '.mod-magie .mg-day>h4{font-size:15px;font-weight:600;margin:0 0 8px}',
+    '.mod-magie .mg-day.full>h4{margin:0;font-weight:500;color:var(--text-sub);font-size:14px}',
+    '.mod-magie .mg-pblk{border-radius:var(--radius);border-left:4px solid var(--pc);padding:8px 10px 10px 12px;background:var(--pbg)}',
+    '.mod-magie .mg-pblk+.mg-pblk,.mod-magie .mg-pblk+.mg-pgrey,.mod-magie .mg-pgrey+.mg-pblk{margin-top:8px}',
+    '.mod-magie .mg-ph{display:flex;align-items:center;gap:8px;font-weight:600;font-size:14px}',
+    '.mod-magie .mg-ph small{font-weight:400;color:var(--text-sub);font-size:13px}',
+    '.mod-magie .mg-pgrey{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);padding:2px 2px 2px 4px}',
+    '.mod-magie .mg-pgrey .mg-dot{opacity:.6}',
+    '.mod-magie .mg-hc{display:inline-flex;align-items:stretch;min-height:44px;border-radius:999px;border:1px solid var(--pc);background:var(--surface);overflow:hidden}',
+    '.mod-magie .mg-hc.off{opacity:.5;border-style:dashed}',
+    '.mod-magie .mg-hk{position:relative;display:grid;place-items:center;width:40px;flex:none;cursor:pointer}',
+    '.mod-magie .mg-hk input{position:absolute;inset:0;opacity:0;width:100%;height:100%;margin:0;cursor:pointer}',
+    '.mod-magie .mg-hk span{width:22px;height:22px;border-radius:6px;border:2px solid var(--muted);display:grid;place-items:center;color:var(--accent-text)}',
+    '.mod-magie .mg-hk span svg{width:15px;height:15px;opacity:0}',
+    '.mod-magie .mg-hk input:checked+span{background:var(--accent);border-color:var(--accent)}',
+    '.mod-magie .mg-hk input:checked+span svg{opacity:1}',
+    '.mod-magie .mg-hk input:focus-visible+span{outline:3px solid var(--focus);outline-offset:2px}',
+    '.mod-magie .mg-hb{border:0;background:transparent;padding:0 14px 0 2px;font-weight:600;font-size:16px;color:var(--text);white-space:nowrap;display:inline-flex;align-items:center;gap:4px}',
+    '.mod-magie .mg-hb svg{width:16px;height:16px;color:var(--text-sub)}',
+    '.mod-magie .mg-alt{font-size:13px;color:var(--text-sub);padding:0 2px 0 4px;margin-top:6px;line-height:20px;min-height:40px;display:flex;align-items:center;flex-wrap:wrap;column-gap:4px}',
+    '.mod-magie .mg-alt .mg-dot{margin-right:6px;vertical-align:-1px}',
+    '.mod-magie .mg-alt button{display:inline-block;border:0;background:transparent;color:var(--accent);font-weight:500;font-size:14px;min-height:40px;line-height:20px;padding:0;white-space:nowrap}',
+    '.mod-magie .mg-alt+.mg-pblk,.mod-magie .mg-pblk+.mg-alt{margin-top:8px}',
+    '.mod-magie .mg-tools{display:flex;gap:4px;margin:2px 0 0;flex-wrap:wrap}',
     '.mod-magie .mg-foot{position:sticky;bottom:0;z-index:3;margin-top:22px;background:var(--surface);border-top:1px solid var(--line);box-shadow:0 -6px 18px var(--shadow);padding:12px 18px calc(12px + env(safe-area-inset-bottom,0px));display:flex;align-items:center;gap:12px;flex-wrap:wrap}',
-    '.mod-magie .mg-foot .mg-fi{flex:1 1 180px;font-size:13px;color:var(--text-sub);min-width:0}',
+    '.mod-magie .mg-foot .mg-fi{flex:1 1 160px;font-size:13px;color:var(--text-sub);min-width:0}',
     '.mod-magie .mg-foot .mg-fi b{color:var(--text);font-size:15px}',
     '.mod-magie .mg-foot .mg-btn{flex:1 1 200px}',
     '.mod-magie .mg-banner{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;border-radius:var(--radius);background:var(--surface);border:1px solid var(--accent);border-left:6px solid var(--accent);margin-bottom:12px}',
@@ -176,8 +187,8 @@
     '@keyframes mgspin{to{transform:rotate(360deg)}}',
     '.mod-magie .mg-busy{font-size:12px;color:var(--text-sub);display:inline-flex;align-items:center;gap:6px;font-weight:400}',
     '.mod-magie .mg-busy .mg-spin{width:12px;height:12px}',
-    '@media (max-width:699px){.mod-magie .mg-row{flex-wrap:wrap}.mod-magie .mg-row .mg-acts{width:100%;justify-content:stretch}.mod-magie .mg-row .mg-acts .mg-btn{flex:1}.mod-magie .mg-slots{grid-template-columns:1fr 1fr}.mod-magie .mg-slot-b em{display:none}.mod-magie .mg-chk{width:44px}.mod-magie .mg-slot-b{padding:4px 8px;gap:0;flex-direction:column;align-items:flex-start;justify-content:center;line-height:1.2}}',
-    '@media (max-width:370px){.mod-magie .mg-slots{grid-template-columns:1fr}}',
+    '@media (max-width:699px){.mod-magie .mg-sum{grid-template-columns:1fr 1fr;gap:8px}.mod-magie .mg-card{padding:12px}.mod-magie .mg-big b{font-size:28px}.mod-magie .mg-big{flex-wrap:wrap;gap:0 6px}.mod-magie .mg-big span{font-size:14px}}',
+    '@media (max-width:370px){.mod-magie .mg-sum{grid-template-columns:1fr}}',
     /* Studio */
     '.mod-magie.mg-studio .mg-st{display:grid;grid-template-columns:minmax(220px,300px) 1fr;gap:20px;align-items:start}',
     '.mod-magie .mg-prev{position:sticky;top:0;z-index:2}',
@@ -260,6 +271,34 @@
   function svcCat(id) { var c = cfg() || {}; var s = (c.services || []).filter(function (x) { return x.id === id; })[0]; return s ? s.categorie : ''; }
   function svcLabel(ids) { return ids.map(function (id) { return svcName(id); }).join(' + '); }
 
+  /* Heure affichée : début seul (« 9h ») ou plage si cfg.affichage.heureFin === true. G.heure du shell si présent. */
+  function hr(debut, fin) {
+    if (typeof G.heure === 'function') { try { var s = G.heure(debut, fin); if (s) return String(s); } catch (e) { /* repli */ } }
+    var c = cfg();
+    return c && c.affichage && c.affichage.heureFin === true && fin ? hfr(debut) + ' – ' + hfr(fin) : hfr(debut);
+  }
+  function dayMid(d) { var p = dp(d); return cap1(JOURS[wd(d)]) + ' ' + p.j + ' ' + MOIS_C[p.m - 1]; }
+  function dayLabel(d) { return rel(d) || dayMid(d); }
+  function showSec(name) { var c = cfg() || {}, m = c.magie || {}; return name === 'afficherRelances' ? m[name] === true : m[name] !== false; }
+
+  var PERSO_MAX = 31; // jours, bornes incluses
+  function persoDefault() { var t = G.today(); return { du: t, au: U().addDays(t, 13) }; }
+  function persoCheck(p) {
+    var t = G.today(), u = U();
+    if (!p || !/^\d{4}-\d\d-\d\d$/.test(p.du || '') || !/^\d{4}-\d\d-\d\d$/.test(p.au || '')) return 'Choisissez les deux dates.';
+    if (p.du < t) return 'La date de début ne peut pas être passée.';
+    if (p.au < p.du) return 'La date de fin doit être après la date de début.';
+    if (u.diffDays(p.du, p.au) + 1 > PERSO_MAX) return PERSO_MAX + ' jours au maximum : rapprochez la date de fin.';
+    return null;
+  }
+  function persoInit() {
+    var p = ls.get('perso', null), t = G.today(), u = U();
+    if (!p || typeof p !== 'object' || !p.du || !p.au) return persoDefault();
+    p = { du: String(p.du), au: String(p.au) };
+    if (p.du < t) { var len = Math.max(0, u.diffDays(p.du, p.au)); p.du = t; p.au = u.addDays(t, Math.min(len, PERSO_MAX - 1)); }
+    return persoCheck(p) ? persoDefault() : p;
+  }
+
   function periods(st) {
     var u = U(), t = G.today(), w = wd(t), mon = u.addDays(t, -((w + 6) % 7));
     var c = cfg() || {}, hz = Math.max(1, Math.min(31, (c.magie && +c.magie.horizonJours) || 7));
@@ -270,11 +309,13 @@
       { id: 'prochaine', nom: 'Semaine prochaine', du: u.addDays(mon, 7), au: u.addDays(mon, 13) }
     ];
     if (st.jour) l.push({ id: 'jour', nom: st.jour.du === st.jour.au ? 'Jour affiché' : 'Période affichée', du: st.jour.du, au: st.jour.au });
+    l.push({ id: 'perso', nom: 'Personnalisée', du: st.perso.du, au: st.perso.au, bad: persoCheck(st.perso) });
     return l;
   }
   function curPer(st) { var l = periods(st); return l.filter(function (p) { return p.id === st.per; })[0] || l[1]; }
   function shownPids(st) { return st.qui === 'tous' ? activeIds() : [st.qui]; }
   function key(date, pid, debut) { return date + '|' + pid + '|' + debut; }
+  var PERS = ['auj', '7j', 'semaine', 'prochaine', 'perso'];
 
   function open(opts) {
     opts = opts || {};
@@ -288,8 +329,8 @@
     if (qui === 'tous' && ids.length === 1) qui = ids[0];
     var jour = opts.du ? { du: opts.du, au: opts.au && opts.au >= opts.du ? opts.au : opts.du } : null;
     var per = jour ? 'jour' : ls.get('per', '7j');
-    if (['auj', '7j', 'semaine', 'prochaine'].indexOf(per) < 0 && !jour) per = '7j';
-    var st = { qui: qui, per: per, jour: jour, services: defaultServices(), excl: {}, data: null, loading: false, err: null, req: 0,
+    if (PERS.indexOf(per) < 0 && !jour) per = '7j';
+    var st = { qui: qui, per: per, jour: jour, perso: persoInit(), services: defaultServices(), excl: {}, data: null, loading: false, err: null, req: 0,
       changed: false, closed: false, relMore: false, alMore: false, loadP: Promise.resolve() };
     M = st;
     var root = document.createElement('div');
@@ -305,7 +346,8 @@
 
   function load(st) {
     var my = ++st.req, p = curPer(st);
-    st.loading = true; st.err = null; renderMain(st);
+    if (p.bad) { st.loading = false; st.err = null; st.data = null; renderMain(st); st.loadP = Promise.resolve(); return st.loadP; }
+    st.loading = true; st.err = null; st.alMore = false; st.relMore = false; renderMain(st);
     st.loadP = G.API.admin('admin.remplir', { praticienne: st.qui, du: p.du, au: p.au, services: st.services }).then(function (d) {
       if (my !== st.req || st.closed) return;
       st.data = d; st.loading = false; renderMain(st);
@@ -316,16 +358,21 @@
     return st.loadP;
   }
 
+  function dayOf(st, date) { return st.data ? st.data.jours.filter(function (x) { return x.date === date; })[0] : null; }
+
   function collectAlerts(st) {
     var out = [];
     if (!st.data) return out;
     st.data.jours.forEach(function (j) {
       shownPids(st).forEach(function (pid) {
         var P = j.praticiennes[pid]; if (!P) return;
-        var crit = (P.alertes || []).filter(function (a) { return a.niveau === 'critique'; });
-        var att = (P.alertes || []).filter(function (a) { return a.niveau === 'attention'; });
-        if (!crit.length && !att.length) return;
-        out.push({ date: j.date, pid: pid, niveau: crit.length ? 'critique' : 'attention', textes: crit.concat(att).map(function (a) { return a.texte; }), P: P });
+        var al = (P.alertes || []).filter(function (a) { return a.niveau === 'critique' || a.niveau === 'attention'; });
+        if (!al.length) return;
+        var crit = al.some(function (a) { return a.niveau === 'critique'; });
+        al.sort(function (a, b) { return (a.niveau === 'critique' ? 0 : 1) - (b.niveau === 'critique' ? 0 : 1); });
+        // « Demain : 2 places à remplir » : le jour est déjà dans l'en-tête de la carte
+        var txt = String(al[0].texte || '').replace(/^(Aujourd'hui|Aujourd’hui|Demain)\s*:\s*/, '');
+        out.push({ date: j.date, pid: pid, niveau: crit ? 'critique' : 'attention', texte: cap1(txt), P: P });
       });
     });
     out.sort(function (a, b) { return (a.niveau === b.niveau ? 0 : a.niveau === 'critique' ? -1 : 1) || a.date.localeCompare(b.date) || pratOrder(a.pid, b.pid); });
@@ -358,6 +405,7 @@
   }
 
   function pStyle(pid) { var c = pc(pid); return '--pc:' + c + ';--pt:' + inkOn(c) + ';--pbg:' + tnt(c, 0.1); }
+  function who(pid) { return '<span class="mg-who" style="' + pStyle(pid) + '"><span class="mg-dot"></span>' + esc(pn(pid)) + '</span>'; }
 
   function ctrlHTML(st) {
     var ids = activeIds(), p = curPer(st), h = '<div class="mg-ctrl">';
@@ -369,7 +417,14 @@
     h += '</div></div>';
     h += '<div class="mg-f"><span class="mg-lab" id="mg-l-per">Période</span><div class="mg-chips" role="group" aria-labelledby="mg-l-per">' + periods(st).map(function (x) {
       return '<button type="button" class="mg-chip' + (x.id === p.id ? ' on' : '') + '" data-a="per" data-v="' + x.id + '" aria-pressed="' + (x.id === p.id) + '">' + esc(x.nom) + '</button>';
-    }).join('') + '</div><div class="mg-range">' + esc(p.du === p.au ? cap1(dayLong(p.du)) : 'Du ' + dayLong(p.du) + ' au ' + dayLong(p.au)) + '</div></div>';
+    }).join('') + '</div>';
+    if (p.id === 'perso') {
+      var t = G.today();
+      h += '<div class="mg-dates"><label>Du<input type="date" data-a="perso" data-k="du" min="' + t + '" value="' + esc(st.perso.du) + '"></label>' +
+        '<label>Au<input type="date" data-a="perso" data-k="au" min="' + esc(st.perso.du >= t ? st.perso.du : t) + '" max="' + esc(U().addDays(st.perso.du >= t ? st.perso.du : t, PERSO_MAX - 1)) + '" value="' + esc(st.perso.au) + '"></label></div>';
+    }
+    if (p.bad) h += '<div class="mg-range bad" role="alert">' + esc(p.bad) + '</div></div>';
+    else h += '<div class="mg-range">' + esc(p.du === p.au ? cap1(dayLong(p.du)) : 'Du ' + dayLong(p.du) + ' au ' + dayLong(p.au)) + (p.id === 'perso' ? '\u00a0(' + (U().diffDays(p.du, p.au) + 1) + '\u00a0j)' : '') + '</div></div>';
     h += '<div class="mg-f"><span class="mg-lab" id="mg-l-svc">Prestation à proposer</span><div class="mg-chips" role="group" aria-labelledby="mg-l-svc">';
     var mains = svcList('main'), pieds = svcList('pied');
     function chip(s) {
@@ -390,107 +445,112 @@
   function fmtDur(m) { m = +m || 0; var h = Math.floor(m / 60), r = m % 60; return h ? h + ' h' + (r ? ' ' + pad(r) : '') : r + ' min'; }
 
   function summaryHTML(st) {
-    var d = st.data, lbl = svcLabel(d.services || st.services);
-    var h = '<section class="mg-sec" aria-labelledby="mg-h-sum"><h3 id="mg-h-sum">Résumé</h3><div class="mg-sum">';
-    Object.keys(d.resume).sort(pratOrder).forEach(function (pid) {
-      var r = d.resume[pid], taux = r.max ? Math.round(r.clientes / r.max * 100) : 0;
-      h += '<div class="mg-card" style="' + pStyle(pid) + '"><div class="mg-card-h"><span class="mg-dot"></span>' + esc(pn(pid)) + '<span class="mg-cnt">' + r.clientes + '/' + r.max + ' clientes</span></div>' +
-        '<div class="mg-big"><b>' + r.capacite + '</b><span>' + esc(lbl) + ' encore possible' + (r.capacite > 1 ? 's' : '') + '</span></div>' +
-        '<p>' + plural(r.places, 'place restante', 'places restantes') + ' · remplie à ' + taux + ' %</p>' +
-        '<div class="mg-gauge" role="img" aria-label="Remplissage ' + taux + ' %"><i style="width:' + Math.min(100, taux) + '%"></i></div></div>';
+    var d = st.data, pids = Object.keys(d.resume).sort(pratOrder);
+    var h = '<div class="mg-sum' + (pids.length === 1 ? '" style="grid-template-columns:1fr' : '') + '" role="group" aria-label="Résumé">';
+    pids.forEach(function (pid) {
+      var r = d.resume[pid], taux = r.max ? Math.round(r.clientes / r.max * 100) : 0, n = r.capacite;
+      h += '<div class="mg-card" style="' + pStyle(pid) + '"><div class="mg-card-h"><span class="mg-dot"></span>' + esc(pn(pid)) + '</div>' +
+        '<div class="mg-big">' + (n ? '<b>' + n + '</b><span>place' + (n > 1 ? 's' : '') + ' à remplir</span>' : '<b style="font-size:22px">Complet</b>') + '</div>' +
+        '<div class="mg-gauge" role="img" aria-label="Remplie à ' + taux + ' %"><i style="width:' + Math.min(100, taux) + '%"></i></div>' +
+        '<p>Remplie à ' + taux + ' %</p></div>';
     });
-    return h + '</div></section>';
+    return h + '</div>';
+  }
+
+  function hourBtn(date, pid, c, label) {
+    var k = key(date, pid, c.debut);
+    return '<button type="button" class="mg-h" data-a="book" data-key="' + esc(k) + '" aria-label="Réserver ' + esc(dayLabel(date) + ' à ' + hfr(c.debut) + ' avec ' + pn(pid)) + '">' + esc(label || hr(c.debut, c.fin)) + '</button>';
   }
 
   function alertsHTML(st) {
-    var al = collectAlerts(st), h = '<section class="mg-sec" aria-labelledby="mg-h-al"><h3 id="mg-h-al">À traiter en priorité' + (al.length ? '<span class="mg-n">' + al.length + '</span>' : '') + '</h3>';
-    if (!al.length) return h + '<div class="mg-empty">Rien d\'urgent sur cette période.</div></section>';
-    var lim = st.alMore ? al.length : 6;
+    var al = collectAlerts(st);
+    var h = '<section class="mg-sec" aria-labelledby="mg-h-al"><h3 id="mg-h-al">À remplir en priorité</h3>' +
+      '<p class="mg-aide">Les jours proches ou peu remplis où une cliente rentre encore.</p>';
+    if (!al.length) return h + '<div class="mg-empty">Rien d\'urgent : les jours proches sont bien remplis.</div></section>';
+    var lim = st.alMore ? al.length : 4;
     h += '<div class="mg-list">' + al.slice(0, lim).map(function (a) {
       var crit = a.niveau === 'critique';
-      var hasSlot = (a.P.creneaux || []).length > 0;
-      return '<div class="mg-row mg-alert' + (crit ? ' crit' : '') + '" style="' + pStyle(a.pid) + '"><div class="mg-body"><div class="mg-t"><span class="mg-badge ' + (crit ? 'crit' : 'att') + '">' + (crit ? 'Urgent' : 'À voir') + '</span>' +
-        esc(dayTitle(a.date)) + '<span class="mg-pratname"><span class="mg-dot"></span>' + esc(pn(a.pid)) + '</span></div><div class="mg-s">' + a.textes.map(esc).join(' · ') + '</div></div>' +
-        '<div class="mg-acts">' + (hasSlot ? '<button type="button" class="mg-btn" data-a="al-book" data-d="' + a.date + '" data-p="' + esc(a.pid) + '">' + ic('plus') + 'Placer une cliente</button>' : '') +
-        '<button type="button" class="mg-btn" data-a="goday" data-d="' + a.date + '">' + ic('calendar') + 'Voir le jour</button></div></div>';
+      return '<div class="mg-it" style="' + pStyle(a.pid) + '"><div class="mg-ih"><b>' + esc(dayLabel(a.date)) + '</b>' + who(a.pid) + '<span class="mg-sp"></span>' +
+        '<button type="button" class="mg-link" data-a="goday" data-d="' + a.date + '">Voir le jour</button></div>' +
+        '<div class="mg-is' + (crit ? ' crit' : '') + '">' + esc(a.texte) + '</div>' +
+        ((a.P.creneaux || []).length ? '<div class="mg-hrs">' + a.P.creneaux.map(function (c) { return hourBtn(a.date, a.pid, c); }).join('') + '</div>' : '') + '</div>';
     }).join('') + '</div>';
-    if (al.length > lim) h += '<button type="button" class="mg-link" data-a="al-more">Voir les ' + al.length + ' points</button>';
+    if (al.length > lim) h += '<button type="button" class="mg-link mg-more" data-a="al-more">' + more(al.length - lim) + '</button>';
     return h + '</section>';
   }
 
-  function relWhen(r) {
-    var n = r.retardJours;
-    if (n > 0) return { txt: 'en retard de ' + n + ' j', late: true };
-    if (n === 0) return { txt: 'prévu aujourd\'hui', late: false };
-    return { txt: 'dans ' + (-n) + ' j', late: false };
-  }
+  function more(n) { return n > 1 ? 'Voir les ' + n + ' autres' : 'Voir l\'autre'; }
   function relMsg(r) {
     var s = r.suggestion;
     var what = (r.services || []).indexOf('remplissage') >= 0 ? 'ton prochain remplissage approche' : 'ton prochain rendez-vous approche';
     return 'Bonjour ' + r.prenom + ', ' + what + (s ? ' : je te propose ' + dayLong(s.date) + ' à ' + hfr(s.debut) + '. Dis-moi si ça te va !' : '. Dis-moi quand tu es disponible !');
   }
   function relancesHTML(st) {
-    var rl = st.data.relances || [], h = '<section class="mg-sec" aria-labelledby="mg-h-rel"><h3 id="mg-h-rel">Clientes à relancer' + (rl.length ? '<span class="mg-n">' + rl.length + '</span>' : '') + '</h3>';
+    var rl = st.data.relances || [];
+    var h = '<section class="mg-sec" aria-labelledby="mg-h-rel"><h3 id="mg-h-rel">Clientes à relancer</h3>' +
+      '<p class="mg-aide">Habituées dont le prochain soin est dû et qui n\'ont pas encore de rendez-vous.</p>';
     if (!rl.length) return h + '<div class="mg-empty">Aucune cliente à relancer sur cette période.</div></section>';
     var lim = st.relMore ? rl.length : 5, hasFiche = !!(G.modules && G.modules.clientes);
     h += '<div class="mg-list">' + rl.slice(0, lim).map(function (r, i) {
-      var w = relWhen(r), s = r.suggestion;
-      var nom = esc((r.prenom + ' ' + (r.nom || '')).trim());
-      return '<div class="mg-row" style="' + pStyle(r.praticienne) + '"><span class="mg-av" aria-hidden="true">' + esc((r.prenom || '?').charAt(0).toUpperCase()) + '</span>' +
-        '<div class="mg-body"><div class="mg-t">' + (hasFiche ? '<button type="button" class="mg-link" style="padding:0;min-height:0;color:var(--text);font-weight:600;font-size:15px" data-a="fiche" data-i="' + i + '">' + nom + '</button>' : nom) +
-        '<span class="mg-pratname"><span class="mg-dot"></span>' + esc(pn(r.praticienne)) + '</span>' + (w.late ? '<span class="mg-badge late">En retard</span>' : '') + '</div>' +
-        '<div class="mg-s">' + esc(svcLabel(r.services || [])) + ' prévu le ' + ddmm(r.prevue) + ' (' + w.txt + ')</div>' +
-        (s ? '<div class="mg-s">Créneau suggéré : <b style="color:var(--text);font-weight:600">' + esc(cap1(dayShort(s.date)) + ' à ' + hfr(s.debut)) + '</b> avec ' + esc(pn(s.praticienne)) + '</div>' : '<div class="mg-s">Pas de créneau trouvé sur la période.</div>') + '</div>' +
+      var s = r.suggestion, nom = esc((r.prenom + ' ' + (r.nom || '')).trim());
+      var late = r.retardJours > 0;
+      var line = esc(svcLabel(r.services || [])) + ' prévu le ' + ddmm(r.prevue) + (late ? '<span class="mg-late">en retard de ' + r.retardJours + ' j</span>' : '');
+      var sug = s ? 'Proposer <b>' + esc(cap1(dayShort(s.date)) + ' à ' + hr(s.debut, s.fin)) + '</b>' + (s.praticienne && s.praticienne !== r.praticienne ? ' avec ' + esc(pn(s.praticienne)) : '') : 'Pas de créneau libre sur la période';
+      return '<div class="mg-it"><div class="mg-ih">' + (hasFiche ? '<button type="button" class="mg-name" data-a="fiche" data-i="' + i + '">' + nom + '</button>' : '<b>' + nom + '</b>') + who(r.praticienne) + '</div>' +
+        '<div class="mg-is">' + line + '</div><div class="mg-is">' + sug + '</div>' +
         '<div class="mg-acts"><button type="button" class="mg-btn pri" data-a="rel-book" data-i="' + i + '">' + ic('plus') + 'Réserver</button>' +
         '<button type="button" class="mg-btn" data-a="rel-copy" data-i="' + i + '">' + ic('copy') + 'Copier le message</button></div></div>';
     }).join('') + '</div>';
-    if (rl.length > lim) h += '<button type="button" class="mg-link" data-a="rel-more">Voir les ' + rl.length + ' clientes</button>';
+    if (rl.length > lim) h += '<button type="button" class="mg-link mg-more" data-a="rel-more">' + more(rl.length - lim) + '</button>';
     return h + '</section>';
   }
 
   function slotsHTML(st) {
     var d = st.data, total = allSlots(st), n = checkedItems(st).length;
-    var h = '<section class="mg-sec" aria-labelledby="mg-h-sl"><h3 id="mg-h-sl">Créneaux à proposer' + (total ? '<span class="mg-n" data-n="sel">' + n + '/' + total + ' cochés</span><span class="mg-sp"></span>' +
-      '<button type="button" class="mg-link" data-a="all" data-v="1">Tout cocher</button><button type="button" class="mg-link" data-a="all" data-v="0">Tout décocher</button>' : '') + '</h3>';
+    var h = '<section class="mg-sec" aria-labelledby="mg-h-sl"><h3 id="mg-h-sl">Créneaux à proposer' + (total ? '<span class="mg-n" data-n="sel">' + n + '/' + total + ' pour la story</span>' : '') + '</h3>';
     if (!d.jours.length) {
       var p = curPer(st);
-      return h + '<div class="mg-empty">' + (p.au < G.today() ? 'Ce jour est passé : choisissez une autre période.' : 'Le salon est fermé sur cette période.') + '</div></section>';
+      return h + '<div class="mg-empty" style="margin-top:10px">' + (p.au < G.today() ? 'Ce jour est passé : choisissez une autre période.' : 'Le salon est fermé sur cette période.') + '</div></section>';
     }
-    h += '<p class="mg-help" style="margin:-4px 0 4px">Heures conseillées pour ' + esc(svcLabel(d.services || st.services)) + '. Touchez une heure pour réserver ; les cases cochées iront dans la story.</p>';
+    h += '<p class="mg-aide">Touchez une heure pour réserver. Les heures cochées iront dans la story.</p>';
+    if (total) h += '<div class="mg-tools"><button type="button" class="mg-link" data-a="all" data-v="1">Tout cocher</button><button type="button" class="mg-link" data-a="all" data-v="0">Tout décocher</button></div>';
     d.jours.forEach(function (j) {
-      var blocks = shownPids(st).map(function (pid) {
-        var P = j.praticiennes[pid]; if (!P) return '';
-        var info = P.clientes + '/' + P.max + ' clientes';
-        if (P.placesRestantes > 0 && P.capacite > 0) info += ' · ' + P.capacite + ' possible' + (P.capacite > 1 ? 's' : '');
-        var body = '';
+      var live = [], grey = [];
+      shownPids(st).forEach(function (pid) {
+        var P = j.praticiennes[pid]; if (!P) return;
         var blocked = (P.alertes || []).some(function (a) { return a.niveau === 'info'; });
-        if (blocked) body = '<div class="mg-none">Indisponible ce jour-là.</div>';
-        else if (P.clientes >= P.max) body = '<div class="mg-none">Journée complète.</div>';
-        else {
-          if ((P.fenetres || []).length) {
-            body += '<div class="mg-wins"><span>Libre :</span>' + P.fenetres.map(function (w, wi) {
-              return '<button type="button" class="mg-win" data-a="win" data-d="' + j.date + '" data-p="' + esc(pid) + '" data-w="' + wi + '" aria-label="Réserver dans la plage libre ' + esc(hfr(w.debut) + ' à ' + hfr(w.fin)) + '">' + esc(hfr(w.debut) + ' – ' + hfr(w.fin)) + '</button>';
-            }).join('') + '</div>';
-          }
-          if ((P.creneaux || []).length) {
-            body += '<div class="mg-slots">' + P.creneaux.map(function (c) {
-              var k = key(j.date, pid, c.debut), on = !st.excl[k];
-              return '<div class="mg-slot' + (on ? '' : ' off') + '" data-key="' + esc(k) + '"><label class="mg-chk"><input type="checkbox" data-a="chk" data-key="' + esc(k) + '"' + (on ? ' checked' : '') +
-                ' aria-label="Mettre ' + esc(hfr(c.debut)) + ' avec ' + esc(pn(pid)) + ' dans la story"><span>' + ic('check') + '</span></label>' +
-                '<button type="button" class="mg-slot-b" data-a="book" data-key="' + esc(k) + '" aria-label="Réserver ' + esc(dayTitle(j.date) + ' à ' + hfr(c.debut) + ' avec ' + pn(pid)) + '"><b>' + esc(hfr(c.debut)) + '</b><small>→ ' + esc(hfr(c.fin)) + '</small><em><span>Réserver</span>' + ic('chevronR') + '</em></button></div>';
-            }).join('') + '</div>';
-          } else body += '<div class="mg-none">Plus de place pour ' + esc(svcLabel(d.services || st.services)) + ' (trous trop courts).</div>';
+        var cr = P.creneaux || [], alts = P.alternatives || [];
+        if (!blocked && P.capacite > 0 && cr.length) {
+          live.push('<div class="mg-pblk" style="' + pStyle(pid) + '"><div class="mg-ph">' + esc(pn(pid)) + '</div><div class="mg-hrs">' + cr.map(function (c) {
+            var k = key(j.date, pid, c.debut), on = !st.excl[k];
+            return '<span class="mg-hc' + (on ? '' : ' off') + '" data-key="' + esc(k) + '"><label class="mg-hk"><input type="checkbox" data-a="chk" data-key="' + esc(k) + '"' + (on ? ' checked' : '') +
+              ' aria-label="Mettre ' + esc(hfr(c.debut)) + ' avec ' + esc(pn(pid)) + ' dans la story"><span>' + ic('check') + '</span></label>' +
+              '<button type="button" class="mg-hb" data-a="book" data-key="' + esc(k) + '" aria-label="Réserver ' + esc(dayLabel(j.date) + ' à ' + hfr(c.debut) + ' avec ' + pn(pid)) + '">' + esc(hr(c.debut, c.fin)) + '</button></span>';
+          }).join('') + '</div></div>');
+        } else if (!blocked && P.placesRestantes > 0 && alts.length) {
+          live.push('<div class="mg-alt" style="' + pStyle(pid) + '"><span class="mg-dot"></span><span>' + esc(pn(pid)) + ' · encore possible : </span>' + alts.slice(0, 1).map(function (a, ai) {
+            return '<button type="button" data-a="alt" data-d="' + j.date + '" data-p="' + esc(pid) + '" data-i="' + ai + '">' + esc(svcName(a.service, true) || a.nom) + ' à ' + esc(hr(a.debut, a.fin)) + '</button>';
+          }).join(' ou ') + '</div>');
+        } else {
+          grey.push({ pid: pid, txt: blocked ? 'indisponible' : P.clientes >= P.max ? 'complet' : 'plus de place' });
         }
-        return '<div class="mg-pblk" style="' + pStyle(pid) + '"><div class="mg-ph"><span class="mg-ptag">' + esc(pn(pid)) + '</span><span class="mg-pinfo">' + esc(info) + '</span></div>' + body + '</div>';
-      }).join('');
-      h += '<div class="mg-day"><h4>' + esc(dayTitle(j.date)) + '</h4>' + blocks + '</div>';
+      });
+      if (!live.length) {
+        var all = grey.every(function (g) { return g.txt === grey[0].txt; });
+        var t = !grey.length ? '' : (all ? ' · ' + (grey.length > 1 && grey[0].txt === 'complet' ? 'complet' : grey[0].txt) + (grey.length === 1 && shownPids(st).length === 1 ? '' : '') : ' · ' + grey.map(function (g) { return pn(g.pid) + ' ' + g.txt; }).join(', '));
+        h += '<div class="mg-day full"><h4>' + esc(cap1(dayLabel(j.date)) + t) + '</h4></div>';
+        return;
+      }
+      h += '<div class="mg-day"><h4>' + esc(dayTitle(j.date)) + '</h4>' + live.join('') + grey.map(function (g) {
+        return '<div class="mg-pgrey" style="' + pStyle(g.pid) + '"><span class="mg-dot"></span>' + esc(pn(g.pid) + ' : ' + g.txt) + '</div>';
+      }).join('') + '</div>';
     });
     return h + '</section>';
   }
 
   function footHTML(st) {
     var n = checkedItems(st).length;
-    return '<div class="mg-foot"><div class="mg-fi" data-n="foot"><b>' + plural(n, 'créneau', 'créneaux') + '</b> pour la story · aucun nom de cliente</div>' +
+    return '<div class="mg-foot"><div class="mg-fi" data-n="foot"><b>' + plural(n, 'heure', 'heures') + '</b> pour la story</div>' +
       '<button type="button" class="mg-btn pri" data-a="story"' + (n ? '' : ' disabled') + '>' + ic('image') + 'Créer la story</button></div>';
   }
 
@@ -499,22 +559,24 @@
     var h = '<div class="mg-pad">';
     if (st.changed && st.data) h += '<div class="mg-banner" role="status"><span>Le planning a changé : pensez à mettre la story à jour.</span><button type="button" class="mg-btn pri" data-a="story">' + ic('image') + 'Mettre la story à jour</button></div>';
     h += ctrlHTML(st);
-    if (st.err) h += '<div class="mg-sec"><div class="mg-err" role="alert">' + esc(st.err) + ' <button type="button" class="mg-btn" data-a="retry">Réessayer</button></div></div>';
+    var bad = curPer(st).bad;
+    if (bad) h += '<div class="mg-sec"><div class="mg-empty">Corrigez les dates ci-dessus pour voir les places à remplir.</div></div>';
+    else if (st.err) h += '<div class="mg-sec"><div class="mg-err" role="alert">' + esc(st.err) + ' <button type="button" class="mg-btn" data-a="retry">Réessayer</button></div></div>';
     else if (!st.data) h += '<div class="mg-load" role="status"><span class="mg-spin"></span>Analyse des agendas…</div>';
     else {
       if (st.loading) h += '<div class="mg-busy" role="status" style="margin-top:10px"><span class="mg-spin"></span>Mise à jour…</div>';
-      h += summaryHTML(st) + alertsHTML(st) + relancesHTML(st) + slotsHTML(st);
+      h += summaryHTML(st) + (showSec('afficherPriorites') ? alertsHTML(st) : '') + (showSec('afficherRelances') ? relancesHTML(st) : '') + slotsHTML(st);
     }
     h += '</div>';
-    if (st.data && !st.err && allSlots(st)) h += footHTML(st);
+    if (!bad && st.data && !st.err && allSlots(st)) h += footHTML(st);
     else h += '<div style="height:24px"></div>';
     st.root.innerHTML = h;
   }
 
   function updCounts(st) {
     var n = checkedItems(st).length, total = allSlots(st);
-    var a = st.root.querySelector('[data-n="sel"]'); if (a) a.textContent = n + '/' + total + ' cochés';
-    var f = st.root.querySelector('[data-n="foot"]'); if (f) f.innerHTML = '<b>' + plural(n, 'créneau', 'créneaux') + '</b> pour la story · aucun nom de cliente';
+    var a = st.root.querySelector('[data-n="sel"]'); if (a) a.textContent = n + '/' + total + ' pour la story';
+    var f = st.root.querySelector('[data-n="foot"]'); if (f) f.innerHTML = '<b>' + plural(n, 'heure', 'heures') + '</b> pour la story';
     var b = st.root.querySelector('.mg-foot [data-a="story"]'); if (b) b.disabled = !n;
   }
 
@@ -532,7 +594,7 @@
     root.addEventListener('click', function (e) {
       var b = e.target.closest('[data-a]'); if (!b || !root.contains(b)) return;
       var a = b.getAttribute('data-a');
-      if (a === 'chk') return; // géré par 'change'
+      if (a === 'chk' || a === 'perso') return; // géré par 'change'
       if (a === 'qui') { var v = b.getAttribute('data-v'); if (v !== st.qui) { st.qui = v; st.excl = {}; load(st); } return; }
       if (a === 'per') { var pv = b.getAttribute('data-v'); if (pv !== st.per) { st.per = pv; if (pv !== 'jour') ls.set('per', pv); load(st); } return; }
       if (a === 'svc') {
@@ -547,25 +609,15 @@
       if (a === 'al-more') { st.alMore = true; renderMain(st); return; }
       if (a === 'rel-more') { st.relMore = true; renderMain(st); return; }
       if (a === 'goday') { var d = b.getAttribute('data-d'); try { st.panel.close(); } catch (x) { /* ignore */ } try { G.goDate(d, 'jour'); } catch (x2) { /* ignore */ } return; }
-      if (a === 'al-book') {
-        var dd = b.getAttribute('data-d'), pp = b.getAttribute('data-p');
-        var j = st.data.jours.filter(function (x) { return x.date === dd; })[0], P = j && j.praticiennes[pp];
-        var c = P && P.creneaux && P.creneaux[0];
-        newRdv(st, { praticienne: pp, date: dd, debut: c ? c.debut : undefined, services: c && c.ordre ? c.ordre : st.services.slice() });
-        return;
-      }
       if (a === 'book') {
         var f = findSlot(st, b.getAttribute('data-key')); if (!f) return;
         newRdv(st, { praticienne: f.pid, date: f.date, debut: f.c.debut, services: (f.c.ordre && f.c.ordre.length ? f.c.ordre : st.services).slice() });
         return;
       }
-      if (a === 'win') {
-        var wd2 = b.getAttribute('data-d'), wp = b.getAttribute('data-p'), wi = +b.getAttribute('data-w');
-        var jj = st.data.jours.filter(function (x) { return x.date === wd2; })[0], PP = jj && jj.praticiennes[wp], w = PP && PP.fenetres[wi];
-        if (!w) return;
-        var main = st.services.filter(function (x) { return svcCat(x) === 'main'; })[0] || st.services[0];
-        var fit = (w.prestations || []).filter(function (x) { return x.service === main; })[0];
-        newRdv(st, { praticienne: wp, date: wd2, debut: fit ? fit.debut : w.debut, services: fit ? st.services.slice() : undefined });
+      if (a === 'alt') {
+        var jd = dayOf(st, b.getAttribute('data-d')), ap = b.getAttribute('data-p'), Pa = jd && jd.praticiennes[ap];
+        var alt = Pa && (Pa.alternatives || [])[+b.getAttribute('data-i')]; if (!alt) return;
+        newRdv(st, { praticienne: ap, date: jd.date, debut: alt.debut, services: [alt.service] });
         return;
       }
       if (a === 'rel-book' || a === 'rel-copy' || a === 'fiche') {
@@ -579,7 +631,7 @@
       if (a === 'all') {
         var on = b.getAttribute('data-v') === '1';
         st.data.jours.forEach(function (jx) { shownPids(st).forEach(function (pid) { var Px = jx.praticiennes[pid]; if (!Px) return; (Px.creneaux || []).forEach(function (c) { var k = key(jx.date, pid, c.debut); if (on) delete st.excl[k]; else st.excl[k] = true; }); }); });
-        Array.prototype.forEach.call(root.querySelectorAll('input[data-a="chk"]'), function (i) { i.checked = on; var row = i.closest('.mg-slot'); if (row) row.classList.toggle('off', !on); });
+        Array.prototype.forEach.call(root.querySelectorAll('input[data-a="chk"]'), function (i) { i.checked = on; var row = i.closest('.mg-hc'); if (row) row.classList.toggle('off', !on); });
         updCounts(st); return;
       }
       if (a === 'story') {
@@ -588,10 +640,24 @@
       }
     });
     root.addEventListener('change', function (e) {
-      var i = e.target; if (!i || i.getAttribute('data-a') !== 'chk') return;
+      var i = e.target; if (!i) return;
+      var a = i.getAttribute('data-a');
+      if (a === 'perso') {
+        var k0 = i.getAttribute('data-k'), np = { du: st.perso.du, au: st.perso.au };
+        np[k0] = i.value || '';
+        // Début déplacé après la fin (ou trop loin) : on garde la même durée
+        if (k0 === 'du' && np.du && /^\d{4}-\d\d-\d\d$/.test(np.du) && np.du >= G.today()) {
+          var len = Math.max(0, Math.min(PERSO_MAX - 1, U().diffDays(st.perso.du, st.perso.au)));
+          if (!np.au || np.au < np.du || U().diffDays(np.du, np.au) + 1 > PERSO_MAX) np.au = U().addDays(np.du, len);
+        }
+        st.perso = np;
+        if (!persoCheck(np)) ls.set('perso', np);
+        st.excl = {}; load(st); return;
+      }
+      if (a !== 'chk') return;
       var k = i.getAttribute('data-key');
       if (i.checked) delete st.excl[k]; else st.excl[k] = true;
-      var row = i.closest('.mg-slot'); if (row) row.classList.toggle('off', !i.checked);
+      var row = i.closest('.mg-hc'); if (row) row.classList.toggle('off', !i.checked);
       updCounts(st);
     });
   }
@@ -1458,6 +1524,7 @@
     });
     G.on('theme', function () { if (M && !M.closed) renderMain(M); if (STU && !STU.closed) renderCtl(STU); });
     G.on('config', function () {
+      if (M && !M.closed) renderMain(M); // afficherPriorites / afficherRelances / affichage.heureFin : re-rendu sans recharger
       if (STU && !STU.closed && STU.mode === 'lien' && STU.offre) updLink(STU);
     });
   }

@@ -464,6 +464,7 @@ input[type=date].inp::-webkit-date-and-time-value,input[type=time].inp::-webkit-
 .errbox{padding:12px 14px;border-radius:12px;background:var(--err-bg);color:var(--err-fg);font-size:14px;margin:0 0 14px}
 .errbox ul{margin:6px 0 0;padding-left:18px}
 .errbox .btn{margin-top:10px}
+.sw-help{margin:-4px 0 8px 56px}
 .switch{position:relative;display:inline-flex;align-items:center;gap:10px;min-height:44px;cursor:pointer;font-size:15px;color:var(--ink)}
 .switch input{position:absolute;opacity:0;width:1px;height:1px}
 .switch i{width:46px;height:28px;border-radius:999px;background:var(--line-3);position:relative;flex:none;transition:background .2s}
@@ -740,8 +741,8 @@ body.has-demo #gsearch{padding-top:8px}
 <div id="toasts" role="status" aria-live="polite"></div>
 
 <script src="../app/config.js"></script>
-<script src="../app/core.js"></script>
-<script src="../app/api.js"></script>
+<script src="../app/core.js?v=1.2.3"></script>
+<script src="../app/api.js?v=1.2.3"></script>
 <script>
 (function () {
 'use strict';
@@ -822,6 +823,9 @@ function wdShort(s) { return F_WD.format(dObj(s)).replace('.', ''); }
 function monShort(s) { return F_MON.format(dObj(s)).replace('.', ''); }
 function hfr(t) { if (!t) return ''; var p = t.split(':'); return (+p[0]) + 'h' + (p[1] === '00' ? '' : p[1]); }
 function hfr2(t) { if (!t) return ''; var p = t.split(':'); return (+p[0]) + 'h' + p[1]; }
+/** Heure d'un RDV : début seul (« 9h30 ») par défaut, plage « 9h – 11h » si Réglages → Apparence l'active. */
+function showFin() { return !!(S.cfg && S.cfg.affichage && S.cfg.affichage.heureFin === true); }
+function hplage(debut, fin) { return fin && showFin() ? hfr(debut) + ' – ' + hfr(fin) : hfr(debut); }
 function nowMin() { return U.toMin(new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date())); }
 function monday(d) { return U.addDays(d, -((U.weekday(d) + 6) % 7)); }
 function relDay(d) {
@@ -930,8 +934,13 @@ function normCfg(c) {
   c.magie = Object.assign({}, mg, {
     horizonJours: Math.min(Math.max(parseInt(mg.horizonJours, 10) || 7, 1), 31),
     services: msv,
-    seuilRemplissage: Math.min(Math.max(mg.seuilRemplissage == null || isNaN(parseInt(mg.seuilRemplissage, 10)) ? 50 : parseInt(mg.seuilRemplissage, 10), 0), 100)
+    seuilRemplissage: Math.min(Math.max(mg.seuilRemplissage == null || isNaN(parseInt(mg.seuilRemplissage, 10)) ? 50 : parseInt(mg.seuilRemplissage, 10), 0), 100),
+    retardMaxRelance: Math.min(Math.max(parseInt(mg.retardMaxRelance, 10) || 30, 7), 120),
+    afficherPriorites: mg.afficherPriorites !== false,
+    afficherRelances: mg.afficherRelances === true
   });
+  var af = c.affichage && typeof c.affichage === 'object' ? c.affichage : {};
+  c.affichage = Object.assign({}, af, { heureFin: af.heureFin === true });
   if (typeof c.retentionMois !== 'number') c.retentionMois = 24;
   return c;
 }
@@ -1025,6 +1034,7 @@ var G = window.G = {
   svcs: function (cat) { return (S.cfg ? S.cfg.services : []).filter(function (s) { return s.categorie !== 'massage' && (!cat || s.categorie === cat); }); },
   svcColor: function (id) { return sColor(id); },
   svcName: function (id, court) { return court ? abbr(id) : svcName(id); },
+  heure: function (debut, fin) { return hplage(debut, fin); },
   textOn: function (h) { return textOn(h); },
   tint: function (h, a) { return tint(h, a); },
   esc: esc,
@@ -1059,11 +1069,16 @@ function setFiltre(patch) {
 function changed(data) { G.emit('change', data || {}); }
 G.on('change', function (d) { if (d && d.source === 'refresh') return; S.skipSig = true; refreshAll(); });
 G.on('filtre', function () { LS.set('filtre', G.filtre); if (S.tab === 'planning') renderPlanning(); });
-G.on('config', function () { if (S.tab === 'planning') renderPlanning(); });
+G.on('config', function () {
+  if (S.tab === 'planning') renderPlanning();
+  if (S.tab === 'attente' && S.attente) renderAttente();
+  stack.forEach(function (v) { if (!v.raw) repaint(v); });
+  if ($('#gs-res')) renderGS();
+});
 function applyServerCfg(c) {
   S.cfg = normCfg(c);
   if (S.draft && !S.dirty) S.draft = clone(S.cfg);
-  else if (S.draft) S.draft.story = Object.assign({}, S.draft.story, { style: S.cfg.story.style });
+  else if (S.draft) { S.draft.story = Object.assign({}, S.draft.story, { style: S.cfg.story.style }); S.draft.affichage = clone(S.cfg.affichage); }
   S.holeCache = null;
   G.emit('config', S.cfg);
 }
@@ -1535,7 +1550,7 @@ function gbar(n, max, pc) { var pct = max ? Math.min(100, Math.round(n / max * 1
 function daySummary(d) {
   var parts = [];
   S.data.rdvs.filter(function (r) { return r.date === d && r.type === 'massage' && ACTIVE[r.statut]; }).sort(function (a, b) { return a.debut.localeCompare(b.debut); }).forEach(function (r) {
-    parts.push('<span class="ds-i"><i class="swi" style="--c:' + sColor(r.services[0]) + '"></i>Modelage <b>' + hfr2(r.debut) + '</b></span>');
+    parts.push('<span class="ds-i"><i class="swi" style="--c:' + sColor(r.services[0]) + '"></i>Modelage <b>' + hfr(r.debut) + '</b></span>');
   });
   var w = S.data.rdvs.filter(function (r) { return r.date === d && r.statut === 'en_attente'; }).length;
   if (w) parts.push('<span class="ds-i ds-wait">' + w + ' à valider</span>');
@@ -1655,7 +1670,7 @@ function renderTimeline(d, cols) {
       if (!fit) { var m = svcMap(); fit = w.prestations.slice().sort(function (a, c) { return ((m[c.service] || {}).duree || 0) - ((m[a.service] || {}).duree || 0); })[0]; }
       var label = fit ? abbr(fit.service) + ' possible' : '';
       html += '<button type="button" class="freez' + (hgt < 40 ? ' tiny' : '') + '" style="--pc:' + pc + ';top:' + (y(s) + 2) + 'px;height:' + hgt + 'px" data-act="freez" data-prat="' + p.id + '" data-debut="' + (fit ? fit.debut : w.debut) + '" aria-label="Libre de ' + hfr2(w.debut) + ' à ' + hfr2(w.fin) + ' avec ' + esc(p.nom) + ', ajouter une cliente">' +
-        '<b>' + I.plus + 'Libre ' + hfr2(w.debut) + (dense ? '' : ' – ' + hfr2(w.fin)) + '</b>' + (label ? '<span>' + esc(label) + '</span>' : '') + '</button>';
+        '<b>' + I.plus + (showFin() && !dense ? 'Libre ' + hfr(w.debut) + ' – ' + hfr(w.fin) : 'Libre dès ' + hfr(w.debut)) + '</b>' + (label ? '<span>' + esc(label) + '</span>' : '') + '</button>';
     });
     var items = rdvs.filter(function (r) { return r.type !== 'massage' && r.praticienne === p.id; }).map(function (r) {
       var s = U.toMin(r.debut), e = U.toMin(r.fin);
@@ -1672,7 +1687,7 @@ function renderTimeline(d, cols) {
       }).join('');
       var tiny = hgt < 50;
       html += '<div class="evc st-' + r.statut + (tiny ? ' tiny' : '') + '" role="button" tabindex="0" data-act="rdv" data-id="' + esc(r.id) + '" style="' + cardVars(r) + pos + 'top:' + top + 'px;height:' + hgt + 'px" aria-label="' + esc(fullName(r) + ', ' + hfr(r.debut) + ', ' + pratName(r.praticienne)) + '">' + segs +
-        '<span class="c-time">' + hfr2(r.debut) + ' – ' + hfr2(r.fin) + (r.source === 'story' ? '<i class="c-st">Story</i>' : '') + '</span><span class="c-name">' + esc(dense ? shortName(r) : fullName(r)) + '</span>' +
+        '<span class="c-time">' + hplage(r.debut, r.fin) + (r.source === 'story' ? '<i class="c-st">Story</i>' : '') + '</span><span class="c-name">' + esc(dense ? shortName(r) : fullName(r)) + '</span>' +
         '<span class="c-svc">' + esc(r.services.map(abbr).join(' + ')) + '</span>' + (r.statut === 'en_attente' ? '<span class="c-wait">À valider</span>' : '') + '</div>';
       if (ACTIVE[r.statut] && b) html += '<div class="buffer" style="' + pos + 'top:' + (y(it.end)) + 'px;height:' + b * ppm + 'px"></div>';
     });
@@ -1684,7 +1699,7 @@ function renderTimeline(d, cols) {
     var who = fullName(r);
     return '<div class="mcard st-' + r.statut + '" role="button" tabindex="0" data-act="rdv" data-id="' + esc(r.id) + '" style="' + massVars(r) + 'top:' + y(s) + 'px;height:' + hgt + 'px">' +
       '<span class="m-title">' + I.leaf + esc(svcName(r.services[0])) + (dense ? '' : ' · institut bloqué') + '</span>' +
-      '<span class="m-sub">' + hfr2(r.debut) + ' – ' + hfr2(r.fin) + ' · ' + esc(pratName(r.praticienne)) + (who ? ' · ' + esc(who) : '') + (r.statut === 'en_attente' ? ' · à valider' : '') + '</span></div>' +
+      '<span class="m-sub">' + hplage(r.debut, r.fin) + ' · ' + esc(pratName(r.praticienne)) + (who ? ' · ' + esc(who) : '') + (r.statut === 'en_attente' ? ' · à valider' : '') + '</span></div>' +
       (ACTIVE[r.statut] && b ? '<div class="mbuffer" style="top:' + y(e) + 'px;height:' + b * ppm + 'px"></div>' : '');
   }).join('');
 
@@ -1720,7 +1735,7 @@ function renderWeek(mon) {
         items += list.map(function (r) {
           var cls = r.type === 'massage' ? 'mass' : r.statut === 'en_attente' ? 'wait' : ACTIVE[r.statut] ? '' : 'cancel';
           if (r.type === 'massage' && !ACTIVE[r.statut]) cls += ' cancel';
-          return '<div class="wk-item ' + cls + '" style="' + (r.type === 'massage' ? massVars(r) : cardVars(r)) + '"><b>' + hfr2(r.debut) + '</b><span>' + esc(r.type === 'massage' ? 'Modelage' + (r.praticienne === p.id ? '' : ' (' + pratName(r.praticienne) + ')') : shortName(r)) + '</span></div>';
+          return '<div class="wk-item ' + cls + '" style="' + (r.type === 'massage' ? massVars(r) : cardVars(r)) + '"><b>' + hplage(r.debut, r.fin) + '</b><span>' + esc(r.type === 'massage' ? 'Modelage' + (r.praticienne === p.id ? '' : ' (' + pratName(r.praticienne) + ')') : shortName(r)) + '</span></div>';
         }).join('');
         var pl = cp == null ? '' : cnt >= max ? '<span class="pl none">complet</span>' : '<span class="pl' + (cp ? '' : ' none') + '">' + cp + ' place' + (cp > 1 ? 's' : '') + '</span>';
         return '<div class="wk-col"><h4>' + pdot(p.id, 'md') + '<span class="nm">' + esc(p.nom) + '</span></h4>' +
@@ -1788,10 +1803,10 @@ function rdvView(id) {
     v.title = r.type === 'massage' ? 'Modelage' : 'Rendez-vous';
     var active = !!ACTIVE[r.statut];
     var segs = r.type === 'massage'
-      ? '<div class="segline" style="' + massVars(r) + '">' + I.leaf + '<div class="w">' + esc(svcName(r.services[0])) + '<small>En cabine · tout l\'institut est bloqué</small></div><span class="t">' + hfr2(r.debut) + '–' + hfr2(r.fin) + '</span></div>'
+      ? '<div class="segline" style="' + massVars(r) + '">' + I.leaf + '<div class="w">' + esc(svcName(r.services[0])) + '<small>En cabine · tout l\'institut est bloqué</small></div><span class="t">' + hplage(r.debut, r.fin) + '</span></div>'
       : (r.segments && r.segments.length ? r.segments : r.services.map(function (s) { return { service: s, debut: '', fin: '', lieu: (svcMap()[s] || {}).categorie === 'pied' ? 'cabine' : 'poste' }; })).map(function (sg) {
         var cab = sg.lieu === 'cabine';
-        return '<div class="segline" style="' + segVars(sg.service, r.praticienne) + '">' + (cab ? I.foot : I.hand) + '<div class="w">' + esc(svcName(sg.service)) + '<small>' + (cab ? 'Pieds · en cabine' : 'Mains · au poste') + '</small></div><span class="t">' + (sg.debut ? hfr2(sg.debut) + '–' + hfr2(sg.fin) : '') + '</span></div>';
+        return '<div class="segline" style="' + segVars(sg.service, r.praticienne) + '">' + (cab ? I.foot : I.hand) + '<div class="w">' + esc(svcName(sg.service)) + '<small>' + (cab ? 'Pieds · en cabine' : 'Mains · au poste') + '</small></div><span class="t">' + (sg.debut ? hplage(sg.debut, sg.fin) : '') + '</span></div>';
       }).join('');
     var dl = '<dt>Praticienne</dt><dd>' + pdot(r.praticienne, 'md') + esc(pratName(r.praticienne)) + '</dd>';
     dl += '<dt>Source</dt><dd>' + (r.source === 'story' ? '<span class="pill story">Story</span>Lien de la story' : r.source === 'en_ligne' ? 'Réservé en ligne' : r.source === 'agenda' ? 'Importé de l\'agenda' : 'Ajouté au salon') + '</dd>';
@@ -1807,7 +1822,7 @@ function rdvView(id) {
     } else acts += '<button class="btn btn-sage wide" data-act="st" data-v="confirme">Rétablir (confirmer)</button>';
     var cli = r.type !== 'massage' && (r.prenom || r.nom) ? '<button class="cli-link" data-act="rdv-client">' + I.user + '<span>Voir la fiche cliente</span>' + I.chevronR + '</button>' : '';
     return '<div class="d-head"><div><h3>' + esc(fullName(r) || (r.type === 'massage' ? 'Modelage' : 'Cliente')) + '</h3>' +
-      '<div class="d-when">' + esc(dateLong(r.date)) + ' · <span class="mono">' + hfr2(r.debut) + ' – ' + hfr2(r.fin) + '</span></div></div><span class="pill ' + r.statut + '">' + STATUT[r.statut] + '</span></div>' +
+      '<div class="d-when">' + esc(dateLong(r.date)) + ' · <span class="mono">' + (showFin() ? hplage(r.debut, r.fin) : hfr(r.debut) + ' · fin ' + hfr(r.fin)) + '</span></div></div><span class="pill ' + r.statut + '">' + STATUT[r.statut] + '</span></div>' +
       '<div class="segs">' + segs + '</div>' + cli + '<dl class="dl">' + dl + '</dl>' +
       '<div class="field"><label for="rdv-note">Note</label><textarea id="rdv-note" class="inp" data-k="note" maxlength="300" placeholder="Allergie, déco souhaitée, rappel…">' + esc(note) + '</textarea>' +
       (v.note != null && v.note !== (r.note || '') ? '<button class="btn btn-ink btn-sm" data-act="save-note" style="align-self:flex-end">Enregistrer la note</button>' : '') + '</div>' +
@@ -1900,7 +1915,7 @@ function slotsHTML(st) {
   var A_ = st.slots.filter(function (s) { return s.classe === 'A'; }), others = st.slots.filter(function (s) { return s.classe !== 'A'; });
   function chip(s) {
     return '<button type="button" class="slot ' + s.classe + (st.sel === s.debut && !st.useFree ? ' on' : '') + '" data-act="slot-pick" data-v="' + s.debut + '" aria-pressed="' + (st.sel === s.debut && !st.useFree) + '">' +
-      (s.classe === 'A' ? '<span class="ideal">Idéal</span>' : '') + '<b>' + hfr2(s.debut) + '</b><small>' + (s.classe === 'C' ? 'trou ' + s.trou + ' min' : 'fin ' + hfr2(s.fin)) + '</small></button>';
+      (s.classe === 'A' ? '<span class="ideal">Idéal</span>' : '') + '<b>' + hfr(s.debut) + '</b>' + (s.classe === 'C' ? '<small>trou ' + s.trou + ' min</small>' : showFin() && s.fin ? '<small>fin ' + hfr(s.fin) + '</small>' : '') + '</button>';
   }
   var h = '';
   if (closed) h += '<div class="notice clay">' + I.moon + '<span>Le salon est fermé ce jour-là. Vous pouvez saisir une heure et forcer.</span></div>';
@@ -1945,7 +1960,7 @@ function addMenu(pre) {
   pre = pre || {};
   var v = { title: 'Ajouter' };
   v.render = function () {
-    var ctx = (pre.date ? dateShort(pre.date) : '') + (pre.heure ? ' · ' + hfr2(pre.heure) : '') + (pre.prat ? ' · ' + pratName(pre.prat) : '');
+    var ctx = (pre.date ? dateShort(pre.date) : '') + (pre.heure ? ' · ' + hfr(pre.heure) : '') + (pre.prat ? ' · ' + pratName(pre.prat) : '');
     return (ctx ? '<p class="hint" style="margin:0 0 12px">' + esc(ctx) + '</p>' : '') +
       '<button class="add-choice" data-act="add-rdv"><span class="ic">' + I.hand + '</span><span><b>Rendez-vous cliente</b><span>Prise par téléphone, Instagram, au salon</span></span></button>' +
       '<button class="add-choice clay" data-act="add-mass"><span class="ic">' + I.leaf + '</span><span><b>Modelage</b><span>Bloque tout l\'institut pendant la séance</span></span></button>' +
@@ -2101,13 +2116,13 @@ function nrView(pre, resolve) {
     return '<button type="button" class="rcard' + (on ? ' on' : '') + '" style="--pc:' + pc + '" data-act="nr-reco" data-i="' + (given ? 'g' : i) + '" aria-pressed="' + !!on + '">' +
       (i === 0 && !given ? '<span class="badge">Recommandé</span>' : '') +
       '<span class="rd"><span class="rdd">' + esc(dateShort(c.date)) + '</span>' + (rel ? '<span class="rel">' + esc(rel) + '</span>' : '') + '</span>' +
-      '<span class="rh">' + hfr2(c.debut) + (c.fin ? ' <small style="font-size:13px;font-weight:400;color:var(--muted)">→ ' + hfr2(c.fin) + '</small>' : '') + '</span>' +
+      '<span class="rh">' + hfr(c.debut) + (c.fin && showFin() ? ' <small style="font-size:13px;font-weight:400;color:var(--muted)">– ' + hfr(c.fin) + '</small>' : '') + '</span>' +
       '<span class="rp">' + pdot(c.praticienne, 'sm') + esc(pratName(c.praticienne)) + '</span>' +
       (rs.length ? '<span class="rr">' + rs.map(function (r) { return '<span>' + I.check + esc(shortReason(r)) + '</span>'; }).join('') + '</span>' : '') +
       (on ? '<span class="ok">' + I.check + '</span>' : '') + '</button>';
   }
   function shortReason(r) {
-    return r.replace('Sans trou dans le planning', 'Sans trou').replace(/^Proche de son heure habituelle/, 'Son heure habituelle').replace('Au bon moment pour son prochain soin', 'Au bon moment');
+    return r.replace('Sans trou dans le planning', 'Sans trou').replace(/^Proche de son heure habituelle/, 'Son heure habituelle').replace('Au bon moment pour son prochain soin', 'Au bon moment').replace(/\b0?(\d{1,2})h(\d{2})\b/g, function (m, h, mi) { return (+h) + 'h' + (mi === '00' ? '' : mi); });
   }
   function otherHTML() {
     var h = '<button type="button" class="other-btn" data-act="nr-other" aria-expanded="' + st.other + '">' + I.calendar + '<span>Autre date ou heure</span>' + I.chevronD.replace('<svg', '<svg class="chev"') + '</button>';
@@ -2131,7 +2146,7 @@ function nrView(pre, resolve) {
   };
   v.footer = function () {
     var c = chosen(), ok = c && svcs().length && hasClient() && !st.busy;
-    var sum = !hasClient() ? 'Choisissez la cliente' : !svcs().length ? 'Choisissez une prestation' : !c ? 'Choisissez un créneau' : dateShort(c.date) + ' · ' + hfr2(c.debut) + ' · ' + pratName(c.praticienne);
+    var sum = !hasClient() ? 'Choisissez la cliente' : !svcs().length ? 'Choisissez une prestation' : !c ? 'Choisissez un créneau' : dateShort(c.date) + ' · ' + hfr(c.debut) + ' · ' + pratName(c.praticienne);
     return '<div class="sum">' + esc(sum) + '</div><button class="btn btn-ink btn-block" data-act="submit"' + (ok ? '' : ' disabled') + '>' + (st.busy ? 'Enregistrement…' : 'Enregistrer le rendez-vous') + '</button>';
   };
   v.mount = function (body) {
@@ -2232,7 +2247,7 @@ function massView(pre, existing) {
       '<div class="row2"><div class="field"><label for="m-date">Date</label><input id="m-date" type="date" class="inp" data-k="date" value="' + st.date + '"></div>' +
       '<div class="field"><label for="m-h">Heure</label><input id="m-h" type="time" step="900" class="inp" data-k="heure" value="' + esc(st.heure) + '"></div></div>' +
       (dayList ? '<div class="field"><span class="flabel">Déjà prévu ce jour-là</span>' + (dayList.length ? '<div class="chips">' + dayList.map(function (r) {
-        return '<span class="chip" style="min-height:34px;font-size:13px;pointer-events:none">' + hfr(r.debut) + '–' + hfr(r.fin) + ' · ' + esc(r.type === 'massage' ? 'Modelage' : pratName(r.praticienne)) + '</span>';
+        return '<span class="chip" style="min-height:34px;font-size:13px;pointer-events:none">' + hplage(r.debut, r.fin) + ' · ' + esc(r.type === 'massage' ? 'Modelage' : pratName(r.praticienne)) + '</span>';
       }).join('') + '</div>' : '<span class="hint">Personne : l\'institut est libre.</span>') + '</div>' : '') +
       '<div class="row2"><div class="field"><label for="m-pre">Prénom (facultatif)</label><input id="m-pre" class="inp" data-k="prenom" autocomplete="off" value="' + esc(st.prenom) + '"></div>' +
       '<div class="field"><label for="m-nom">Nom (facultatif)</label><input id="m-nom" class="inp" data-k="nom" autocomplete="off" value="' + esc(st.nom) + '"></div></div>' +
@@ -2366,17 +2381,17 @@ function moveView(r) {
     if (!isM && st.recos && st.recos !== 'loading' && st.recos.length) {
       rec = '<div class="flabel" style="margin-bottom:8px">Suggestions</div><div class="chips" style="margin-bottom:14px">' + st.recos.map(function (c, i) {
         var on = st.date === c.date && st.sel === c.debut && st.prat === c.praticienne && !st.useFree;
-        return '<button type="button" class="slot' + (on ? ' on' : '') + '" data-act="mv-reco" data-i="' + i + '" style="box-shadow:inset 4px 0 0 ' + pColor(c.praticienne) + '"><small>' + esc(dateShort(c.date)) + '</small><b>' + hfr2(c.debut) + '</b></button>';
+        return '<button type="button" class="slot' + (on ? ' on' : '') + '" data-act="mv-reco" data-i="' + i + '" style="box-shadow:inset 4px 0 0 ' + pColor(c.praticienne) + '"><small>' + esc(dateShort(c.date)) + '</small><b>' + hfr(c.debut) + '</b></button>';
       }).join('') + '</div>';
     }
-    return '<p class="hint" style="margin:0 0 14px">Actuellement : ' + esc(dateShort(r.date) + ' · ' + hfr2(r.debut) + ' · ' + pratName(r.praticienne)) + '<br>' + esc(r.services.map(svcName).join(' + ')) + '</p>' + rec +
+    return '<p class="hint" style="margin:0 0 14px">Actuellement : ' + esc(dateShort(r.date) + ' · ' + hfr(r.debut) + ' · ' + pratName(r.praticienne)) + '<br>' + esc(r.services.map(svcName).join(' + ')) + '</p>' + rec +
       '<div class="field"><span class="flabel">Praticienne</span>' + pratSeg(st.prat) + '</div>' +
       '<div class="field"><label for="mv-date">Nouvelle date</label><input id="mv-date" type="date" class="inp" data-k="date" value="' + st.date + '"></div>' +
       (isM ? '' : slotsHTML(st)) + freeRowHTML(st, isM ? 'Heure du modelage' : 'Autre heure (saisie libre)') + '<div style="height:12px"></div>' + conflictBox(st);
   };
   v.footer = function () {
     var t = chosenTime(st);
-    return '<div class="sum">' + (t ? esc(dateShort(st.date) + ' · ' + hfr2(t) + ' · ' + pratName(st.prat)) : 'Choisissez un horaire') + '</div><button class="btn btn-ink btn-block" data-act="submit"' + (!t || st.busy ? ' disabled' : '') + '>' + (st.busy ? 'Enregistrement…' : 'Déplacer ici') + '</button>';
+    return '<div class="sum">' + (t ? esc(dateShort(st.date) + ' · ' + hfr(t) + ' · ' + pratName(st.prat)) : 'Choisissez un horaire') + '</div><button class="btn btn-ink btn-block" data-act="submit"' + (!t || st.busy ? ' disabled' : '') + '>' + (st.busy ? 'Enregistrement…' : 'Déplacer ici') + '</button>';
   };
   v.mount = function () { if (!isM && st.slots == null) { loadSlots(v, r.id); loadRecos(); } };
   v.on = function (act, el) {
@@ -2419,7 +2434,7 @@ function editSvcView(r) {
     var body = isM ? '<div class="opts">' + S.cfg.services.filter(function (s) { return s.categorie === 'massage'; }).map(function (s) {
       return '<button type="button" class="opt' + (st.mass === s.id ? ' on' : '') + '" data-act="mass" data-id="' + esc(s.id) + '">' + esc(s.nom) + '<small>' + dur(s.duree) + '</small></button>';
     }).join('') + '</div>' : pickerHTML(st);
-    return '<p class="hint" style="margin:0 0 6px">' + esc(dateShort(r.date) + ' à ' + hfr2(r.debut) + ' avec ' + pratName(r.praticienne)) + '. L\'heure de début est conservée.</p>' + body + '<div style="height:14px"></div>' + conflictBox(st);
+    return '<p class="hint" style="margin:0 0 6px">' + esc(dateShort(r.date) + ' à ' + hfr(r.debut) + ' avec ' + pratName(r.praticienne)) + '. L\'heure de début est conservée.</p>' + body + '<div style="height:14px"></div>' + conflictBox(st);
   };
   v.footer = function () {
     var ok = isM ? !!st.mass : pickedServices(st).length > 0;
@@ -2481,7 +2496,7 @@ function rdvItem(r, withActions) {
   return '<div class="item" style="--pc:' + pColor(r.praticienne) + '"><button class="item-main" data-act="rdv" data-id="' + esc(r.id) + '">' +
     '<div class="item-date"><div class="d1">' + esc(wdShort(d)) + '</div><div class="d2">' + (+d.slice(8)) + '</div><div class="d3">' + esc(monShort(d)) + '</div></div>' +
     '<div class="item-body"><div class="nm">' + esc(fullName(r) || 'Modelage') + ' <span class="pill ' + r.statut + '">' + STATUT[r.statut] + '</span>' + (r.source === 'story' ? '<span class="pill story">Story</span>' : '') + (r.nouvelle ? '<span class="pill new">Nouvelle</span>' : '') + '</div>' +
-    '<div class="meta">' + hfr2(r.debut) + ' – ' + hfr2(r.fin) + ' · ' + pdot(r.praticienne, 'sm') + esc(pratName(r.praticienne)) + '</div>' +
+    '<div class="meta">' + hplage(r.debut, r.fin) + ' · ' + pdot(r.praticienne, 'sm') + esc(pratName(r.praticienne)) + '</div>' +
     '<div class="meta">' + esc(r.services.map(svcName).join(' + ')) + '</div>' +
     '</div></button>' +
     (withActions ? '<div class="item-actions"><button class="btn btn-ghost" data-act="q-st" data-id="' + esc(r.id) + '" data-v="refuse">Refuser</button><button class="btn btn-sage" data-act="q-st" data-id="' + esc(r.id) + '" data-v="confirme">' + I.check + 'Valider</button></div>' : '') +
@@ -2543,7 +2558,7 @@ function renderGS() {
       var t = today(), fut = GS.rdvs.filter(function (r) { return r.date >= t; }).reverse(), past = GS.rdvs.filter(function (r) { return r.date < t; });
       var all = fut.concat(past).slice(0, 8);
       h += '<div class="gs-t">Rendez-vous</div>' + all.map(function (r) {
-        return '<button class="gs-i' + (n++ === GS.hl ? ' hl' : '') + '" data-act="gs-rdv" data-id="' + esc(r.id) + '"><span class="gs-date"><span class="d1">' + esc(wdShort(r.date)) + '</span><br><span class="d2">' + (+r.date.slice(8)) + '</span></span><span class="t"><b>' + esc(fullName(r) || 'Modelage') + ' · ' + hfr2(r.debut) + '</b><small>' + esc(dateShort(r.date) + ' · ' + pratName(r.praticienne) + ' · ' + r.services.map(abbr).join(' + ') + (ACTIVE[r.statut] ? '' : ' · ' + STATUT[r.statut]) + ' · ' + r.code) + '</small></span></button>';
+        return '<button class="gs-i' + (n++ === GS.hl ? ' hl' : '') + '" data-act="gs-rdv" data-id="' + esc(r.id) + '"><span class="gs-date"><span class="d1">' + esc(wdShort(r.date)) + '</span><br><span class="d2">' + (+r.date.slice(8)) + '</span></span><span class="t"><b>' + esc(fullName(r) || 'Modelage') + ' · ' + hplage(r.debut, r.fin) + '</b><small>' + esc(dateShort(r.date) + ' · ' + pratName(r.praticienne) + ' · ' + r.services.map(abbr).join(' + ') + (ACTIVE[r.statut] ? '' : ' · ' + STATUT[r.statut]) + ' · ' + r.code) + '</small></span></button>';
       }).join('');
     }
   }
@@ -2729,7 +2744,11 @@ function section(t) {
         }).join('') + '</div></div>';
       }).join('') + '</div>';
     h += '<div class="card-s"><div class="row2">' + fNum('magie.horizonJours', 'Période par défaut', 'Nombre de jours analysés (1 à 31).', 'jours') +
-      fNum('magie.seuilRemplissage', 'Seuil d\'alerte', 'Une journée remplie à moins de ce pourcentage est signalée.', '%') + '</div></div>';
+      fNum('magie.seuilRemplissage', 'Seuil d\'alerte', 'Une journée remplie à moins de ce pourcentage est signalée.', '%') + '</div>' +
+      '<div class="row2">' + fNum('magie.retardMaxRelance', 'Relancer les clientes jusqu\'à', 'Jours de retard sur leur prochain soin (7 à 120).', 'jours') + '</div></div>';
+    h += '<div class="card-s"><h3>Ce qui est affiché</h3>' +
+      fSwitch('magie.afficherPriorites', 'Afficher « À remplir en priorité »') + '<p class="help sw-help">Jours proches ou peu remplis où une cliente rentre encore.</p>' +
+      fSwitch('magie.afficherRelances', 'Afficher « Clientes à relancer »') + '<p class="help sw-help">Habituées dont le prochain soin est dû, sans rendez-vous.</p></div>';
   } else if (t === 'presta-liste') {
     h += '<p class="set-lead">Les durées servent à calculer les créneaux. Une prestation non réservable en ligne reste disponible ici, au salon.</p>';
     [['main', 'Mains'], ['pied', 'Pieds'], ['massage', 'Modelages']].forEach(function (g) {
@@ -2764,6 +2783,9 @@ function section(t) {
       }).join('') + '</div><p class="help" style="margin:10px 0 0">Auto suit le réglage clair / sombre de l\'iPhone ou de l\'iPad.</p></div>';
     h += '<div class="card-s"><h3>Légende des couleurs</h3><p class="lead">Ce que signifient les couleurs des cartes du planning.</p>' + legendHTML(null).replace('class="clegend"', 'class="clegend" style="padding:0 0 10px"') +
       '<label class="switch"><input type="checkbox" data-pref="legend"' + (S.legend ? ' checked' : '') + '><i></i>Afficher la légende sous la date</label></div>';
+    h += '<div class="card-s"><h3>Heures des rendez-vous</h3><p class="lead">Par défaut, seule l\'heure de début est affichée.</p>' +
+      '<label class="switch"><input type="checkbox" data-hfin="1"' + (showFin() ? ' checked' : '') + '><i></i>Afficher l\'heure de fin des rendez-vous</label>' +
+      '<p class="help sw-help">Exemple : « ' + esc(showFin() ? '9h30 – 11h30' : '9h30') + ' ». Réglage partagé entre les appareils du salon.</p></div>';
     h += '<div class="card-s"><h3>Navigation</h3><label class="switch"><input type="checkbox" data-pref="skipClosed"' + (S.skipClosed ? ' checked' : '') + '><i></i>Sauter les jours fermés avec les flèches</label></div>';
   } else if (t === 'securite') {
     h += '<div class="card-s"><h3>Changer le code PIN</h3><p class="lead">4 à 8 chiffres. Le même code sert à Laurie et Léa.</p><div class="row2">' +
@@ -2850,8 +2872,8 @@ function colPreview(D) {
     var foot = footTop != null && piedL ? '<div class="c-part" style="' + segVars(piedL, r.praticienne, D) + 'background:var(--cbg);top:' + footTop + 'px;bottom:0">' + '<span class="c-pl">' + I.foot + 'Pieds</span></div>' : '';
     return '<div class="evc st-confirme" style="' + cardVars(r, D) + 'top:' + top + 'px;height:' + hgt + 'px">' + foot + '<span class="c-time">' + extra.t + '</span><span class="c-name">' + extra.n + '</span><span class="c-svc">' + esc(r.services.map(function (id) { return m[id] ? abbr(id) : id; }).join(' + ')) + '</span></div>';
   }
-  var cL = card({ praticienne: pL, services: [mainL, piedL].filter(Boolean) }, 0, 124, piedL ? 78 : null, { t: '9h00 – 11h50', n: 'Sandra Morel' });
-  var cE = card({ praticienne: pE, services: [mainE] }, 0, 70, null, { t: '9h00 – 10h00', n: 'Julie Bernard' });
+  var cL = card({ praticienne: pL, services: [mainL, piedL].filter(Boolean) }, 0, 124, piedL ? 78 : null, { t: hplage('09:00', '11:50'), n: 'Sandra Morel' });
+  var cE = card({ praticienne: pE, services: [mainE] }, 0, 70, null, { t: hplage('09:00', '10:00'), n: 'Julie Bernard' });
   var mc = '';
   if (mass) { var r = { praticienne: pL, services: [mass.id] }; mc = '<div class="pv-mass"><div class="mcard" style="' + massVars(r, D) + 'top:0;height:40px"><span class="m-title">' + I.leaf + esc(mass.nom) + ' · institut bloqué</span></div></div>'; }
   return '<div class="pv-t">Aperçu</div><div class="pv-tl"><div class="pv-col">' + cL + '</div><div class="pv-col">' + cE + '</div></div>' + mc;
@@ -2926,9 +2948,16 @@ function settingsInput(el, ev) {
     if (focusPath && !el.dataset.repaint) { var f = document.querySelector('[data-path="' + focusPath + '"]'); if (f) { f.focus(); try { var L = f.value.length; f.setSelectionRange(L, L); } catch (x) { /* champs heure */ } } }
   }
 }
+function setHeureFin(on, el) {
+  if (el) el.disabled = true;
+  G.saveConfig(function (c) { c.affichage = Object.assign({}, c.affichage, { heureFin: !!on }); }).then(function () {
+    if (S.tab === 'reglages') renderSettings();
+    toast(on ? 'Heure de fin affichée' : 'Seule l\'heure de début est affichée', 'ok');
+  }, function (e) { if (el) { el.disabled = false; el.checked = !on; } fail(e); });
+}
 function saveConfig() {
   var btn = $('[data-act="cfg-save"]'); if (btn) { btn.disabled = true; btn.textContent = 'Enregistrement…'; }
-  var draft = S.draft;
+  var draft = normCfg(S.draft);
   A('admin.sauverConfig', { config: draft }).then(function (c) {
     S.dirty = false; S.cfgErrors = null; S.draft = null;
     applyServerCfg(c); S.draft = clone(S.cfg);
@@ -3099,6 +3128,7 @@ function onField(ev) {
   if (el.id === 'datepick') { if (el.value && ev.type === 'change') goDate(el.value); return; }
   if (el.id === 'gs-q') { if (ev.type === 'input') gsInput(el.value); return; }
   if (el.dataset && el.dataset.pref) { if (ev.type === 'change') setPref(el.dataset.pref, el.checked); return; }
+  if (el.dataset && el.dataset.hfin) { if (ev.type === 'change') setHeureFin(el.checked, el); return; }
   var layer = el.closest('.layer'), v = layer && layer._view;
   if (v) { if (!v.raw && v.onInput) v.onInput(el, ev); return; }
   if (el.closest('#v-reglages')) {
@@ -3160,8 +3190,8 @@ function boot() { if (API.isLoggedIn()) startApp(); else showLogin(); }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else setTimeout(boot, 0);
 })();
 </script>
-<script src="stats.js"></script>
-<script src="clientes.js"></script>
-<script src="magie.js"></script>
+<script src="stats.js?v=1.2.3"></script>
+<script src="clientes.js?v=1.2.3"></script>
+<script src="magie.js?v=1.2.3"></script>
 </body>
 </html>

@@ -11,15 +11,21 @@
   var MOIS_L = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
   var JOURS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
   var JC = ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.'];
-  var STATUTS = [['tous', 'Toutes'], ['relancer', 'À relancer'], ['avenir', 'RDV à venir'], ['inactives', 'Inactives']];
-  var TRIS = [['derniere', 'Dernière visite'], ['visites', 'Nombre de visites'], ['prevue', 'Prochaine visite prévue'], ['az', 'A → Z']];
+  var SITS = [['avenir', 'RDV à venir'], ['inactives', 'Inactives depuis plus de 90 jours']];
+  var TRIS = [['derniere', 'Dernière visite'], ['visites', 'Nombre de visites'], ['prochain', 'Prochain RDV'], ['az', 'A → Z']];
   var STATUT = { confirme: ['Confirmé', 'ok'], en_attente: ['À valider', 'warn'], annule: ['Annulé', 'danger'], refuse: ['Refusé', 'danger'], absente: ['Absente', 'danger'] };
-  // Mot utilisé dans le message de relance selon la prestation habituelle
-  var SOIN = { remplissage: 'remplissage', extension: 'rendez-vous', renfort: 'renfort', semi: 'semi-permanent', depose_pose_semi: 'semi-permanent',
-    depose_gel: 'rendez-vous', depose_semi: 'rendez-vous', yumi: 'soin des pieds', yumi_semi: 'soin des pieds', yumi_depose_semi: 'soin des pieds' };
-
-  var st = { q: '', prat: null, statut: 'tous', tri: 'derniere', n: 60, dupOpen: false, dupKeep: {} };
-  var dups = [];
+  var VUE_KEY = 'sorelle.gestion.clientesVue';
+  function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* appareil sans stockage */ } }
+  var st = { q: '', prat: null, sit: 'tous', tri: 'derniere', n: 60, incOpen: false, vue: lsGet(VUE_KEY) === 'cartes' ? 'cartes' : 'liste' };
+  var fp = null; // panneau des filtres ouvert {panel, el}
+  var SVG = {
+    filtre: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg>',
+    liste: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r=".6" fill="currentColor"/><circle cx="4" cy="12" r=".6" fill="currentColor"/><circle cx="4" cy="18" r=".6" fill="currentColor"/></svg>',
+    cartes: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.6"/></svg>',
+    check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+    chev: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>'
+  };
   var root = null, mounted = false, hooked = false, tok = 0, profils = null, err = null;
   var fiches = []; // fiches ouvertes {cle, panel, tok}
   var ficheUid = 0;
@@ -49,8 +55,9 @@
   function sname(id, c) { try { return G.svcName(id, c) || id; } catch (e) { return id; } }
   function tOn(hex) { try { return G.textOn(hex); } catch (e) { return '#fff'; } }
   function tint(hex, a) { try { return G.tint ? G.tint(hex, a) : hex; } catch (e) { return hex; } }
-  function fullName(p) { return ((p.prenom || '') + ' ' + (p.nom || '')).trim() || 'Sans nom'; }
-  function initials(p) { return ((p.prenom || '').charAt(0) + (p.nom || '').charAt(0)).toUpperCase() || '?'; }
+  function nomAff(p) { var n = String(p.nom || '').trim(); return n === '-' ? '' : n; }
+  function fullName(p) { return ((p.prenom || '') + ' ' + nomAff(p)).trim() || 'Sans nom'; }
+  function initials(p) { return ((p.prenom || '').charAt(0) + nomAff(p).charAt(0)).toUpperCase() || '?'; }
   function prats() { try { return G.prats() || []; } catch (e) { return []; } }
   function ago(d) {
     var n = diff(d, today());
@@ -65,10 +72,10 @@
 
   /* ---------------- statut d'une cliente ---------------- */
   function prevue(p) { return p.habitude && p.habitude.prochaineVisitePrevue; }
-  function aRelancer(p, t) { var pv = prevue(p); return !p.aVenir && !!pv && pv <= add(t, 7) && diff(p.derniere || pv, t) <= 365; }
   function inactive(p, t) { var last = p.derniere || p.premiere; return !p.aVenir && !!last && diff(last, t) > 90; }
+  /** Fiche sans vrai nom de famille : vide, « - » ou une seule lettre (« B », « B. »). */
+  function incomplete(p) { return String((p && p.nom) || '').replace(/[\s.\-'’]/g, '').length <= 1; }
   function matchStatut(p, s, t) {
-    if (s === 'relancer') return aRelancer(p, t);
     if (s === 'avenir') return p.aVenir > 0;
     if (s === 'inactives') return inactive(p, t);
     return true;
@@ -86,9 +93,86 @@
     '.mod-clientes .cl-head{display:flex;align-items:baseline;justify-content:space-between;gap:4px 16px;flex-wrap:wrap;margin:0 0 12px}',
     '.mod-clientes h2{font-size:22px;font-weight:600;margin:0;letter-spacing:-.01em;color:var(--text)}',
     '.mod-clientes .cl-count{color:var(--text-sub);font-size:14px;margin:0}',
-    '.mod-clientes .cl-tools{display:flex;flex-direction:column;gap:10px;margin-bottom:14px}',
-    '@container (min-width:900px){.mod-clientes .cl-tools{flex-direction:row;flex-wrap:wrap;align-items:center}.mod-clientes .cl-search{flex:1 1 300px;max-width:420px}}',
+    '.mod-clientes .cl-tools{display:flex;gap:8px;align-items:center;margin-bottom:8px}',
+    '.mod-clientes .cl-tools .cl-search{flex:1 1 auto}',
+    '@container (min-width:900px){.mod-clientes .cl-tools .cl-search{flex:0 1 420px}}',
     '.mod-clientes .cl-search{position:relative;min-width:0}',
+    '.mod-clientes .tbtn{display:inline-flex;align-items:center;gap:8px;min-height:46px;padding:0 14px;border-radius:var(--radius);border:1px solid var(--line);background:var(--surface);font-weight:500;font-size:15px;color:var(--text);flex:0 0 auto;white-space:nowrap}',
+    '.mod-clientes .tbtn svg{width:20px;height:20px;display:block}',
+    '.mod-clientes .tbtn[data-on="true"]{border-color:var(--text)}',
+    '.mod-clientes .tbtn .bdg{min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:var(--text);color:var(--bg);font-size:12px;font-weight:600;display:inline-grid;place-items:center}',
+    '@container (max-width:479px){.mod-clientes .tbtn .lbl{display:none}.mod-clientes .tbtn{padding:0 12px}}',
+    '.mod-clientes .vt{display:inline-flex;flex:0 0 auto;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);padding:3px;gap:2px}',
+    '.mod-clientes .vt button{width:40px;height:38px;border-radius:calc(var(--radius) - 3px);display:grid;place-items:center;color:var(--text-sub)}',
+    '.mod-clientes .vt button svg{width:20px;height:20px}',
+    '.mod-clientes .vt button[aria-pressed="true"]{background:var(--surface-2);color:var(--text)}',
+    '.mod-clientes .cl-active{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:0 0 12px;font-size:13.5px;color:var(--text-sub);min-height:20px}',
+    '.mod-clientes .cl-active:empty{margin:0 0 6px;min-height:0}',
+    '.mod-clientes .cl-active b{color:var(--text);font-weight:600}',
+    '.mod-clientes .cl-active .lnk{min-height:28px;font-size:13.5px;text-decoration:underline;text-underline-offset:2px}',
+    /* vue liste */
+    '.mod-clientes .cl-tab{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);overflow:hidden}',
+    '.mod-clientes .cl-tab ul{list-style:none;margin:0;padding:0}',
+    '.mod-clientes .cl-tab li+li{border-top:1px solid var(--line)}',
+    '.mod-clientes .cl-row,.mod-clientes .cl-th{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:12px;align-items:center;width:100%;padding:9px 14px;text-align:left}',
+    '.mod-clientes .cl-row{min-height:58px}',
+    '.mod-clientes .cl-row:hover{background:var(--surface-2)}',
+    '.mod-clientes .cl-row .av{width:34px;height:34px;font-size:12.5px}',
+    '.mod-clientes .cl-row b{display:block;font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+    '.mod-clientes .cl-row small{display:block;font-size:12.5px;color:var(--text-sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+    '.mod-clientes .cl-row .c{display:none;font-size:13.5px;color:var(--text-sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}',
+    '.mod-clientes .cl-row .c i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:1px}',
+    '.mod-clientes .cl-row .nx{font-size:12.5px;font-weight:600;color:var(--ok);white-space:nowrap}',
+    '.mod-clientes .cl-th{display:none;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;padding-top:10px;padding-bottom:8px;border-bottom:1px solid var(--line)}',
+    '@container (min-width:720px){.mod-clientes .cl-row,.mod-clientes .cl-th{grid-template-columns:34px minmax(0,1.6fr) minmax(0,.8fr) 70px minmax(0,1fr) minmax(0,1.1fr)}.mod-clientes .cl-th{display:grid}.mod-clientes .cl-row .c{display:block}.mod-clientes .cl-row small,.mod-clientes .cl-row .nx{display:none}}',
+    '.mod-clientes .cl-row .c.nb{text-align:right;font-variant-numeric:tabular-nums}',
+    '.mod-clientes .cl-th .nb{text-align:right}',
+    '.mod-clientes .cl-row .c.ok{color:var(--ok);font-weight:600}',
+    /* vue cartes */
+    '.mod-clientes .cl-card{display:flex;flex-direction:column;gap:10px;width:100%;height:100%;padding:14px;border-radius:var(--radius-lg);background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--pc);text-align:left;transition:border-color .15s}',
+    '.mod-clientes .cl-card:hover{border-color:var(--text-sub);border-top-color:var(--pc)}',
+    '.mod-clientes .cl-card .top{display:flex;align-items:center;gap:12px;min-width:0}',
+    '.mod-clientes .cl-card .kv{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;font-size:13.5px;margin:0}',
+    '.mod-clientes .cl-card .kv dt{color:var(--muted)}',
+    '.mod-clientes .cl-card .kv dd{margin:0;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+    '.mod-clientes .cl-card .ft{margin-top:auto;padding-top:9px;border-top:1px solid var(--line);font-size:13px;color:var(--text-sub)}',
+    '.mod-clientes .cl-card .ft b{color:var(--ok);font-weight:600}',
+    /* fiches à compléter */
+    '.mod-clientes .inc-l{list-style:none;margin:0;padding:0 8px 6px}',
+    '.mod-clientes .inc-l li+li{border-top:1px solid var(--line)}',
+    '.mod-clientes .inc-l button{display:grid;grid-template-columns:32px minmax(0,1fr) auto;gap:10px;align-items:center;width:100%;min-height:54px;padding:6px 6px;text-align:left;border-radius:var(--radius)}',
+    '.mod-clientes .inc-l button:hover{background:color-mix(in srgb,var(--warn) 9%,transparent)}',
+    '.mod-clientes .inc-l .av{width:32px;height:32px;font-size:12.5px}',
+    '.mod-clientes .inc-l b{display:block;font-weight:600;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+    '.mod-clientes .inc-l small{display:block;color:var(--text-sub);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+    '.mod-clientes .inc-l .go{display:inline-flex;align-items:center;gap:2px;font-size:13px;font-weight:500;color:var(--text-sub)}',
+    '.mod-clientes .inc-l .go svg{width:16px;height:16px}',
+    '.mod-clientes .inc-help{margin:0;padding:0 14px 8px;font-size:13px;color:var(--text-sub);line-height:1.45}',
+    /* panneau filtres */
+    '.mod-clientes.fp{padding:0 0 8px}',
+    '.mod-clientes .fp-h{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:4px 0 6px}',
+    '.mod-clientes .fp-g{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);overflow:hidden;margin:0 0 18px}',
+    '.mod-clientes .fp-o{display:flex;align-items:center;gap:12px;width:100%;min-height:52px;padding:8px 14px;text-align:left;font-size:15px}',
+    '.mod-clientes .fp-o+.fp-o{border-top:1px solid var(--line)}',
+    '.mod-clientes .fp-o .dot{width:10px;height:10px;border-radius:50%;flex:0 0 auto}',
+    '.mod-clientes .fp-o .n{margin-left:auto;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}',
+    '.mod-clientes .fp-o .ck{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--line);display:grid;place-items:center;flex:0 0 auto;color:var(--bg)}',
+    '.mod-clientes .fp-o .ck svg{width:14px;height:14px;opacity:0}',
+    '.mod-clientes .fp-o[aria-pressed="true"]{font-weight:600}',
+    '.mod-clientes .fp-o[aria-pressed="true"] .ck{background:var(--text);border-color:var(--text)}',
+    '.mod-clientes .fp-o[aria-pressed="true"] .ck svg{opacity:1}',
+    '.mod-clientes .fp-f{display:flex;gap:8px;position:sticky;bottom:0;padding:10px 0 2px;background:var(--bg)}',
+    '.mod-clientes .fp-f .btn{flex:1}',
+    /* fusion / complétion */
+    '.mod-clientes .mg-lb{display:block;font-size:13px;font-weight:500;color:var(--text-sub);margin:10px 0 5px}',
+    '.mod-clientes .mg-row{display:flex;gap:8px;flex-wrap:wrap}',
+    '.mod-clientes .mg-row select{flex:1 1 220px;min-width:0;min-height:46px;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);padding:0 12px;color-scheme:light dark}',
+    '.mod-clientes .mg-row .btn{flex:0 0 auto}',
+    '.mod-clientes .mg-or{display:flex;align-items:center;gap:10px;margin:14px 0 10px;color:var(--muted);font-size:13px}',
+    '.mod-clientes .mg-or::before,.mod-clientes .mg-or::after{content:"";flex:1;height:1px;background:var(--line)}',
+    '.mod-clientes .mg .btn.full{width:100%}',
+    '.mod-clientes .rl .ttl{display:block;font-size:12.5px;color:var(--muted);font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+    '.mod-clientes .f-sw{display:block;margin:-6px 0 14px;font-size:13.5px}',
     '.mod-clientes .cl-search input{width:100%;min-height:46px;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);padding:0 12px 0 42px;color-scheme:light dark}',
     '.mod-clientes .cl-search .ico{position:absolute;left:13px;top:13px;color:var(--muted);pointer-events:none}',
     '.mod-clientes .ico svg{width:20px;height:20px;display:block}',
@@ -251,89 +335,161 @@
   function render() {
     if (!root) return;
     root.innerHTML = '<div class="cl-head"><h2>Nos clientes</h2><p class="cl-count" data-r="count"></p></div>' +
-      '<div class="cl-tools"><div class="cl-search"><span class="ico">' + icon('search') + '</span><input type="search" data-r="q" placeholder="Rechercher une cliente" autocomplete="off" aria-label="Rechercher une cliente" value="' + esc(st.q) + '"></div>' +
-      '<div class="chips" role="group" aria-label="Praticienne" data-r="prats"></div>' +
-      '<div class="chips" role="group" aria-label="Statut" data-r="statuts"></div>' +
-      '<label class="sel">Trier par <select data-r="tri">' + TRIS.map(function (t) { return '<option value="' + t[0] + '"' + (st.tri === t[0] ? ' selected' : '') + '>' + t[1] + '</option>'; }).join('') + '</select></label></div>' +
-      '<div data-r="dup"></div><div data-r="list"></div>';
+      '<div class="cl-tools"><div class="cl-search"><span class="ico">' + icon('search') + '</span><input type="search" data-r="q" placeholder="Rechercher" autocomplete="off" aria-label="Rechercher une cliente" value="' + esc(st.q) + '"></div>' +
+      '<button class="tbtn" data-act="filters" aria-haspopup="dialog" data-r="fbtn">' + SVG.filtre + '<span class="lbl">Filtres</span></button>' +
+      '<div class="vt" role="group" aria-label="Affichage">' +
+      '<button data-vue="liste" aria-pressed="' + (st.vue === 'liste') + '" aria-label="Vue liste" title="Vue liste">' + SVG.liste + '</button>' +
+      '<button data-vue="cartes" aria-pressed="' + (st.vue === 'cartes') + '" aria-label="Vue cartes" title="Vue cartes">' + SVG.cartes + '</button></div></div>' +
+      '<p class="cl-active" data-r="active" aria-live="polite"></p>' +
+      '<div data-r="inc"></div><div data-r="list"></div>';
     renderList();
   }
 
-  function renderList() {
-    var el = root && root.querySelector('[data-r="list"]'); if (!el) return;
-    var cnt = root.querySelector('[data-r="count"]');
-    if (err && !profils) {
-      el.innerHTML = '<div class="empty"><div class="big">' + icon('alert') + '</div><h3>Impossible de charger les clientes</h3><p>' + esc(err) + '</p><button class="btn pri" data-act="retry">Réessayer</button></div>';
-      return;
-    }
-    var de = root.querySelector('[data-r="dup"]'); if (de) de.innerHTML = dupHtml();
-    if (!profils) { el.innerHTML = skeleton(8); if (cnt) cnt.textContent = 'Chargement…'; renderChips(null); return; }
+  /** Listes filtrées : par recherche (byQ), + praticienne (byP), + situation (list). */
+  function compute() {
     var t = today(), q = norm(st.q), pf = pratFilter();
-    var byQ = profils.filter(function (p) {
+    var byQ = (profils || []).filter(function (p) {
       if (!q) return true;
       var a = norm(p.prenom + ' ' + p.nom), b = norm(p.nom + ' ' + p.prenom);
       return a.indexOf(q) >= 0 || b.indexOf(q) >= 0;
     });
     var byP = byQ.filter(function (p) { return pf === 'tous' || p.praticienne === pf; });
-    renderChips({ byQ: byQ, byP: byP, t: t });
-    var list = byP.filter(function (p) { return matchStatut(p, st.statut, t); });
+    var list = byP.filter(function (p) { return matchStatut(p, st.sit, t); });
     list.sort(sorter(st.tri));
+    return { t: t, q: q, pf: pf, byQ: byQ, byP: byP, list: list };
+  }
+  function nActive() { return (pratFilter() !== 'tous' ? 1 : 0) + (st.sit !== 'tous' ? 1 : 0); }
+
+  function renderList() {
+    var el = root && root.querySelector('[data-r="list"]'); if (!el) return;
+    var cnt = root.querySelector('[data-r="count"]');
+    paintToolbar();
+    if (err && !profils) {
+      el.innerHTML = '<div class="empty"><div class="big">' + icon('alert') + '</div><h3>Impossible de charger les clientes</h3><p>' + esc(err) + '</p><button class="btn pri" data-act="retry">Réessayer</button></div>';
+      return;
+    }
+    var ie = root.querySelector('[data-r="inc"]'); if (ie) ie.innerHTML = incHtml();
+    if (!profils) { el.innerHTML = skeleton(8); if (cnt) cnt.textContent = 'Chargement…'; return; }
+    var c = compute(), list = c.list;
     if (cnt) cnt.textContent = profils.length ? (list.length === profils.length ? pl(profils.length, 'cliente') : list.length + ' sur ' + pl(profils.length, 'cliente')) : '';
+    paintFilters(c);
     if (!profils.length) {
       el.innerHTML = '<div class="empty"><div class="big">' + icon('users') + '</div><h3>Aucune cliente pour l’instant</h3><p>La base se remplit automatiquement avec chaque rendez-vous.</p>' + (G.newRdv ? '<button class="btn pri" data-act="new" style="margin-top:12px">' + icon('plus') + 'Nouveau RDV</button>' : '') + '</div>';
       return;
     }
     if (!list.length) {
-      el.innerHTML = '<div class="empty"><h3>Aucune cliente</h3><p>' + (q ? 'Personne ne correspond à « ' + esc(st.q) + ' ».' : 'Aucune cliente dans ce filtre.') + '</p>' +
-        ((q || st.statut !== 'tous' || st.prat) ? '<button class="btn" data-act="reset" style="margin-top:12px">Effacer les filtres</button>' : '') + '</div>';
+      el.innerHTML = '<div class="empty"><h3>Aucune cliente</h3><p>' + (c.q ? 'Personne ne correspond à « ' + esc(st.q) + ' ».' : 'Aucune cliente dans ce filtre.') + '</p>' +
+        ((c.q || nActive()) ? '<button class="btn" data-act="reset" style="margin-top:12px">Effacer les filtres</button>' : '') + '</div>';
       return;
     }
-    el.innerHTML = '<ul class="cl-list">' + list.slice(0, st.n).map(function (p) { return '<li>' + item(p, t) + '</li>'; }).join('') + '</ul>' +
-      (list.length > st.n ? '<button class="more" data-act="more">Afficher plus (' + (list.length - st.n) + ' restantes)</button>' : '');
+    var shown = list.slice(0, st.n), more = list.length > st.n ? '<button class="more" data-act="more">Afficher plus (' + (list.length - st.n) + ' restantes)</button>' : '';
+    if (st.vue === 'cartes') el.innerHTML = '<ul class="cl-list">' + shown.map(function (p) { return '<li>' + card(p, c.t) + '</li>'; }).join('') + '</ul>' + more;
+    else el.innerHTML = '<div class="cl-tab"><div class="cl-th" aria-hidden="true"><span></span><span>Cliente</span><span>Praticienne</span><span class="nb">Visites</span><span>Dernière visite</span><span>Prochain RDV</span></div><ul>' +
+      shown.map(function (p) { return '<li>' + row(p, c.t) + '</li>'; }).join('') + '</ul></div>' + more;
   }
 
-  function renderChips(c) {
-    var pe = root.querySelector('[data-r="prats"]'), se = root.querySelector('[data-r="statuts"]');
-    var pf = pratFilter(), t = c && c.t;
-    if (pe) pe.innerHTML = [{ id: 'tous', nom: 'Toutes' }].concat(prats()).map(function (p) {
-      var n = c ? (p.id === 'tous' ? c.byQ.length : c.byQ.filter(function (x) { return x.praticienne === p.id; }).length) : '';
-      var col = p.id === 'tous' ? '' : pcol(p.id);
-      return '<button class="chip"' + (col ? ' data-p="' + esc(p.id) + '" style="--pc:' + col + ';--pf:' + tOn(col) + '"' : '') + ' data-prat="' + esc(p.id) + '" aria-pressed="' + (pf === p.id) + '">' + (col ? '<i class="dot"></i>' : '') + esc(p.nom) + (c ? ' <span class="n">' + n + '</span>' : '') + '</button>';
-    }).join('');
-    if (se) se.innerHTML = STATUTS.map(function (s) {
-      var n = c ? c.byP.filter(function (p) { return matchStatut(p, s[0], t); }).length : '';
-      return '<button class="chip" data-statut="' + s[0] + '" aria-pressed="' + (st.statut === s[0]) + '"' + (s[0] === 'inactives' ? ' title="Sans visite depuis plus de 90 jours"' : s[0] === 'relancer' ? ' title="Prochaine visite prévue dépassée ou dans les 7 jours, sans RDV à venir"' : '') + '>' + s[1] + (s[0] === 'inactives' ? ' (+90 j)' : '') + (c ? ' <span class="n">' + n + '</span>' : '') + '</button>';
-    }).join('');
+  /** Bouton Filtres (nombre de filtres actifs) + rappel discret des filtres en cours. */
+  function paintToolbar() {
+    if (!root) return;
+    var n = nActive(), b = root.querySelector('[data-r="fbtn"]'), a = root.querySelector('[data-r="active"]');
+    if (b) { b.setAttribute('data-on', String(n > 0)); b.innerHTML = SVG.filtre + '<span class="lbl">Filtres</span>' + (n ? '<span class="bdg" aria-label="' + n + ' actif' + (n > 1 ? 's' : '') + '">' + n + '</span>' : ''); }
+    root.querySelectorAll('[data-vue]').forEach(function (x) { x.setAttribute('aria-pressed', String(x.getAttribute('data-vue') === st.vue)); });
+    if (!a) return;
+    var parts = [], pf = pratFilter();
+    if (pf !== 'tous') parts.push('Clientes de ' + pname(pf));
+    if (st.sit !== 'tous') parts.push(SITS.filter(function (x) { return x[0] === st.sit; })[0][1]);
+    a.innerHTML = parts.length ? '<span>Filtre :</span> <b>' + esc(parts.join(' · ')) + '</b> <button class="lnk" data-act="reset-f">Effacer</button>' : '';
+  }
+
+  /* ---------------- panneau des filtres ---------------- */
+  function filtersHtml(c) {
+    var pf = pratFilter(), H = '';
+    var opt = function (attr, val, on, label, n, dot) {
+      return '<button class="fp-o" ' + attr + '="' + esc(val) + '" aria-pressed="' + on + '"><span class="ck">' + SVG.check + '</span>' +
+        (dot ? '<span class="dot" style="background:' + dot + '"></span>' : '') + '<span>' + esc(label) + '</span>' + (n != null ? '<span class="n">' + n + '</span>' : '') + '</button>';
+    };
+    H += '<p class="fp-h">Afficher</p><div class="fp-g">' + opt('data-prat', 'tous', pf === 'tous', 'Toutes', c ? c.byQ.length : null);
+    prats().forEach(function (p) { H += opt('data-prat', p.id, pf === p.id, p.nom, c ? c.byQ.filter(function (x) { return x.praticienne === p.id; }).length : null, pcol(p.id)); });
+    SITS.forEach(function (x) { H += opt('data-sit', x[0], st.sit === x[0], x[1], c ? c.byP.filter(function (p) { return matchStatut(p, x[0], c.t); }).length : null); });
+    H += '</div><p class="fp-h">Trier par</p><div class="fp-g">';
+    TRIS.forEach(function (x) { H += opt('data-tri', x[0], st.tri === x[0], x[1], null); });
+    H += '</div><div class="fp-f"><button class="btn" data-act="fp-reset"' + (nActive() ? '' : ' disabled') + '>Réinitialiser</button><button class="btn pri" data-act="fp-close">Voir ' + pl(c ? c.list.length : 0, 'cliente') + '</button></div>';
+    return H;
+  }
+  function paintFilters(c) { if (fp && fp.el) fp.el.innerHTML = filtersHtml(c || (profils ? compute() : null)); }
+  function openFilters() {
+    if (fp) return;
+    var box = document.createElement('div'); box.className = 'mod-clientes fp';
+    fp = { el: box };
+    box.innerHTML = filtersHtml(profils ? compute() : null);
+    box.addEventListener('click', function (e) {
+      var b = e.target.closest('button'); if (!b || !box.contains(b)) return;
+      var a;
+      if ((a = b.getAttribute('data-prat'))) { st.prat = a; }
+      else if ((a = b.getAttribute('data-sit'))) { st.sit = st.sit === a ? 'tous' : a; }
+      else if ((a = b.getAttribute('data-tri'))) { st.tri = a; }
+      else if (b.getAttribute('data-act') === 'fp-reset') { st.prat = 'tous'; st.sit = 'tous'; }
+      else if (b.getAttribute('data-act') === 'fp-close') { if (fp && fp.panel) fp.panel.close(); return; }
+      else return;
+      st.n = 60; renderList();
+    });
+    fp.panel = G.panel({ title: 'Filtres', size: 'side', content: box, onClose: function () { fp = null; var fb = root && root.querySelector('[data-r="fbtn"]'); if (fb) fb.focus(); } });
   }
 
   function sorter(tri) {
-    var t = today();
     if (tri === 'visites') return function (a, b) { return (b.realises || 0) - (a.realises || 0) || (b.derniere || '').localeCompare(a.derniere || ''); };
     if (tri === 'az') return function (a, b) { return fullName(a).localeCompare(fullName(b), 'fr', { sensitivity: 'base' }); };
-    if (tri === 'prevue') return function (a, b) {
-      // les clientes avec un RDV déjà pris passent après celles à relancer ; sans date prévue en dernier
-      var ka = a.aVenir ? '2' + (a.prochain ? a.prochain.date : '') : prevue(a) ? '1' + prevue(a) : '3';
-      var kb = b.aVenir ? '2' + (b.prochain ? b.prochain.date : '') : prevue(b) ? '1' + prevue(b) : '3';
-      return ka.localeCompare(kb) || fullName(a).localeCompare(fullName(b), 'fr');
+    if (tri === 'prochain') return function (a, b) {
+      // RDV le plus proche d'abord ; les clientes sans RDV à venir ensuite, par dernière visite
+      var ka = a.prochain ? '1' + a.prochain.date + a.prochain.debut : '2', kb = b.prochain ? '1' + b.prochain.date + b.prochain.debut : '2';
+      return ka.localeCompare(kb) || (b.derniere || '').localeCompare(a.derniere || '') || fullName(a).localeCompare(fullName(b), 'fr');
     };
     // Dernière visite réalisée (la plus récente d'abord) ; les clientes pas encore venues à la fin
     return function (a, b) { return (!a.derniere) - (!b.derniere) || (b.derniere || b.premiere || '').localeCompare(a.derniere || a.premiere || '') || fullName(a).localeCompare(fullName(b), 'fr'); };
   }
 
-  function item(p, t) {
+  function nextTxt(p) { return p.prochain ? fDate(p.prochain.date) + ' ' + fH(p.prochain.debut) : ''; }
+  function row(p, t) {
     var col = pcol(p.praticienne), h = p.habitude || {};
-    var meta = [pl(p.realises || 0, 'visite')];
-    if (h.frequenceJours) meta.push('tous les ' + h.frequenceJours + ' j');
-    meta.push(p.derniere ? 'dernière ' + ago(p.derniere) : 'pas encore venue');
-    var right = '', next = '';
-    if (p.prochain) next = '<div class="cl-next"><b>RDV ' + esc(fDate(p.prochain.date)) + ' ' + esc(fH(p.prochain.debut)) + '</b> · ' + esc(pname(p.prochain.praticienne)) + '</div>';
-    else if (aRelancer(p, t)) {
-      var late = diff(prevue(p), t);
-      next = '<div class="cl-next"><span class="tag warn">À relancer</span> ' + (late > 0 ? 'prévue le ' + esc(fDateY(prevue(p))) + ', ' + late + ' j de retard' : late === 0 ? 'prévue aujourd’hui' : 'prévue le ' + esc(fDateY(prevue(p))) + ' (' + inDays(prevue(p)) + ')') + '</div>';
-    } else if (inactive(p, t)) right = '<span class="tag">Inactive</span>';
-    else if (prevue(p)) next = '<div class="cl-next">Prochaine visite prévue vers le ' + esc(fDateY(prevue(p))) + '</div>';
-    return '<button class="cl-item" data-cle="' + esc(p.cle) + '"><span class="av" style="background:' + col + ';color:' + tOn(col) + '">' + esc(initials(p)) + '</span>' +
-      '<span class="cl-main"><div class="cl-name">' + esc(fullName(p)) + '</div><div class="cl-meta">' + esc(meta.join(' · ')) + '</div>' + next + '</span>' + right + '</button>';
+    var meta = [pname(p.praticienne), pl(p.realises || 0, 'visite'), p.derniere ? 'dernière ' + ago(p.derniere) : 'pas encore venue'].filter(Boolean);
+    return '<button class="cl-row" data-cle="' + esc(p.cle) + '">' + avatar(p) +
+      '<span style="min-width:0"><b>' + esc(fullName(p)) + '</b><small>' + esc(meta.join(' · ')) + '</small></span>' +
+      '<span class="c"><i style="background:' + col + '"></i>' + esc(pname(p.praticienne)) + '</span>' +
+      '<span class="c nb">' + nf(p.realises || 0) + '</span>' +
+      '<span class="c">' + esc(p.derniere ? fDateY(p.derniere) + ' · ' + ago(p.derniere) : '—') + '</span>' +
+      '<span class="c' + (p.prochain ? ' ok' : '') + '">' + esc(p.prochain ? nextTxt(p) : (inactive(p, t) ? 'Inactive' : '—')) + '</span>' +
+      (p.prochain ? '<span class="nx">' + esc(nextTxt(p)) + '</span>' : inactive(p, t) ? '<span class="tag">Inactive</span>' : '<span></span>') +
+      '</button>';
+  }
+  function card(p, t) {
+    var col = pcol(p.praticienne), h = p.habitude || {};
+    var kv = [['Visites', nf(p.realises || 0) + (h.frequenceJours ? ' · tous les ' + h.frequenceJours + ' j' : '')]];
+    if ((h.services || []).length) kv.push(['Soin', h.services.map(function (x) { return sname(x, true); }).join(' + ')]);
+    if (h.jours && h.jours[0]) kv.push(['Jour', cap(JOURS[h.jours[0].jour]) + (h.heure ? ' · ' + fH(h.heure) : '')]);
+    var ft = p.prochain ? '<b>Prochain RDV ' + esc(nextTxt(p)) + '</b>' : (p.derniere ? 'Dernière visite ' + esc(fDateY(p.derniere)) + ' · ' + esc(ago(p.derniere)) : 'Pas encore venue');
+    return '<button class="cl-card" data-cle="' + esc(p.cle) + '" style="--pc:' + col + '"><span class="top">' + avatar(p) +
+      '<span style="min-width:0;flex:1"><div class="cl-name">' + esc(fullName(p)) + '</div><div class="cl-meta">' + esc(pname(p.praticienne)) + '</div></span>' +
+      (inactive(p, t) && !p.prochain ? '<span class="tag">Inactive</span>' : '') + '</span>' +
+      '<dl class="kv">' + kv.map(function (x) { return '<dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd>'; }).join('') + '</dl>' +
+      '<span class="ft">' + ft + '</span></button>';
+  }
+
+  /* ---------------- fiches à compléter ---------------- */
+  function incList() {
+    var pf = pratFilter();
+    return (profils || []).filter(function (p) { return incomplete(p) && (pf === 'tous' || p.praticienne === pf); })
+      .sort(function (a, b) { return fullName(a).localeCompare(fullName(b), 'fr', { sensitivity: 'base' }); });
+  }
+  function incHtml() {
+    if (!profils || st.q) return '';
+    var l = incList(); if (!l.length) return '';
+    var H = '<section class="dup"><button class="dup-h" data-act="inc-toggle" aria-expanded="' + !!st.incOpen + '"><span class="ico">' + icon('users') + '</span><b>Fiches à compléter (' + l.length + ')</b><small>' + (st.incOpen ? 'Masquer' : 'Voir') + icon('chevronD') + '</small></button>';
+    if (st.incOpen) {
+      H += '<p class="inc-help">Prénom seul ou nom incomplet. Touchez une fiche pour voir ses rendez-vous, puis la fusionner avec la bonne cliente ou compléter son nom.</p><ul class="inc-l">' + l.map(function (p) {
+        return '<li><button data-inc="' + esc(p.cle) + '">' + avatar(p) + '<span style="min-width:0"><b>' + esc(fullName(p)) + '</b><small>' + esc(pname(p.praticienne) + ' · ' + visitsLine(p)) + '</small></span><span class="go">Compléter' + SVG.chev + '</span></button></li>';
+      }).join('') + '</ul>';
+    }
+    return H + '</section>';
   }
 
   function load() {
@@ -356,45 +512,32 @@
       var b = e.target.closest('button'); if (!b || !el.contains(b)) return;
       var a;
       if ((a = b.getAttribute('data-cle'))) { openClient(a); return; }
-      if ((a = b.getAttribute('data-prat'))) { st.prat = a; st.n = 60; renderList(); return; }
-      if ((a = b.getAttribute('data-statut'))) { st.statut = a; st.n = 60; renderList(); return; }
+      if ((a = b.getAttribute('data-inc'))) { openClient(a, { completer: true }); return; }
+      if ((a = b.getAttribute('data-vue'))) { st.vue = a === 'cartes' ? 'cartes' : 'liste'; lsSet(VUE_KEY, st.vue); renderList(); return; }
       a = b.getAttribute('data-act');
-      if (a === 'dup-toggle') { st.dupOpen = !st.dupOpen; renderList(); return; }
-      if (a && a.indexOf('dup-') === 0) {
-        var x = dups[+b.getAttribute('data-dup')]; if (!x) return;
-        if (a === 'dup-keep') { st.dupKeep[x.key] = b.getAttribute('data-keep'); renderList(); return; }
-        if (a === 'dup-no') { ignorePair(x.key); renderList(); if (G.toast) G.toast('Paire masquée : ' + fullName(x.a) + ' / ' + fullName(x.b), { type: 'info' }); return; }
-        if (a === 'dup-merge') {
-          var keepB = st.dupKeep[x.key] === x.b.cle, dst = keepB ? x.b : x.a, src = keepB ? x.a : x.b;
-          b.disabled = true;
-          doMerge(src, dst).then(function (res) { b.disabled = false; if (res) delete st.dupKeep[x.key]; })
-            .catch(function (e) { b.disabled = false; if (G.toast) G.toast((e && e.message) || 'Fusion impossible.', { type: 'err' }); });
-        }
-        return;
-      }
+      if (a === 'filters') { openFilters(); return; }
+      if (a === 'inc-toggle') { st.incOpen = !st.incOpen; renderList(); return; }
+      if (a === 'reset-f') { st.prat = 'tous'; st.sit = 'tous'; st.n = 60; renderList(); return; }
       if (a === 'more') { st.n += 60; renderList(); }
       else if (a === 'retry') load();
       else if (a === 'new' && G.newRdv) G.newRdv({});
-      else if (a === 'reset') { st.q = ''; st.statut = 'tous'; st.prat = 'tous'; render(); }
+      else if (a === 'reset') { st.q = ''; st.sit = 'tous'; st.prat = 'tous'; render(); }
     });
     el.addEventListener('input', function (e) {
       if (e.target.getAttribute('data-r') !== 'q') return;
       st.q = e.target.value; st.n = 60;
       clearTimeout(qTimer); qTimer = setTimeout(renderList, 60);
     });
-    el.addEventListener('change', function (e) {
-      if (e.target.getAttribute('data-r') === 'tri') { st.tri = e.target.value; renderList(); }
-    });
   }
 
   /* ---------------- fiche cliente ---------------- */
-  function openClient(cle) {
+  function openClient(cle, opts) {
     if (!cle) return null;
     injectCss();
     var box = document.createElement('div');
     box.className = 'mod-clientes fiche';
     box.innerHTML = ficheSkeleton();
-    var f = { cle: cle, el: box, tok: 0, data: null, recos: null, recoErr: null, recoLoading: false, showPast: 10, rn: null, mg: null, uid: ++ficheUid };
+    var f = { cle: cle, el: box, tok: 0, data: null, recos: null, recoErr: null, recoLoading: false, showPast: 10, rn: null, mg: null, uid: ++ficheUid, completer: !!(opts && opts.completer) };
     var known = (profils || []).filter(function (p) { return p.cle === cle; })[0];
     var title = known ? fullName(known) : 'Fiche cliente';
     f.panel = G.panel({ title: title, size: 'side', content: box, onClose: function () { fiches = fiches.filter(function (x) { return x !== f; }); } });
@@ -435,10 +578,27 @@
       esc([d.praticienne ? 'Avec ' + pname(d.praticienne) : '', since].filter(Boolean).join(' · ')) + '</p></div>' +
       '<button class="f-ed" data-act="f-rn" aria-label="Modifier le nom" title="Modifier le nom">' + icon('edit') + '</button></div>';
 
+    var rd = d.rdvs || [];
+    var up = rd.filter(function (r) { return r.date >= t && (ACTIVE[r.statut]); }).sort(function (a, b) { return (a.date + a.debut).localeCompare(b.date + b.debut); });
+    var past = rd.filter(function (r) { return !(r.date >= t && ACTIVE[r.statut]); }).sort(function (a, b) { return (b.date + b.debut).localeCompare(a.date + a.debut); });
+    var rdvSecs = function (titres) {
+      return '<div class="f-sec"><h4>À venir <small>' + up.length + '</small></h4>' + (up.length ? '<ul class="rl">' + up.map(function (r) { return rdvRow(r, t, titres); }).join('') + '</ul>' : '<p class="f-empty">Aucun rendez-vous à venir.</p>') + '</div>' +
+        '<div class="f-sec"><h4>Passés <small>' + past.length + '</small></h4>' + (past.length ? '<ul class="rl">' + past.slice(0, f.showPast).map(function (r) { return rdvRow(r, t, titres); }).join('') + '</ul>' +
+        (past.length > f.showPast ? '<button class="btn" data-act="f-past" style="width:100%;margin-top:8px">Voir les ' + (past.length - f.showPast) + ' autres</button>' : '') : '<p class="f-empty">Aucun rendez-vous passé.</p>') + '</div>';
+    };
+
+    // Mode « compléter » : uniquement ce qui sert à identifier la cliente et à décider
+    if (f.completer) {
+      if (!f.rn && !f.mg) initMerge(f);
+      if (f.mg) H += mergeBlock(f);
+      H += rdvSecs(true) + '<button class="lnk f-sw" data-act="f-full">Voir la fiche complète (habitudes, créneaux recommandés)</button>';
+      f.el.innerHTML = H;
+      return;
+    }
+
     if (f.mg) H += mergeBlock(f);
     else H += '<div class="f-act">' +
-      '<button class="btn pri" data-act="f-new">' + icon('plus') + 'Nouveau RDV</button>' +
-      '<button class="btn" data-act="f-copy">' + icon('copy') + 'Message de relance</button>' +
+      '<button class="btn pri full" data-act="f-new">' + icon('plus') + 'Nouveau RDV</button>' +
       '<button class="btn sub full" data-act="f-mg">' + icon('users') + 'Fusionner avec une autre fiche</button>' +
       '</div>';
 
@@ -453,15 +613,12 @@
       num(nf(d.absentes || 0), (d.absentes || 0) > 1 ? 'absences' : 'absence') +
       '</div></div>';
 
-    // Prochaine visite prévue
+    // Prochain RDV, sinon rythme habituel (simple repère, pas de relance)
     var pv = h.prochaineVisitePrevue;
     if (d.prochain) {
       H += '<div class="f-sec"><div class="prev"><span class="ico">' + icon('calendar') + '</span><div><b>Prochain RDV ' + esc(fLong(d.prochain.date)) + ' à ' + esc(fH(d.prochain.debut)) + '</b><small>' + esc(pname(d.prochain.praticienne)) + ' · ' + esc((d.prochain.services || []).map(function (x) { return sname(x, true); }).join(' + ')) + ' · ' + inDays(d.prochain.date) + '</small></div></div></div>';
-    } else if (pv) {
-      var late = diff(pv, t);
-      H += '<div class="f-sec"><div class="prev"><span class="ico">' + icon('clock') + '</span><div><b>Prochaine visite prévue ' + (late > 0 ? 'le ' + esc(fLong(pv)) : 'vers le ' + esc(fLong(pv))) + '</b><small>' +
-        (late > 0 ? 'En retard de ' + pl(late, 'jour') + ', aucun RDV à venir' : late === 0 ? 'Aujourd’hui, aucun RDV à venir' : inDays(pv) + ', aucun RDV à venir') + '</small></div>' +
-        (late >= -7 ? '<span class="tag warn" style="margin-left:auto">À relancer</span>' : '') + '</div></div>';
+    } else if (pv && pv >= t) {
+      H += '<div class="f-sec"><div class="prev"><span class="ico">' + icon('clock') + '</span><div><b>Revient habituellement vers le ' + esc(fLong(pv)) + '</b><small>D’après son rythme · aucun RDV pris pour l’instant</small></div></div></div>';
     }
 
     // Habitudes
@@ -470,13 +627,7 @@
     // Créneaux recommandés
     H += '<div class="f-sec" data-r="recos"><h4>Créneaux recommandés <small>' + esc(recoSub(d)) + '</small></h4><div data-r="recos-body">' + recosHtml(f) + '</div></div>';
 
-    // RDV à venir et passés
-    var rd = (d.rdvs || []).filter(function (r) { return r.type !== 'massage' || true; });
-    var up = rd.filter(function (r) { return r.date >= t && (ACTIVE[r.statut]); }).sort(function (a, b) { return (a.date + a.debut).localeCompare(b.date + b.debut); });
-    var past = rd.filter(function (r) { return !(r.date >= t && ACTIVE[r.statut]); }).sort(function (a, b) { return (b.date + b.debut).localeCompare(a.date + a.debut); });
-    H += '<div class="f-sec"><h4>À venir <small>' + up.length + '</small></h4>' + (up.length ? '<ul class="rl">' + up.map(function (r) { return rdvRow(r, t); }).join('') + '</ul>' : '<p class="f-empty">Aucun rendez-vous à venir.</p>') + '</div>';
-    H += '<div class="f-sec"><h4>Passés <small>' + past.length + '</small></h4>' + (past.length ? '<ul class="rl">' + past.slice(0, f.showPast).map(function (r) { return rdvRow(r, t); }).join('') + '</ul>' +
-      (past.length > f.showPast ? '<button class="btn" data-act="f-past" style="width:100%;margin-top:8px">Voir les ' + (past.length - f.showPast) + ' autres</button>' : '') : '<p class="f-empty">Aucun rendez-vous passé.</p>') + '</div>';
+    H += rdvSecs(false);
     f.el.innerHTML = H;
     if (!f.recos && !f.recoLoading && !f.recoErr) loadRecos(f);
   }
@@ -548,72 +699,17 @@
     });
   }
 
-  function rdvRow(r, t) {
+  var TITRE_RE = /^Importé de Google Agenda : (.*?)( \(prestation à vérifier\))?$/;
+  function rdvRow(r, t, titre) {
     var stt = STATUT[r.statut] || [r.statut, ''], off = !ACTIVE[r.statut];
     var done = r.statut === 'confirme' && r.date < t;
     var svc = r.type === 'massage' ? (r.services || []).map(function (x) { return sname(x); }).join(' + ') : (r.services || []).map(function (x) { return sname(x, true); }).join(' + ');
-    return '<li><button data-rdv="' + esc(r.id) + '" class="' + (off ? 'off' : '') + '" style="--pc:' + pcol(r.praticienne) + '"><span class="mcl-stripe"></span><span style="min-width:0"><b>' + esc(cap(fDate(r.date))) + (r.date.slice(0, 4) !== t.slice(0, 4) ? ' ' + r.date.slice(0, 4) : '') + ' · ' + esc(fHR(r.debut, r.fin)) + '</b><small>' + esc(pname(r.praticienne)) + ' · ' + esc(svc) + '</small></span>' +
+    return '<li><button data-rdv="' + esc(r.id) + '" class="' + (off ? 'off' : '') + '" style="--pc:' + pcol(r.praticienne) + '"><span class="mcl-stripe"></span><span style="min-width:0"><b>' + esc(cap(fDate(r.date))) + (r.date.slice(0, 4) !== t.slice(0, 4) ? ' ' + r.date.slice(0, 4) : '') + ' · ' + esc(fHR(r.debut, r.fin)) + '</b><small>' + esc(pname(r.praticienne)) + ' · ' + esc(svc) + '</small>' +
+      (titre && TITRE_RE.test(r.note || '') ? '<span class="ttl">Google Agenda : « ' + esc(TITRE_RE.exec(r.note)[1]) + ' »</span>' : '') + '</span>' +
       '<span class="tag ' + (done ? '' : stt[1]) + '">' + (done ? 'Réalisé' : stt[0]) + '</span></button></li>';
   }
 
-  /* ---------------- doublons possibles ---------------- */
-  var PARTICULES = { de: 1, du: 1, des: 1, d: 1, le: 1, la: 1, les: 1, l: 1, di: 1, da: 1, del: 1, della: 1, van: 1, von: 1, der: 1 };
   function nk(s) { return norm(s).replace(/[’`]/g, "'").replace(/\s+/g, ' '); }
-  function compact(s) { return nk(s).replace(/[\s'.\-]+/g, ''); }
-  /** Formes comparables d'un nom : collé, sans particules, sans particule collée en tête (« Dupont » → « pont »). */
-  function variants(s) {
-    var n = nk(s).replace(/\./g, ' '), out = {};
-    var toks = n.split(/[\s'\-]+/).filter(Boolean);
-    var all = toks.join(''); if (all) out[all] = 1;
-    var sans = toks.filter(function (t) { return !PARTICULES[t]; }).join(''); if (sans) out[sans] = 1;
-    ['des', 'del', 'du', 'de', 'di', 'da', 'le', 'la', 'd', 'l'].forEach(function (pp) { if (all.indexOf(pp) === 0 && all.length - pp.length >= 3) out[all.slice(pp.length)] = 1; });
-    return Object.keys(out);
-  }
-  function lev(a, b) {
-    if (Math.abs(a.length - b.length) > 2) return 3;
-    var prev = [], cur, i, j;
-    for (j = 0; j <= b.length; j++) prev[j] = j;
-    for (i = 1; i <= a.length; i++) {
-      cur = [i];
-      for (j = 1; j <= b.length; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
-      prev = cur;
-    }
-    return prev[b.length];
-  }
-  /** Raison pour laquelle deux fiches semblent être la même cliente, ou null. */
-  function dupReason(a, b) {
-    if (a.cle === b.cle || !nk(a.prenom) || nk(a.prenom) !== nk(b.prenom)) return null;
-    var na = compact(a.nom), nb = compact(b.nom);
-    if (!na || !nb) return 'nom manquant sur une fiche';
-    if (na === nb) return 'même nom, écrit autrement';
-    var s = na.length <= nb.length ? na : nb, l = s === na ? nb : na;
-    if (l.indexOf(s) === 0) return s.length === 1 ? 'initiale du nom' : 'nom abrégé';
-    var va = variants(a.nom), vb = variants(b.nom);
-    for (var i = 0; i < va.length; i++) if (vb.indexOf(va[i]) >= 0) return 'même nom, écrit autrement';
-    if (na.length >= 5 && nb.length >= 5 && lev(na, nb) <= 2) return 'orthographe proche';
-    return null;
-  }
-  function pairKey(a, b) { return [a, b].sort().join('||'); }
-  var IGN_KEY = 'sorelle.gestion.doublonsIgnores';
-  var ignored = (function () { try { var v = JSON.parse(localStorage.getItem(IGN_KEY) || '[]'); return Array.isArray(v) ? v : []; } catch (e) { return []; } })();
-  function ignorePair(k) { if (ignored.indexOf(k) < 0) ignored.push(k); try { localStorage.setItem(IGN_KEY, JSON.stringify(ignored.slice(-500))); } catch (e) { /* appareil sans stockage */ } }
-  function findDups(list) {
-    var by = {}, out = [];
-    (list || []).forEach(function (p) { var k = nk(p.prenom); if (k) (by[k] = by[k] || []).push(p); });
-    Object.keys(by).forEach(function (k) {
-      var g = by[k]; if (g.length < 2) return;
-      for (var i = 0; i < g.length; i++) for (var j = i + 1; j < g.length; j++) {
-        var r = dupReason(g[i], g[j]); if (!r) continue;
-        var key = pairKey(g[i].cle, g[j].cle); if (ignored.indexOf(key) >= 0) continue;
-        // par défaut on garde la fiche avec le plus de visites (puis la plus complète)
-        var A = g[i], B = g[j];
-        var keepA = (A.realises || 0) !== (B.realises || 0) ? (A.realises || 0) > (B.realises || 0) : (A.total || 0) !== (B.total || 0) ? (A.total || 0) > (B.total || 0) : compact(A.nom).length >= compact(B.nom).length;
-        out.push({ key: key, a: keepA ? A : B, b: keepA ? B : A, raison: r });
-      }
-    });
-    out.sort(function (x, y) { return fullName(x.a).localeCompare(fullName(y.a), 'fr'); });
-    return out;
-  }
   function visitsLine(p) {
     return [pl(p.realises || 0, 'visite'), p.derniere ? 'dernière ' + ago(p.derniere) : (p.prochain ? 'RDV ' + fDate(p.prochain.date) : 'pas encore venue')].join(' · ');
   }
@@ -637,77 +733,77 @@
     });
   }
 
-  function dupHtml() {
-    if (!profils || st.q) return '';
-    var d = findDups(profils); dups = d;
-    if (!d.length) return '';
-    var H = '<section class="dup"><button class="dup-h" data-act="dup-toggle" aria-expanded="' + !!st.dupOpen + '"><span class="ico">' + icon('users') + '</span><b>Doublons possibles (' + d.length + ')</b><small>' + (st.dupOpen ? 'Masquer' : 'Vérifier') + icon('chevronD') + '</small></button>';
-    if (st.dupOpen) {
-      H += '<ul class="dup-l">' + d.map(function (x, i) {
-        var keepB = st.dupKeep[x.key] === x.b.cle;
-        return '<li class="dup-p" data-dup="' + i + '"><p class="dup-k">Même cliente ? ' + esc(x.raison) + '. Nom à garder :</p>' +
-          [x.a, x.b].map(function (p, k) {
-            var on = k === 0 ? !keepB : keepB;
-            return '<button class="dup-o" data-act="dup-keep" data-dup="' + i + '" data-keep="' + esc(p.cle) + '" aria-pressed="' + on + '">' + avatar(p) + '<span style="min-width:0"><b>' + esc(fullName(p)) + '</b><small>' + esc(pname(p.praticienne) + ' · ' + visitsLine(p)) + '</small></span><span class="keep">Nom gardé</span></button>';
-          }).join('') +
-          '<div class="dup-a"><button class="btn pri" data-act="dup-merge" data-dup="' + i + '">Fusionner</button><button class="lnk" data-act="dup-no" data-dup="' + i + '">Ce n’est pas un doublon</button></div></li>';
-      }).join('') + '</ul>';
-    }
-    return H + '</section>';
-  }
-
-  /* ---------------- fusion depuis la fiche ---------------- */
-  function mergeBlock(f) {
-    var m = f.mg, d = f.data;
-    return '<div class="mg" data-r="mg"><h4>Fusionner avec une autre fiche</h4>' +
-      '<div class="cl-search"><span class="ico">' + icon('search') + '</span><input type="search" data-mg="q" placeholder="Rechercher l’autre fiche" autocomplete="off" aria-label="Rechercher la fiche à fusionner" value="' + esc(m.q) + '"></div>' +
-      '<p class="mg-mode">' + (m.inverse ? 'Le nom gardé sera <b>' + esc(fullName(d)) + '</b> (cette fiche). <button class="lnk" data-act="mg-inv">Garder plutôt le nom de l’autre fiche</button>'
-        : 'Le nom gardé sera celui de la fiche choisie. <button class="lnk" data-act="mg-inv">Garder plutôt le nom de cette fiche</button>') + '</p>' +
-      '<div data-r="mg-res">' + mergeResults(f) + '</div>' +
-      '<div class="mg-foot"><button class="btn" data-act="mg-cancel">Annuler</button></div></div>';
-  }
-  function mergeResults(f) {
-    var m = f.mg;
-    if (m.err) return '<p class="f-empty">' + esc(m.err) + '</p>';
-    if (!m.list) return '<p class="f-empty">Chargement…</p>';
-    var me = f.data, q = norm(m.q), toks = q.split(/\s+/).filter(Boolean);
+  /* ---------------- fusion / complétion depuis la fiche ---------------- */
+  // Liste déroulante de toutes les clientes : celles qui ont le même prénom en tête.
+  function mergeOptions(f) {
+    var m = f.mg, me = f.data;
+    if (!m.list) return '<option value="">' + (m.err ? esc(m.err) : 'Chargement des clientes…') + '</option>';
     var others = m.list.filter(function (p) { return p.cle !== f.cle; });
-    var sug = others.filter(function (p) { return dupReason(me, p); });
-    var res;
-    if (!toks.length) res = sug;
-    else res = others.filter(function (p) { var s = norm(p.prenom + ' ' + p.nom); return toks.every(function (t) { return s.indexOf(t) >= 0; }); })
-      .sort(function (a, b) { return (dupReason(me, b) ? 1 : 0) - (dupReason(me, a) ? 1 : 0) || (b.realises || 0) - (a.realises || 0); });
-    if (!res.length) return '<p class="f-empty">' + (toks.length ? 'Aucune fiche ne correspond.' : 'Tapez le nom de l’autre fiche (aucun doublon évident trouvé).') + '</p>';
-    return (!toks.length ? '<p class="mg-mode" style="margin-top:4px">Doublons possibles :</p>' : '') +
-      '<ul class="mg-res">' + res.slice(0, 8).map(function (p) {
-        return '<li><button data-mg-cle="' + esc(p.cle) + '">' + avatar(p) + '<span style="min-width:0;flex:1"><b>' + esc(fullName(p)) + '</b><small>' + esc(pname(p.praticienne) + ' · ' + visitsLine(p)) + '</small></span>' + (dupReason(me, p) ? '<span class="sug">Doublon ?</span>' : '') + '</button></li>';
-      }).join('') + '</ul>';
+    var fn = nk(me.prenom);
+    var lab = function (p) { return fullName(p) + ' — ' + [pname(p.praticienne), pl(p.realises || 0, 'visite'), p.derniere ? 'dernière ' + fDateY(p.derniere) : ''].filter(Boolean).join(' · '); };
+    var o = function (p) { return '<option value="' + esc(p.cle) + '"' + (m.sel === p.cle ? ' selected' : '') + '>' + esc(lab(p)) + '</option>'; };
+    var same = others.filter(function (p) { return fn && nk(p.prenom) === fn; }).sort(function (a, b) { return incomplete(a) - incomplete(b) || (b.realises || 0) - (a.realises || 0); });
+    var all = others.slice().sort(function (a, b) { return fullName(a).localeCompare(fullName(b), 'fr', { sensitivity: 'base' }); });
+    return '<option value="">Choisir la cliente…</option>' +
+      (same.length ? '<optgroup label="Même prénom (' + same.length + ')">' + same.map(o).join('') + '</optgroup>' : '') +
+      '<optgroup label="Toutes les clientes (' + all.length + ')">' + all.map(o).join('') + '</optgroup>';
   }
-  function startMerge(f) {
-    f.rn = null; f.mg = { q: '', inverse: false, list: null, err: null };
-    renderFiche(f);
-    var i = f.el.querySelector('[data-mg="q"]'); if (i && !G.isMobile()) i.focus();
-    Promise.resolve().then(function () { return G.clientes(); }).then(function (l) { if (!f.mg) return; f.mg.list = l || []; paintMerge(f); },
-      function (e) { if (!f.mg) return; f.mg.err = (e && e.message) || 'Clientes indisponibles.'; paintMerge(f); });
+  /** Sens de la fusion : on garde toujours le nom le plus complet. */
+  function mergeDir(f, other) {
+    var me = { cle: f.cle, prenom: f.data.prenom, nom: f.data.nom, total: f.data.total || (f.data.rdvs || []).length, praticienne: f.data.praticienne };
+    return incomplete(other) && !incomplete(me) ? { src: other, dst: me } : { src: me, dst: other };
   }
-  function paintMerge(f) { var b = f.el.querySelector('[data-r="mg-res"]'); if (b) b.innerHTML = mergeResults(f); }
-  function pickMerge(f, cle) {
-    var m = f.mg; if (!m || m.busy) return;
-    var other = (m.list || []).filter(function (p) { return p.cle === cle; })[0]; if (!other) return;
-    var me = { cle: f.cle, prenom: f.data.prenom, nom: f.data.nom, total: f.data.total };
-    var src = m.inverse ? other : me, dst = m.inverse ? me : other;
-    m.busy = true;
-    doMerge(src, dst).then(function (res) {
-      if (!f.mg) return;
+  function mergeHint(f) {
+    var m = f.mg, other = m && m.list && m.sel ? m.list.filter(function (p) { return p.cle === m.sel; })[0] : null;
+    if (!other) return incomplete(f.data) ? 'Les rendez-vous de cette fiche iront sur la fiche choisie, avec son nom complet.' : 'Les deux fiches n’en feront plus qu’une.';
+    var d = mergeDir(f, other); return mergeText(d.src, d.dst);
+  }
+  function mergeBlock(f) {
+    var m = f.mg, d = f.data, inc = incomplete(d);
+    var nom = String(d.nom || '').trim();
+    return '<div class="mg" data-r="mg"><h4>' + (inc ? 'Compléter cette fiche' : 'Fusionner avec une autre fiche') + '</h4>' +
+      (inc ? '<p class="mg-mode">' + (nom && nom !== '-' ? 'Nom incomplet (« ' + esc(nom) + ' »).' : 'Pas de nom de famille.') + ' Vérifiez ses rendez-vous plus bas, puis fusionnez-la avec la bonne cliente ou complétez son nom.</p>' : '') +
+      '<label class="mg-lb" for="mg-sel-' + f.uid + '">C’est la même cliente que</label>' +
+      '<div class="mg-row"><select id="mg-sel-' + f.uid + '" data-mg="sel"' + (m.list ? '' : ' disabled') + '>' + mergeOptions(f) + '</select>' +
+      '<button class="btn pri" data-act="mg-go"' + (m.sel && !m.busy ? '' : ' disabled') + '>' + (m.busy ? 'Fusion…' : 'Fusionner') + '</button></div>' +
+      '<p class="mg-mode" data-r="mg-hint">' + esc(mergeHint(f)) + '</p>' +
+      (inc ? '<div class="mg-or">ou</div><button class="btn full" data-act="f-rn">' + icon('edit') + 'C’est une autre cliente : compléter son nom</button>' : '') +
+      (f.completer ? '' : '<div class="mg-foot"><button class="btn" data-act="mg-cancel">Annuler</button></div>') + '</div>';
+  }
+  function initMerge(f) {
+    f.mg = { sel: '', list: null, err: null, busy: false };
+    var m = f.mg;
+    Promise.resolve().then(function () { return G.clientes(); }).then(function (l) { if (f.mg !== m) return; m.list = l || []; paintMerge(f); },
+      function (e) { if (f.mg !== m) return; m.err = (e && e.message) || 'Clientes indisponibles.'; paintMerge(f); });
+  }
+  function startMerge(f) { f.rn = null; initMerge(f); renderFiche(f); }
+  function paintMerge(f) {
+    var b = f.el.querySelector('[data-r="mg"]'); if (!b || !f.mg) return;
+    var t = document.createElement('div'); t.innerHTML = mergeBlock(f);
+    b.parentNode.replaceChild(t.firstChild, b);
+  }
+  function goMerge(f) {
+    var m = f.mg; if (!m || m.busy || !m.sel) return;
+    var other = (m.list || []).filter(function (p) { return p.cle === m.sel; })[0]; if (!other) return;
+    var dir = mergeDir(f, other);
+    m.busy = true; paintMerge(f);
+    doMerge(dir.src, dir.dst).then(function (res) {
+      if (f.mg !== m) return;
       m.busy = false;
-      if (!res) return;
+      if (!res) { paintMerge(f); return; }
+      if (f.completer) { closeFiche(f); return; }
       f.mg = null; f.cle = res.cle;
-      try { if (f.panel && f.panel.setTitle) f.panel.setTitle(fullName(dst)); } catch (e) { /* ignore */ }
+      try { if (f.panel && f.panel.setTitle) f.panel.setTitle(fullName(dir.dst)); } catch (e) { /* ignore */ }
       if (!G.emit) loadFiche(f);
     }).catch(function (e) {
-      m.busy = false;
+      m.busy = false; paintMerge(f);
       if (G.toast) G.toast((e && e.message) || 'Fusion impossible.', { type: 'err' });
     });
+  }
+  /** Ferme une fiche (mode « compléter » : retour direct à la liste pour traiter la suivante). */
+  function closeFiche(f) {
+    fiches = fiches.filter(function (x) { return x !== f; });
+    try { if (f.panel && f.panel.close) f.panel.close(); } catch (e) { /* ignore */ }
   }
 
   /* ---------------- renommer / fusionner ---------------- */
@@ -763,6 +859,7 @@
       // les autres fiches ouvertes sur l'ancienne clé suivent la cliente
       fiches.forEach(function (x) { if (x !== f && x.cle === oldCle) x.cle = f.cle; });
       if (G.toast) G.toast(fusionner ? 'Fiches fusionnées' : 'Nom modifié sur ' + pl(n, 'rendez-vous', 'rendez-vous'), { type: 'ok' });
+      if (f.completer && !incomplete({ nom: nom })) { closeFiche(f); if (G.emit) G.emit('change', { source: 'renommerCliente', ancienne: oldCle, cle: f.cle }); return; }
       try { if (f.panel && f.panel.setTitle) f.panel.setTitle(res.prenom + ' ' + res.nom); } catch (e) { /* ignore */ }
       if (G.emit) G.emit('change', { source: 'renommerCliente', ancienne: oldCle, cle: f.cle }); // vide les caches du shell, recharge la liste et les fiches
       else loadFiche(f);
@@ -783,38 +880,19 @@
     });
   }
 
-  function relanceText(f) {
-    var d = f.data, h = d.habitude || {}, prenom = (d.prenom || '').trim() || 'à toi';
-    var main = (h.services || [])[0], soin = SOIN[main] || 'rendez-vous';
-    var gen = soin === 'rendez-vous' || soin === 'renfort' || soin === 'remplissage' || soin === 'semi-permanent' || soin === 'soin des pieds' ? 'ton prochain ' + soin : 'ton prochain soin';
-    var c = f.recos && f.recos.creneaux && f.recos.creneaux[0];
-    if (c) return 'Bonjour ' + prenom + ', ' + gen + ' approche : je te propose ' + fLong(c.date) + ' à ' + fH(c.debut) + '. Dis-moi si ça te va !';
-    return 'Bonjour ' + prenom + ', ' + gen + ' approche : dis-moi quand tu es disponible, je te trouve un créneau !';
-  }
-
-  function copy(text) {
-    function fallback() {
-      return new Promise(function (res, rej) {
-        try {
-          var ta = document.createElement('textarea'); ta.value = text; ta.setAttribute('readonly', '');
-          ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;font-size:16px';
-          document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, text.length);
-          var ok = document.execCommand('copy'); document.body.removeChild(ta);
-          ok ? res() : rej(new Error('copie'));
-        } catch (e) { rej(e); }
-      });
-    }
-    if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(text).catch(fallback);
-    return fallback();
-  }
-
   function bindFiche(f) {
     f.el.addEventListener('submit', function (e) { e.preventDefault(); saveRename(f, false); });
     f.el.addEventListener('input', function (e) {
-      if (e.target.getAttribute && e.target.getAttribute('data-mg') === 'q' && f.mg) { f.mg.q = e.target.value; paintMerge(f); return; }
       var k = e.target.getAttribute && e.target.getAttribute('data-rn'); if (!k || !f.rn) return;
       f.rn[k] = e.target.value;
       if (f.rn.err) { f.rn.err = ''; f.rn.champ = null; showRnErr(f); }
+    });
+    f.el.addEventListener('change', function (e) {
+      if (e.target.getAttribute && e.target.getAttribute('data-mg') === 'sel' && f.mg) {
+        f.mg.sel = e.target.value;
+        var go = f.el.querySelector('[data-act="mg-go"]'); if (go) go.disabled = !f.mg.sel;
+        var h = f.el.querySelector('[data-r="mg-hint"]'); if (h) h.textContent = mergeHint(f);
+      }
     });
     f.el.addEventListener('keydown', function (e) {
       if (e.key === 'Escape' && f.rn && e.target.getAttribute && e.target.getAttribute('data-rn')) { e.stopPropagation(); e.preventDefault(); if (!f.rn.busy) stopRename(f); }
@@ -828,11 +906,11 @@
         G.newRdv({ cle: d.cle, prenom: d.prenom, nom: d.nom, praticienne: c.praticienne, services: (c.ordre && c.ordre.length ? c.ordre : (f.recos.services || [])).slice(), date: c.date, debut: c.debut });
         return;
       }
-      if ((a = b.getAttribute('data-mg-cle'))) { pickMerge(f, a); return; }
       a = b.getAttribute('data-act');
       if (a === 'f-mg') { startMerge(f); return; }
       if (a === 'mg-cancel') { f.mg = null; renderFiche(f); var mb = f.el.querySelector('[data-act="f-mg"]'); if (mb) mb.focus(); return; }
-      if (a === 'mg-inv') { f.mg.inverse = !f.mg.inverse; var mm = f.el.querySelector('.mg-mode'); if (mm) mm.outerHTML = (function () { var t = document.createElement('div'); t.innerHTML = mergeBlock(f); return t.querySelector('.mg-mode').outerHTML; })(); return; }
+      if (a === 'mg-go') { goMerge(f); return; }
+      if (a === 'f-full') { f.completer = false; renderFiche(f); return; }
       if (a === 'f-rn') { f.mg = null; startRename(f); return; }
       if (a === 'f-rn-cancel') { stopRename(f); return; }
       if (a === 'f-rn-save') { e.preventDefault(); saveRename(f, false); return; }
@@ -840,17 +918,6 @@
       else if (a === 'f-retry') { f.el.innerHTML = ficheSkeleton(); loadFiche(f); }
       else if (a === 'f-reco') { f.recoErr = null; var bb = f.el.querySelector('[data-r="recos-body"]'); if (bb) bb.innerHTML = recosHtml(f); loadRecos(f); }
       else if (a === 'f-past') { f.showPast += 20; renderFiche(f); }
-      else if (a === 'f-copy' && d) {
-        var go = function () {
-          var txt = relanceText(f);
-          copy(txt).then(function () { if (G.toast) G.toast('Message copié : ' + txt, { type: 'ok' }); })
-            .catch(function () { if (G.toast) G.toast('Copie impossible sur cet appareil. ' + txt, { type: 'err' }); });
-        };
-        if (!f.recos && f.recoLoading) {
-          // attendre les recommandations (une seconde max) pour proposer un créneau dans le message
-          var n = 0, iv = setInterval(function () { if (!f.recoLoading || ++n > 10) { clearInterval(iv); go(); } }, 100);
-        } else go();
-      }
     });
   }
 
